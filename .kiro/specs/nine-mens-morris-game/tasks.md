@@ -43,8 +43,8 @@ The implementation uses:
 
 ### Phase 2: Core Game Engine
 
-- [ ] 3. Implement Board class with position management
-  - [ ] 3.1 Create Board class with 24-position array
+- [x] 3. Implement Board class with position management
+  - [x] 3.1 Create Board class with 24-position array
     - Initialize positions array (0-23)
     - Define adjacency map for all 24 positions based on Nine Men's Morris layout
     - Define MILL_PATTERNS constant with all 16 mill configurations
@@ -54,14 +54,14 @@ The implementation uses:
     - Implement `clone()` method for board copying
     - _Requirements: 1.7, 1.8_
   
-  - [ ] 3.2 Write property test for board adjacency
+  - [x] 3.2 Write property test for board adjacency
     - **Property 8: Movement Validation**
     - **Validates: Requirements 1.8**
     - Test that all adjacency relationships are bidirectional
     - Test that no position is adjacent to itself
     - Test that adjacency map covers all 24 positions
   
-  - [ ] 3.3 Write unit tests for board initialization
+  - [x] 3.3 Write unit tests for board initialization
     - Test that new board has 24 empty positions
     - Test that adjacency map contains correct connections
     - Test that MILL_PATTERNS contains all 16 mills
