@@ -282,7 +282,7 @@ public class RuleEngine {
                 if (!board.isPositionEmpty(i) && 
                     board.getPosition(i).getOccupant() == opponent &&
                     canRemovePiece(state, i)) {
-                    legalMoves.add(new Move(MoveType.REMOVE, i, player));
+                    legalMoves.add(new Move(MoveType.REMOVE, -1, i, player));
                 }
             }
             return legalMoves;

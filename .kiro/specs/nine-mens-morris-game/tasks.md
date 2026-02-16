@@ -154,7 +154,7 @@ The implementation uses:
     - Test that game ends when player has fewer than 3 pieces
     - Test that game ends when player has no legal moves
 
-- [ ] 7. Checkpoint - Core game engine complete
+- [x] 7. Checkpoint - Core game engine complete
   - Ensure all core game engine tests pass
   - Verify that a complete game can be played programmatically
   - Ask the user if questions arise

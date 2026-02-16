@@ -129,3 +129,23 @@ Violating these TDD requirements undermines the entire project quality and is no
 - Tests should be maintainable and understandable
 
 This experience reinforced that **understanding the codebase architecture is essential before writing tests**. Taking time to read and understand the existing code prevents wasted effort and ensures tests are designed appropriately for the system.
+
+### Constructor Overloading and Type Safety
+
+**CRITICAL LESSON**: When working with overloaded constructors, always verify parameter types and order
+
+**What Happened**: The Move class has two constructors:
+- `Move(MoveType type, int to, PlayerColor player)` - Only for PLACE moves
+- `Move(MoveType type, int from, int to, PlayerColor player)` - For MOVE and REMOVE moves
+
+**The Error**: RuleEngine was calling `new Move(MoveType.REMOVE, position, player)` which used the 3-parameter constructor that's restricted to PLACE moves only.
+
+**The Fix**: REMOVE moves need the 4-parameter constructor: `new Move(MoveType.REMOVE, -1, position, player)`
+
+**Prevention Strategies**:
+1. **Read constructor documentation carefully** - The Move class clearly documents which constructor is for which move type
+2. **Understand the domain model** - REMOVE moves conceptually don't have a "from" position, but the constructor still requires it (use -1)
+3. **Run integration tests early** - This error only appeared when the full game flow was tested, not in isolated unit tests
+4. **Pay attention to IllegalArgumentException messages** - The error message "This constructor is only for PLACE moves" was very clear about the issue
+
+**Key Takeaway**: Constructor overloading with business logic constraints requires careful attention to parameter types and validation rules. Always verify you're using the correct constructor variant for your use case.
