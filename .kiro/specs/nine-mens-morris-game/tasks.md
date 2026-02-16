@@ -31,7 +31,7 @@ The implementation uses:
   - Create README with project overview and setup instructions
   - _Requirements: 12.5_
 
-- [ ] 2. Create core data models for game state
+- [x] 2. Create core data models for game state
   - Implement `Position` class with index and occupant
   - Implement `PlayerColor` enum (WHITE, BLACK)
   - Implement `GamePhase` enum (PLACEMENT, MOVEMENT, FLYING)
