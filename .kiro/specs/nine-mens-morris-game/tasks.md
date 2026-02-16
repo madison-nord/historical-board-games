@@ -87,7 +87,7 @@ The implementation uses:
     - Test that all new games start with WHITE as current player
 
 - [ ] 5. Implement RuleEngine for game rules validation
-  - [ ] 5.1 Create RuleEngine class with move validation
+  - [x] 5.1 Create RuleEngine class with move validation
     - Implement `isValidMove(GameState, Move)` for placement moves
     - Implement `isValidMove(GameState, Move)` for movement moves
     - Implement `isValidMove(GameState, Move)` for flying moves
@@ -97,26 +97,26 @@ The implementation uses:
     - Implement `hasLegalMoves(GameState, PlayerColor)` method
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.7, 1.8_
   
-  - [ ] 5.2 Write property test for placement validation
+  - [x] 5.2 Write property test for placement validation
     - **Property 7: Placement Validation**
     - **Validates: Requirements 1.7**
     - Test that placement is only valid on empty positions
     - Test that placement is rejected on occupied positions
   
-  - [ ] 5.3 Write property test for movement validation
+  - [x] 5.3 Write property test for movement validation
     - **Property 8: Movement Validation**
     - **Validates: Requirements 1.8**
     - Test that movement requires adjacent empty position
     - Test that movement is rejected for non-adjacent positions
     - Test that movement is rejected for occupied positions
   
-  - [ ] 5.4 Write property test for flying phase activation
+  - [x] 5.4 Write property test for flying phase activation
     - **Property 4: Flying Phase Activation**
     - **Validates: Requirements 1.4**
     - Test that players with exactly 3 pieces can move anywhere
     - Test that players with more than 3 pieces cannot fly
   
-  - [ ] 5.5 Write property test for mill protection
+  - [x] 5.5 Write property test for mill protection
     - **Property 3: Protected Mill Pieces**
     - **Validates: Requirements 1.3**
     - Test that pieces in mills cannot be removed if other pieces exist
