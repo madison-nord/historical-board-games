@@ -161,8 +161,8 @@ The implementation uses:
 
 ### Phase 3: AI Implementation
 
-- [ ] 8. Implement board evaluation for AI
-  - [ ] 8.1 Create AIService class with evaluation function
+- [x] 8. Implement board evaluation for AI
+  - [x] 8.1 Create AIService class with evaluation function
     - Implement `evaluatePosition(GameState, PlayerColor)` method
     - Score based on piece count difference
     - Score based on number of mills formed
@@ -171,7 +171,7 @@ The implementation uses:
     - Score based on blocked opponent pieces
     - _Requirements: 3.2, 3.3_
   
-  - [ ] 8.2 Write unit tests for evaluation function
+  - [x] 8.2 Write unit tests for evaluation function
     - Test evaluation of winning positions (high score)
     - Test evaluation of losing positions (low score)
     - Test evaluation of equal positions (near zero score)
