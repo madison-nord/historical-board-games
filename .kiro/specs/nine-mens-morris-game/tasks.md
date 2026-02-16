@@ -67,8 +67,8 @@ The implementation uses:
     - Test that MILL_PATTERNS contains all 16 mills
     - _Requirements: 1.7, 1.8_
 
-- [ ] 4. Implement GameState class with state management
-  - [ ] 4.1 Create GameState class
+- [x] 4. Implement GameState class with state management
+  - [x] 4.1 Create GameState class
     - Implement constructor with gameId initialization
     - Initialize board, phase (PLACEMENT), currentPlayer (WHITE)
     - Initialize piece counters: 9 remaining per player, 0 on board
@@ -78,7 +78,7 @@ The implementation uses:
     - Implement `clone()` method
     - _Requirements: 1.1, 1.6, 1.9_
   
-  - [ ] 4.2 Write property test for initial game state
+  - [x] 4.2 Write property test for initial game state
     - **Property 6: Initial Game State**
     - **Validates: Requirements 1.6**
     - Test that all new games start with 9 pieces per player
