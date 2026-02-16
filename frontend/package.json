@@ -1,7 +1,7 @@
 {
-  "name": "nine-mens-morris-frontend",
+  "name": "historical-board-games-frontend",
   "version": "1.0.0",
-  "description": "Frontend for Nine Men's Morris digital board game",
+  "description": "Frontend for Historical Board Games platform",
   "type": "module",
   "scripts": {
     "dev": "vite",

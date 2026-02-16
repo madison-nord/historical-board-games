@@ -12,11 +12,11 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.ninemensmorris</groupId>
-    <artifactId>nine-mens-morris-game</artifactId>
+    <groupId>com.historicalboardgames</groupId>
+    <artifactId>historical-board-games</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <name>Nine Men's Morris Digital Board Game</name>
-    <description>Digital implementation of Nine Men's Morris board game with AI and online multiplayer</description>
+    <name>Historical Board Games Platform</name>
+    <description>Digital platform for playing historical board games with AI and online multiplayer</description>
 
     <properties>
         <java.version>25</java.version>

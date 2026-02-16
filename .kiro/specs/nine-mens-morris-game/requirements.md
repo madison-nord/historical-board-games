@@ -2,7 +2,11 @@
 
 ## Introduction
 
-This document specifies the requirements for a digital implementation of Nine Men's Morris (also known as Mills), a traditional strategy board game. The system will provide multiple game modes including single-player AI, local multiplayer, online multiplayer with matchmaking, and an interactive tutorial. The implementation targets modern web browsers with a focus on responsive design, smooth animations, and an engaging user experience suitable for a portfolio project.
+This document specifies the requirements for a digital implementation of Nine Men's Morris (also known as Mills), a traditional strategy board game. This is the first game in the Historical Board Games platform, which will eventually host multiple classic strategy games.
+
+The system will provide multiple game modes including single-player AI, local multiplayer, online multiplayer with matchmaking, and an interactive tutorial. The implementation targets modern web browsers with a focus on responsive design, smooth animations, and an engaging user experience suitable for a portfolio project.
+
+**Note**: While this specification focuses on Nine Men's Morris, the architecture is designed to be extensible to support additional historical board games in future phases.
 
 ## Glossary
 

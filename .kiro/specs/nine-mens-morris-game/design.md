@@ -2,7 +2,15 @@
 
 ## Overview
 
-This document describes the technical design for a digital implementation of Nine Men's Morris (Mills), a traditional strategy board game. The system will be built using Java 25 with a modern web-based architecture to support desktop and mobile browsers. The design emphasizes clean separation between game logic, presentation, and backend services to ensure maintainability and testability.
+This document describes the technical design for a digital implementation of Nine Men's Morris (Mills), a traditional strategy board game. This is the first game in the Historical Board Games platform.
+
+The system will be built using Java 25 with a modern web-based architecture to support desktop and mobile browsers. The design emphasizes clean separation between game logic, presentation, and backend services to ensure maintainability, testability, and extensibility for future games.
+
+**Platform Vision**: While this design focuses on Nine Men's Morris, the architecture is intentionally designed to be extensible. Future games can be added by:
+- Creating new game engine packages (e.g., `com.historicalboardgames.chess.engine`)
+- Reusing the service layer, WebSocket infrastructure, and frontend framework
+- Adding game-specific UI components and rendering logic
+- Sharing common features like matchmaking, chat, and user management
 
 ## Technology Stack
 
