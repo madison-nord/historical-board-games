@@ -117,6 +117,8 @@ Violating these TDD requirements undermines the entire project quality and is no
 - Fix compilation issues before moving to the next test
 - Verify tests actually run and pass with 100+ iterations
 - Use `mvn test -Dtest=ClassName --quiet` for focused testing
+- **Check imports**: When using new classes (List, Map, etc.), ensure imports are added
+- **Common missing imports**: `java.util.List`, `java.util.Map`, `java.util.ArrayList`
 
 ### Test-First Mindset
 

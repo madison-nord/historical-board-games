@@ -86,7 +86,7 @@ The implementation uses:
     - Test that all new games start in PLACEMENT phase
     - Test that all new games start with WHITE as current player
 
-- [ ] 5. Implement RuleEngine for game rules validation
+- [x] 5. Implement RuleEngine for game rules validation
   - [x] 5.1 Create RuleEngine class with move validation
     - Implement `isValidMove(GameState, Move)` for placement moves
     - Implement `isValidMove(GameState, Move)` for movement moves
@@ -123,8 +123,8 @@ The implementation uses:
     - Test that pieces in mills can be removed if no other pieces exist
 
 
-- [ ] 6. Implement move generation and game flow
-  - [ ] 6.1 Add legal move generation to RuleEngine
+- [x] 6. Implement move generation and game flow
+  - [x] 6.1 Add legal move generation to RuleEngine
     - Implement `generateLegalMoves(GameState)` method
     - Generate placement moves during PLACEMENT phase
     - Generate movement moves during MOVEMENT phase
@@ -132,23 +132,23 @@ The implementation uses:
     - Generate removal moves after mill formation
     - _Requirements: 1.1, 1.7, 1.8_
   
-  - [ ] 6.2 Write property test for move legality invariant
+  - [x] 6.2 Write property test for move legality invariant
     - **Property 10: Move Legality Invariant**
     - **Validates: Requirements 1.7, 1.8**
     - Test that all generated moves are valid
     - Test that all valid moves are in generated list
   
-  - [ ] 6.3 Write property test for turn alternation
+  - [x] 6.3 Write property test for turn alternation
     - **Property 9: Turn Alternation**
     - **Validates: Requirements 1.9, 4.2**
     - Test that applying any valid move switches current player
   
-  - [ ] 6.4 Write property test for phase identification
+  - [x] 6.4 Write property test for phase identification
     - **Property 1: Phase Identification**
     - **Validates: Requirements 1.1**
     - Test that phase is correctly determined based on game state
   
-  - [ ] 6.5 Write property test for win condition detection
+  - [x] 6.5 Write property test for win condition detection
     - **Property 5: Win Condition Detection**
     - **Validates: Requirements 1.5**
     - Test that game ends when player has fewer than 3 pieces
