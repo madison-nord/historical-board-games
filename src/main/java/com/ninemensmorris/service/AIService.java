@@ -10,22 +10,29 @@ import java.util.List;
 
 /**
  * AI service for Nine Men's Morris that provides board position evaluation
- * and strategic decision-making capabilities.
+ * and strategic decision-making capabilities using minimax with alpha-beta pruning.
  * 
- * This service implements a comprehensive evaluation function that considers:
+ * This service implements:
+ * - Comprehensive board evaluation considering multiple strategic factors
+ * - Minimax algorithm with alpha-beta pruning for optimal move selection
+ * - Configurable search depth for performance tuning
+ * - Strategic decision-making that provides challenging AI gameplay
+ * 
+ * The evaluation considers:
  * - Piece count differences
  * - Mill formations
  * - Potential mills (2 pieces in a row)
  * - Mobility (number of legal moves)
  * - Blocked opponent pieces
- * 
- * The evaluation is designed to provide strategic AI gameplay that offers
- * a challenging experience for human players.
  */
 @Service
 public class AIService {
     
     private final RuleEngine ruleEngine;
+    
+    // Default search depth for minimax algorithm
+    private static final int DEFAULT_DEPTH = 4;
+    private final int searchDepth;
     
     // Evaluation weights for different strategic factors
     private static final int PIECE_COUNT_WEIGHT = 100;
@@ -36,6 +43,119 @@ public class AIService {
     
     public AIService() {
         this.ruleEngine = new RuleEngine();
+        this.searchDepth = DEFAULT_DEPTH;
+    }
+    
+    public AIService(int depth) {
+        this.ruleEngine = new RuleEngine();
+        this.searchDepth = depth;
+    }
+    
+    /**
+     * Selects the best move for the AI using minimax algorithm with alpha-beta pruning.
+     * 
+     * @param state the current game state
+     * @param aiColor the color of the AI player
+     * @return the best move for the AI, or null if no legal moves available
+     * @throws IllegalArgumentException if state or aiColor is null
+     */
+    public Move selectMove(GameState state, PlayerColor aiColor) {
+        if (state == null) {
+            throw new IllegalArgumentException("Game state cannot be null");
+        }
+        if (aiColor == null) {
+            throw new IllegalArgumentException("AI color cannot be null");
+        }
+        
+        List<Move> legalMoves = ruleEngine.generateLegalMoves(state, aiColor);
+        if (legalMoves.isEmpty()) {
+            return null; // No legal moves available
+        }
+        
+        Move bestMove = null;
+        int bestScore = Integer.MIN_VALUE;
+        int alpha = Integer.MIN_VALUE;
+        int beta = Integer.MAX_VALUE;
+        
+        // Evaluate each possible move using minimax
+        for (Move move : legalMoves) {
+            GameState newState = state.applyMove(move);
+            int score = minimax(newState, searchDepth - 1, alpha, beta, false, aiColor);
+            
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = move;
+            }
+            
+            alpha = Math.max(alpha, score);
+            if (beta <= alpha) {
+                break; // Alpha-beta pruning
+            }
+        }
+        
+        return bestMove;
+    }
+    
+    /**
+     * Minimax algorithm with alpha-beta pruning for game tree search.
+     * 
+     * @param state the current game state
+     * @param depth the remaining search depth
+     * @param alpha the alpha value for pruning
+     * @param beta the beta value for pruning
+     * @param maximizing true if this is a maximizing node (AI's turn)
+     * @param aiColor the color of the AI player
+     * @return the evaluated score of this position
+     */
+    private int minimax(GameState state, int depth, int alpha, int beta, 
+                       boolean maximizing, PlayerColor aiColor) {
+        
+        // Base case: terminal node or depth limit reached
+        if (depth == 0 || state.isGameOver()) {
+            return evaluatePosition(state, aiColor);
+        }
+        
+        PlayerColor currentPlayer = maximizing ? aiColor : aiColor.opposite();
+        List<Move> legalMoves = ruleEngine.generateLegalMoves(state, currentPlayer);
+        
+        // If no legal moves, this is effectively a terminal position
+        if (legalMoves.isEmpty()) {
+            return evaluatePosition(state, aiColor);
+        }
+        
+        if (maximizing) {
+            // Maximizing player (AI)
+            int maxEval = Integer.MIN_VALUE;
+            
+            for (Move move : legalMoves) {
+                GameState newState = state.applyMove(move);
+                int eval = minimax(newState, depth - 1, alpha, beta, false, aiColor);
+                maxEval = Math.max(maxEval, eval);
+                alpha = Math.max(alpha, eval);
+                
+                if (beta <= alpha) {
+                    break; // Beta cutoff (alpha-beta pruning)
+                }
+            }
+            
+            return maxEval;
+        } else {
+            // Minimizing player (opponent)
+            int minEval = Integer.MAX_VALUE;
+            
+            for (Move move : legalMoves) {
+                GameState newState = state.applyMove(move);
+                int eval = minimax(newState, depth - 1, alpha, beta, true, aiColor);
+                minEval = Math.min(minEval, eval);
+                beta = Math.min(beta, eval);
+                
+                if (beta <= alpha) {
+                    break; // Alpha cutoff (alpha-beta pruning)
+                }
+            }
+            
+            return minEval;
+        }
     }
     
     /**

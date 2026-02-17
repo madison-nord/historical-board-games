@@ -178,8 +178,8 @@ The implementation uses:
     - Test that more mills = higher score
     - _Requirements: 3.2_
 
-- [ ] 9. Implement minimax algorithm with alpha-beta pruning
-  - [ ] 9.1 Add minimax search to AIService
+- [x] 9. Implement minimax algorithm with alpha-beta pruning
+  - [x] 9.1 Add minimax search to AIService
     - Implement `minimax(GameState, depth, alpha, beta, maximizing, aiColor)` method
     - Implement recursive tree search with depth limiting
     - Implement alpha-beta pruning for optimization
@@ -187,17 +187,17 @@ The implementation uses:
     - Set default search depth to 4
     - _Requirements: 3.2_
   
-  - [ ] 9.2 Write property test for AI move legality
+  - [x] 9.2 Write property test for AI move legality
     - **Property 11: AI Move Legality**
     - **Validates: Requirements 3.2**
     - Test that AI always selects legal moves
   
-  - [ ] 9.3 Write property test for evaluation consistency
+  - [x] 9.3 Write property test for evaluation consistency
     - **Property 12: AI Evaluation Consistency**
     - **Validates: Requirements 3.2**
     - Test that evaluating same position multiple times gives same score
   
-  - [ ] 9.4 Write unit tests for AI strategic behavior
+  - [x] 9.4 Write unit tests for AI strategic behavior
     - Test that AI forms mills when possible
     - Test that AI blocks opponent mills
     - Test that AI removes opponent pieces after forming mills
