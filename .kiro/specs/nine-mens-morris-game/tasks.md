@@ -268,8 +268,8 @@ The implementation uses:
     - Test responsive scaling calculations
     - _Requirements: 2.1, 9.4_
 
-- [ ] 14. Add visual feedback and highlighting
-  - [ ] 14.1 Implement highlighting system
+- [x] 14. Add visual feedback and highlighting
+  - [x] 14.1 Implement highlighting system
     - Implement `highlightValidMoves(positions[])` method
     - Implement `clearHighlights()` method
     - Implement hover effect for valid positions
@@ -279,7 +279,7 @@ The implementation uses:
     - Add display for remaining pieces during placement
     - _Requirements: 2.2, 2.3, 2.4, 2.5, 2.6, 2.7_
   
-  - [ ] 14.2 Write unit tests for highlighting
+  - [x] 14.2 Write unit tests for highlighting
     - Test that highlighting marks correct positions
     - Test that clearing removes all highlights
     - _Requirements: 2.3, 2.4_

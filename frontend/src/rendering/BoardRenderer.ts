@@ -1,4 +1,4 @@
-import { PlayerColor } from '../models/index.js';
+import { PlayerColor, GamePhase } from '../models/index.js';
 
 /**
  * Coordinates for a position on the board
@@ -21,6 +21,10 @@ export class BoardRenderer {
   
   // Board layout constants - Nine Men's Morris has 3 concentric squares
   private readonly positions: PositionCoordinates[] = [];
+  
+  // Highlighting state
+  private highlightedPositions: Set<number> = new Set();
+  private hoveredPosition: number | null = null;
   
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -247,13 +251,157 @@ export class BoardRenderer {
   }
 
   /**
-   * Render the complete board with pieces
-   * @param board Array of 24 positions with PlayerColor or null
+   * Highlight valid move positions
+   * @param positions Array of position indices to highlight
    */
-  public render(board: (PlayerColor | null)[]): void {
+  public highlightValidMoves(positions: number[]): void {
+    this.highlightedPositions.clear();
+    positions.forEach(pos => {
+      if (pos >= 0 && pos < 24) {
+        this.highlightedPositions.add(pos);
+      }
+    });
+  }
+
+  /**
+   * Clear all position highlights
+   */
+  public clearHighlights(): void {
+    this.highlightedPositions.clear();
+    this.hoveredPosition = null;
+  }
+
+  /**
+   * Set hover effect for a position
+   * @param position Position index to hover, or null to clear hover
+   */
+  public setHoverPosition(position: number | null): void {
+    this.hoveredPosition = position;
+  }
+
+  /**
+   * Draw highlighting effects for valid moves and hover
+   */
+  private drawHighlights(): void {
+    // Draw highlighted positions (valid moves)
+    this.highlightedPositions.forEach(position => {
+      this.drawPositionHighlight(position, 'rgba(0, 255, 0, 0.3)', 'rgba(0, 255, 0, 0.6)');
+    });
+
+    // Draw hover effect
+    if (this.hoveredPosition !== null && this.hoveredPosition >= 0 && this.hoveredPosition < 24) {
+      this.drawPositionHighlight(this.hoveredPosition, 'rgba(255, 255, 0, 0.2)', 'rgba(255, 255, 0, 0.5)');
+    }
+  }
+
+  /**
+   * Draw highlight effect at a specific position
+   */
+  private drawPositionHighlight(position: number, fillColor: string, strokeColor: string): void {
+    const pos = this.positions[position];
+    const highlightRadius = this.pieceRadius + 8;
+
+    // Draw highlight background
+    this.ctx.fillStyle = fillColor;
+    this.ctx.beginPath();
+    this.ctx.arc(pos.x, pos.y, highlightRadius, 0, 2 * Math.PI);
+    this.ctx.fill();
+
+    // Draw highlight border
+    this.ctx.strokeStyle = strokeColor;
+    this.ctx.lineWidth = 3;
+    this.ctx.beginPath();
+    this.ctx.arc(pos.x, pos.y, highlightRadius, 0, 2 * Math.PI);
+    this.ctx.stroke();
+  }
+
+  /**
+   * Render the complete board with pieces, highlights, and UI feedback
+   * @param board Array of 24 positions with PlayerColor or null
+   * @param currentPlayer Current player's turn
+   * @param phase Current game phase
+   * @param whitePiecesRemaining Remaining white pieces to place
+   * @param blackPiecesRemaining Remaining black pieces to place
+   */
+  public render(
+    board: (PlayerColor | null)[],
+    currentPlayer?: PlayerColor,
+    phase?: GamePhase,
+    whitePiecesRemaining?: number,
+    blackPiecesRemaining?: number
+  ): void {
     this.updateCanvasSize();
     this.drawBoard();
+    this.drawHighlights();
     this.drawPieces(board);
+    
+    if (currentPlayer !== undefined && phase !== undefined) {
+      this.drawGameInfo(currentPlayer, phase, whitePiecesRemaining, blackPiecesRemaining);
+    }
+  }
+
+  /**
+   * Draw game information (current player, phase, remaining pieces)
+   */
+  private drawGameInfo(
+    currentPlayer: PlayerColor,
+    phase: GamePhase,
+    whitePiecesRemaining?: number,
+    blackPiecesRemaining?: number
+  ): void {
+    const padding = 20;
+    const fontSize = Math.max(14, this.boardSize * 0.035);
+    
+    this.ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+    this.ctx.textAlign = 'left';
+    this.ctx.textBaseline = 'top';
+
+    // Current player indicator
+    const playerColor = currentPlayer === PlayerColor.WHITE ? '#ffffff' : '#333333';
+    const playerText = currentPlayer === PlayerColor.WHITE ? 'White' : 'Black';
+    
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.fillText(`Current Player: ${playerText}`, padding, padding);
+
+    // Draw current player indicator circle
+    this.ctx.fillStyle = playerColor;
+    this.ctx.strokeStyle = playerColor === '#ffffff' ? '#cccccc' : '#000000';
+    this.ctx.lineWidth = 2;
+    this.ctx.beginPath();
+    this.ctx.arc(padding + 140, padding + fontSize / 2, 8, 0, 2 * Math.PI);
+    this.ctx.fill();
+    this.ctx.stroke();
+
+    // Game phase
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.fillText(`Phase: ${phase}`, padding, padding + fontSize + 10);
+
+    // Remaining pieces (only during placement phase)
+    if (phase === GamePhase.PLACEMENT && whitePiecesRemaining !== undefined && blackPiecesRemaining !== undefined) {
+      this.ctx.fillText(`White pieces remaining: ${whitePiecesRemaining}`, padding, padding + (fontSize + 10) * 2);
+      this.ctx.fillText(`Black pieces remaining: ${blackPiecesRemaining}`, padding, padding + (fontSize + 10) * 3);
+    }
+  }
+
+  /**
+   * Get position index from canvas coordinates
+   * @param x Canvas x coordinate
+   * @param y Canvas y coordinate
+   * @returns Position index (0-23) or null if no position found
+   */
+  public getPositionFromCoordinates(x: number, y: number): number | null {
+    const clickRadius = this.pieceRadius + 10; // Allow some tolerance for clicking
+    
+    for (let i = 0; i < this.positions.length; i++) {
+      const pos = this.positions[i];
+      const distance = Math.sqrt((x - pos.x) ** 2 + (y - pos.y) ** 2);
+      
+      if (distance <= clickRadius) {
+        return i;
+      }
+    }
+    
+    return null;
   }
 
   /**

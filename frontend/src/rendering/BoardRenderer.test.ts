@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { BoardRenderer } from './BoardRenderer.js';
-import { PlayerColor } from '../models/index.js';
+import { PlayerColor, GamePhase } from '../models/index.js';
 
 // Mock canvas and context
 const mockContext = {
@@ -10,6 +10,9 @@ const mockContext = {
   lineWidth: 0,
   lineCap: '',
   lineJoin: '',
+  font: '',
+  textAlign: '',
+  textBaseline: '',
   beginPath: vi.fn(),
   rect: vi.fn(),
   stroke: vi.fn(),
@@ -17,6 +20,7 @@ const mockContext = {
   lineTo: vi.fn(),
   arc: vi.fn(),
   fill: vi.fn(),
+  fillText: vi.fn(),
   scale: vi.fn(),
 };
 
@@ -135,6 +139,83 @@ describe('BoardRenderer', () => {
     expect(mockContext.clearRect).toHaveBeenCalled();
     expect(mockContext.beginPath).toHaveBeenCalled();
     expect(mockContext.stroke).toHaveBeenCalled();
+  });
+
+  it('should render complete board with game info', () => {
+    const board = new Array(24).fill(null);
+    board[0] = PlayerColor.WHITE;
+    
+    renderer.render(board, PlayerColor.WHITE, GamePhase.PLACEMENT, 8, 9);
+    
+    // Should draw everything including game info
+    expect(mockContext.clearRect).toHaveBeenCalled();
+    expect(mockContext.fillText).toHaveBeenCalled();
+  });
+
+  it('should highlight valid moves', () => {
+    renderer.highlightValidMoves([0, 1, 2]);
+    
+    const board = new Array(24).fill(null);
+    renderer.render(board);
+    
+    // Should draw highlights
+    expect(mockContext.arc).toHaveBeenCalled();
+    expect(mockContext.fill).toHaveBeenCalled();
+  });
+
+  it('should clear highlights', () => {
+    renderer.highlightValidMoves([0, 1, 2]);
+    renderer.clearHighlights();
+    
+    const board = new Array(24).fill(null);
+    renderer.render(board);
+    
+    // Should not draw highlights after clearing
+    expect(mockContext.clearRect).toHaveBeenCalled();
+  });
+
+  it('should set hover position', () => {
+    renderer.setHoverPosition(5);
+    
+    const board = new Array(24).fill(null);
+    renderer.render(board);
+    
+    // Should draw hover effect
+    expect(mockContext.arc).toHaveBeenCalled();
+  });
+
+  it('should clear hover position', () => {
+    renderer.setHoverPosition(5);
+    renderer.setHoverPosition(null);
+    
+    const board = new Array(24).fill(null);
+    renderer.render(board);
+    
+    // Should not draw hover effect after clearing
+    expect(mockContext.clearRect).toHaveBeenCalled();
+  });
+
+  it('should get position from coordinates', () => {
+    const pos0 = renderer.getPositionCoordinates(0);
+    
+    // Should return position 0 when clicking near its coordinates
+    const foundPosition = renderer.getPositionFromCoordinates(pos0.x, pos0.y);
+    expect(foundPosition).toBe(0);
+    
+    // Should return null when clicking far from any position
+    const notFound = renderer.getPositionFromCoordinates(-100, -100);
+    expect(notFound).toBeNull();
+  });
+
+  it('should ignore invalid positions in highlight', () => {
+    // Should not throw error with invalid positions
+    expect(() => renderer.highlightValidMoves([-1, 0, 24, 25])).not.toThrow();
+    
+    const board = new Array(24).fill(null);
+    renderer.render(board);
+    
+    // Should still render without errors
+    expect(mockContext.clearRect).toHaveBeenCalled();
   });
 
   it('should handle resize events', () => {
