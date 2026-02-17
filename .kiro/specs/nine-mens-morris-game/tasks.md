@@ -252,8 +252,8 @@ The implementation uses:
     - Implement `GameMode` enum
     - _Requirements: 1.1_
 
-- [ ] 13. Implement BoardRenderer for game visualization
-  - [ ] 13.1 Create BoardRenderer class with Canvas API
+- [x] 13. Implement BoardRenderer for game visualization
+  - [x] 13.1 Create BoardRenderer class with Canvas API
     - Initialize canvas and 2D context
     - Implement `drawBoard()` method to draw three concentric squares with connecting lines
     - Implement `drawPieces()` method to draw circles for pieces
@@ -262,7 +262,7 @@ The implementation uses:
     - Implement responsive scaling based on canvas size
     - _Requirements: 2.1, 2.2, 9.4_
   
-  - [ ] 13.2 Write unit tests for BoardRenderer
+  - [x] 13.2 Write unit tests for BoardRenderer
     - Test position coordinate calculations
     - Test that all 24 positions have valid coordinates
     - Test responsive scaling calculations
