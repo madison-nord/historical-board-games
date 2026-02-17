@@ -233,8 +233,8 @@ The implementation uses:
 
 ### Phase 5: Frontend Foundation
 
-- [ ] 12. Set up frontend project structure
-  - [ ] 12.1 Initialize Vite project with TypeScript
+- [x] 12. Set up frontend project structure
+  - [x] 12.1 Initialize Vite project with TypeScript
     - Create frontend directory with Vite 6 configuration
     - Configure TypeScript 5.7 with strict mode
     - Set up project structure: controllers, rendering, network, models, utils, styles
@@ -243,7 +243,7 @@ The implementation uses:
     - Configure Vite to proxy API requests to Spring Boot backend
     - _Requirements: 12.5_
   
-  - [ ] 12.2 Create frontend data models
+  - [x] 12.2 Create frontend data models
     - Create TypeScript interfaces matching backend models
     - Implement `GameState` interface
     - Implement `Move` interface
