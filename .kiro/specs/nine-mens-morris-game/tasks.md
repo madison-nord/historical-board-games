@@ -226,7 +226,7 @@ The implementation uses:
     - Test game cleanup
     - _Requirements: 3.1, 4.1_
 
-- [ ] 11. Checkpoint - Backend game logic complete
+- [x] 11. Checkpoint - Backend game logic complete
   - Ensure all backend tests pass
   - Verify single-player game can be played through service layer
   - Ask the user if questions arise
