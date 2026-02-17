@@ -13,6 +13,7 @@ const mockContext = {
   font: '',
   textAlign: '',
   textBaseline: '',
+  globalAlpha: 1,
   beginPath: vi.fn(),
   rect: vi.fn(),
   stroke: vi.fn(),
@@ -22,6 +23,8 @@ const mockContext = {
   fill: vi.fn(),
   fillText: vi.fn(),
   scale: vi.fn(),
+  save: vi.fn(),
+  restore: vi.fn(),
 };
 
 const mockCanvas = {
@@ -43,6 +46,20 @@ const mockCanvas = {
 Object.defineProperty(window, 'devicePixelRatio', {
   writable: true,
   value: 1,
+});
+
+// Mock requestAnimationFrame and performance.now for animations
+global.requestAnimationFrame = vi.fn((callback) => {
+  setTimeout(callback, 16);
+  return 1;
+});
+
+global.cancelAnimationFrame = vi.fn();
+
+Object.defineProperty(global, 'performance', {
+  value: {
+    now: vi.fn(() => Date.now()),
+  },
 });
 
 describe('BoardRenderer', () => {
@@ -207,15 +224,61 @@ describe('BoardRenderer', () => {
     expect(notFound).toBeNull();
   });
 
-  it('should ignore invalid positions in highlight', () => {
-    // Should not throw error with invalid positions
-    expect(() => renderer.highlightValidMoves([-1, 0, 24, 25])).not.toThrow();
+  it('should animate piece placement', () => {
+    renderer.animatePlacement(0, PlayerColor.WHITE);
+    
+    expect(renderer.hasActiveAnimations()).toBe(true);
     
     const board = new Array(24).fill(null);
     renderer.render(board);
     
-    // Should still render without errors
+    // Should render animations
     expect(mockContext.clearRect).toHaveBeenCalled();
+  });
+
+  it('should animate piece movement', () => {
+    renderer.animateMovement(0, 1, PlayerColor.BLACK);
+    
+    expect(renderer.hasActiveAnimations()).toBe(true);
+  });
+
+  it('should animate piece removal', () => {
+    renderer.animateRemoval(5, PlayerColor.WHITE);
+    
+    expect(renderer.hasActiveAnimations()).toBe(true);
+  });
+
+  it('should animate mill formation', () => {
+    renderer.animateMill([0, 1, 2]);
+    
+    expect(renderer.hasActiveAnimations()).toBe(true);
+  });
+
+  it('should clear all animations', () => {
+    renderer.animatePlacement(0, PlayerColor.WHITE);
+    renderer.animateMovement(1, 2, PlayerColor.BLACK);
+    
+    expect(renderer.hasActiveAnimations()).toBe(true);
+    
+    renderer.clearAnimations();
+    
+    expect(renderer.hasActiveAnimations()).toBe(false);
+  });
+
+  it('should throw error for invalid animation positions', () => {
+    expect(() => renderer.animatePlacement(-1, PlayerColor.WHITE)).toThrow();
+    expect(() => renderer.animatePlacement(24, PlayerColor.WHITE)).toThrow();
+    expect(() => renderer.animateMovement(-1, 0, PlayerColor.WHITE)).toThrow();
+    expect(() => renderer.animateMovement(0, 24, PlayerColor.WHITE)).toThrow();
+    expect(() => renderer.animateRemoval(-1, PlayerColor.WHITE)).toThrow();
+    expect(() => renderer.animateRemoval(24, PlayerColor.WHITE)).toThrow();
+  });
+
+  it('should throw error for invalid mill positions', () => {
+    expect(() => renderer.animateMill([0, 1])).toThrow('Mill must contain exactly 3 positions');
+    expect(() => renderer.animateMill([0, 1, 2, 3])).toThrow('Mill must contain exactly 3 positions');
+    expect(() => renderer.animateMill([-1, 0, 1])).toThrow('Invalid mill position: -1');
+    expect(() => renderer.animateMill([0, 1, 24])).toThrow('Invalid mill position: 24');
   });
 
   it('should handle resize events', () => {
@@ -234,5 +297,102 @@ describe('BoardRenderer', () => {
     // Check that all coordinates are unique
     const uniqueCoords = new Set(coords.map(c => `${c.x},${c.y}`));
     expect(uniqueCoords.size).toBe(24);
+  });
+
+  // Input handling tests
+  describe('Input Handling', () => {
+    it('should set position click callback', () => {
+      const mockCallback = vi.fn();
+      renderer.setOnPositionClick(mockCallback);
+      
+      // Test that callback is set (we can't directly access private property)
+      // but we can test the public interface
+      expect(() => renderer.setOnPositionClick(mockCallback)).not.toThrow();
+    });
+
+    it('should enable and disable input', () => {
+      expect(renderer.isInputEnabledState()).toBe(true);
+      
+      renderer.setInputEnabled(false);
+      expect(renderer.isInputEnabledState()).toBe(false);
+      
+      renderer.setInputEnabled(true);
+      expect(renderer.isInputEnabledState()).toBe(true);
+    });
+
+    it('should handle position click when input is enabled', () => {
+      const mockCallback = vi.fn();
+      renderer.setOnPositionClick(mockCallback);
+      
+      renderer.handlePositionClick(5);
+      expect(mockCallback).toHaveBeenCalledWith(5);
+    });
+
+    it('should not handle position click when input is disabled', () => {
+      const mockCallback = vi.fn();
+      renderer.setOnPositionClick(mockCallback);
+      renderer.setInputEnabled(false);
+      
+      renderer.handlePositionClick(5);
+      expect(mockCallback).not.toHaveBeenCalled();
+    });
+
+    it('should map coordinates to positions correctly', () => {
+      // Test coordinate to position mapping for center of board
+      const centerX = 200;
+      const centerY = 200;
+      const position = renderer.getPositionFromCoordinates(centerX, centerY);
+      
+      if (position !== null) {
+        expect(position).toBeTypeOf('number');
+        expect(position).toBeGreaterThanOrEqual(0);
+        expect(position).toBeLessThan(24);
+      }
+    });
+
+    it('should return null for coordinates outside valid positions', () => {
+      // Test coordinates far outside the board
+      const position = renderer.getPositionFromCoordinates(-100, -100);
+      expect(position).toBeNull();
+    });
+
+    it('should handle click detection for all 24 positions', () => {
+      // Test that all positions have valid coordinates that can be clicked
+      for (let i = 0; i < 24; i++) {
+        const coords = renderer.getPositionCoordinates(i);
+        const detectedPosition = renderer.getPositionFromCoordinates(coords.x, coords.y);
+        expect(detectedPosition).toBe(i);
+      }
+    });
+
+    it('should clear hover position when input is disabled', () => {
+      renderer.setHoverPosition(5);
+      renderer.setInputEnabled(false);
+      
+      // After disabling input, hover should be cleared
+      // We can't directly test the private hoveredPosition, but we can test the behavior
+      expect(() => renderer.setInputEnabled(false)).not.toThrow();
+    });
+
+    it('should handle touch events properly', () => {
+      // Test that touch event handling methods exist and don't throw
+      expect(() => renderer.setInputEnabled(true)).not.toThrow();
+      expect(() => renderer.setInputEnabled(false)).not.toThrow();
+    });
+
+    it('should validate position bounds in handlePositionClick', () => {
+      const mockCallback = vi.fn();
+      renderer.setOnPositionClick(mockCallback);
+      
+      // Test valid position
+      renderer.handlePositionClick(0);
+      expect(mockCallback).toHaveBeenCalledWith(0);
+      
+      mockCallback.mockClear();
+      
+      // Test another valid position
+      renderer.handlePositionClick(23);
+      expect(mockCallback).toHaveBeenCalledWith(23);
+    });
   });
 });

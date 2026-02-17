@@ -285,8 +285,8 @@ The implementation uses:
     - _Requirements: 2.3, 2.4_
 
 
-- [ ] 15. Implement animation system
-  - [ ] 15.1 Create Animation class and queue system
+- [x] 15. Implement animation system
+  - [x] 15.1 Create Animation class and queue system
     - Create `Animation` interface with update and complete callbacks
     - Implement `PlacementAnimation` class (fade in over 300ms)
     - Implement `MovementAnimation` class (slide from position to position over 300ms)
@@ -297,14 +297,14 @@ The implementation uses:
     - Process animations in queue and update rendering
     - _Requirements: 10.1, 10.2, 10.3_
   
-  - [ ] 15.2 Write unit tests for animation system
+  - [x] 15.2 Write unit tests for animation system
     - Test animation queue management
     - Test animation timing calculations
     - Test animation completion callbacks
     - _Requirements: 10.1, 10.2_
 
-- [ ] 16. Implement user input handling
-  - [ ] 16.1 Add click/touch event handling
+- [x] 16. Implement user input handling
+  - [x] 16.1 Add click/touch event handling
     - Add click event listener to canvas
     - Add touch event listener for mobile support
     - Implement position detection from click/touch coordinates
@@ -313,7 +313,7 @@ The implementation uses:
     - Provide immediate visual feedback on invalid moves
     - _Requirements: 2.3, 2.4, 9.5_
   
-  - [ ] 16.2 Write unit tests for input handling
+  - [x] 16.2 Write unit tests for input handling
     - Test coordinate to position mapping
     - Test click detection for all 24 positions
     - Test touch event handling

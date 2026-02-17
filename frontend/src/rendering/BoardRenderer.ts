@@ -1,4 +1,9 @@
 import { PlayerColor, GamePhase } from '../models/index.js';
+import { AnimationQueue } from './AnimationQueue.js';
+import { PlacementAnimation } from './PlacementAnimation.js';
+import { MovementAnimation } from './MovementAnimation.js';
+import { RemovalAnimation } from './RemovalAnimation.js';
+import { MillAnimation } from './MillAnimation.js';
 
 /**
  * Coordinates for a position on the board
@@ -26,6 +31,13 @@ export class BoardRenderer {
   private highlightedPositions: Set<number> = new Set();
   private hoveredPosition: number | null = null;
   
+  // Animation system
+  private animationQueue: AnimationQueue = new AnimationQueue();
+  
+  // Input handling
+  private onPositionClick: ((position: number) => void) | null = null;
+  private isInputEnabled: boolean = true;
+  
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     const context = canvas.getContext('2d');
@@ -36,6 +48,7 @@ export class BoardRenderer {
     
     this.initializePositions();
     this.setupCanvas();
+    this.setupInputHandling();
   }
 
   /**
@@ -316,7 +329,113 @@ export class BoardRenderer {
   }
 
   /**
-   * Render the complete board with pieces, highlights, and UI feedback
+   * Animate placing a piece at the specified position
+   */
+  public animatePlacement(position: number, playerColor: PlayerColor, onComplete?: () => void): void {
+    if (position < 0 || position >= 24) {
+      throw new Error(`Invalid position: ${position}. Must be 0-23.`);
+    }
+    
+    const coordinates = this.getPositionCoordinates(position);
+    const animation = new PlacementAnimation(
+      position,
+      coordinates,
+      playerColor,
+      this.pieceRadius,
+      onComplete
+    );
+    
+    this.animationQueue.addAnimation(animation);
+  }
+
+  /**
+   * Animate moving a piece from one position to another
+   */
+  public animateMovement(
+    fromPosition: number, 
+    toPosition: number, 
+    playerColor: PlayerColor, 
+    onComplete?: () => void
+  ): void {
+    if (fromPosition < 0 || fromPosition >= 24 || toPosition < 0 || toPosition >= 24) {
+      throw new Error(`Invalid positions: ${fromPosition} to ${toPosition}. Must be 0-23.`);
+    }
+    
+    const fromCoordinates = this.getPositionCoordinates(fromPosition);
+    const toCoordinates = this.getPositionCoordinates(toPosition);
+    const animation = new MovementAnimation(
+      fromPosition,
+      toPosition,
+      fromCoordinates,
+      toCoordinates,
+      playerColor,
+      this.pieceRadius,
+      onComplete
+    );
+    
+    this.animationQueue.addAnimation(animation);
+  }
+
+  /**
+   * Animate removing a piece from the specified position
+   */
+  public animateRemoval(position: number, playerColor: PlayerColor, onComplete?: () => void): void {
+    if (position < 0 || position >= 24) {
+      throw new Error(`Invalid position: ${position}. Must be 0-23.`);
+    }
+    
+    const coordinates = this.getPositionCoordinates(position);
+    const animation = new RemovalAnimation(
+      position,
+      coordinates,
+      playerColor,
+      this.pieceRadius,
+      onComplete
+    );
+    
+    this.animationQueue.addAnimation(animation);
+  }
+
+  /**
+   * Animate mill formation highlighting
+   */
+  public animateMill(millPositions: number[], onComplete?: () => void): void {
+    if (millPositions.length !== 3) {
+      throw new Error('Mill must contain exactly 3 positions');
+    }
+    
+    for (const pos of millPositions) {
+      if (pos < 0 || pos >= 24) {
+        throw new Error(`Invalid mill position: ${pos}. Must be 0-23.`);
+      }
+    }
+    
+    const animation = new MillAnimation(
+      millPositions,
+      this.positions,
+      this.pieceRadius,
+      onComplete
+    );
+    
+    this.animationQueue.addAnimation(animation);
+  }
+
+  /**
+   * Clear all active animations
+   */
+  public clearAnimations(): void {
+    this.animationQueue.clearAll();
+  }
+
+  /**
+   * Check if any animations are currently running
+   */
+  public hasActiveAnimations(): boolean {
+    return this.animationQueue.hasActiveAnimations();
+  }
+
+  /**
+   * Render the complete board with pieces, highlights, animations, and UI feedback
    * @param board Array of 24 positions with PlayerColor or null
    * @param currentPlayer Current player's turn
    * @param phase Current game phase
@@ -334,6 +453,9 @@ export class BoardRenderer {
     this.drawBoard();
     this.drawHighlights();
     this.drawPieces(board);
+    
+    // Render animations on top of everything else
+    this.animationQueue.renderAnimations(this.ctx);
     
     if (currentPlayer !== undefined && phase !== undefined) {
       this.drawGameInfo(currentPlayer, phase, whitePiecesRemaining, blackPiecesRemaining);
@@ -409,5 +531,132 @@ export class BoardRenderer {
    */
   public handleResize(): void {
     this.setupCanvas();
+  }
+
+  /**
+   * Set up input event listeners for click and touch events
+   */
+  private setupInputHandling(): void {
+    // Check if canvas has addEventListener method (not available in test mocks)
+    if (typeof this.canvas.addEventListener !== 'function') {
+      return;
+    }
+    
+    // Mouse events
+    this.canvas.addEventListener('click', this.handleClick.bind(this));
+    this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
+    this.canvas.addEventListener('mouseleave', this.handleMouseLeave.bind(this));
+    
+    // Touch events for mobile support
+    this.canvas.addEventListener('touchstart', this.handleTouchStart.bind(this));
+    this.canvas.addEventListener('touchend', this.handleTouchEnd.bind(this));
+    
+    // Prevent default touch behaviors that might interfere with game
+    this.canvas.addEventListener('touchmove', (e) => e.preventDefault());
+    this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+
+  /**
+   * Handle mouse click events
+   */
+  private handleClick(event: MouseEvent): void {
+    if (!this.isInputEnabled) return;
+    
+    const rect = this.canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    const position = this.getPositionFromCoordinates(x, y);
+    if (position !== null && this.onPositionClick) {
+      this.onPositionClick(position);
+    }
+  }
+
+  /**
+   * Handle mouse move events for hover effects
+   */
+  private handleMouseMove(event: MouseEvent): void {
+    if (!this.isInputEnabled) return;
+    
+    const rect = this.canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    const position = this.getPositionFromCoordinates(x, y);
+    this.setHoverPosition(position);
+  }
+
+  /**
+   * Handle mouse leave events
+   */
+  private handleMouseLeave(): void {
+    this.setHoverPosition(null);
+  }
+
+  /**
+   * Handle touch start events
+   */
+  private handleTouchStart(event: TouchEvent): void {
+    event.preventDefault(); // Prevent mouse events from firing
+  }
+
+  /**
+   * Handle touch end events
+   */
+  private handleTouchEnd(event: TouchEvent): void {
+    if (!this.isInputEnabled) return;
+    
+    event.preventDefault();
+    
+    if (event.changedTouches.length > 0) {
+      const touch = event.changedTouches[0];
+      const rect = this.canvas.getBoundingClientRect();
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      
+      const position = this.getPositionFromCoordinates(x, y);
+      if (position !== null && this.onPositionClick) {
+        this.onPositionClick(position);
+      }
+    }
+  }
+
+  /**
+   * Set the callback function for position clicks
+   */
+  public setOnPositionClick(callback: (position: number) => void): void {
+    this.onPositionClick = callback;
+  }
+
+  /**
+   * Enable or disable input handling
+   */
+  public setInputEnabled(enabled: boolean): void {
+    this.isInputEnabled = enabled;
+    if (!enabled) {
+      this.setHoverPosition(null);
+    }
+  }
+
+  /**
+   * Check if input is currently enabled
+   */
+  public isInputEnabledState(): boolean {
+    return this.isInputEnabled;
+  }
+
+  /**
+   * Handle position click with validation and feedback
+   */
+  public handlePositionClick(position: number): void {
+    if (!this.isInputEnabled) return;
+    
+    // Provide immediate visual feedback
+    this.setHoverPosition(position);
+    
+    // Call the registered callback if available
+    if (this.onPositionClick) {
+      this.onPositionClick(position);
+    }
   }
 }
