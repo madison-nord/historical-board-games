@@ -37,10 +37,13 @@ export class GameController {
   private currentGameState: GameState | null = null;
   private selectedPosition: number | null = null;
   private validMoves: number[] = [];
+  private playerColor: PlayerColor = PlayerColor.WHITE; // Player's color in single-player mode
+  private isAiThinking: boolean = false;
 
-  constructor(gameMode: GameMode, boardRenderer: BoardRenderer) {
+  constructor(gameMode: GameMode, boardRenderer: BoardRenderer, playerColor: PlayerColor = PlayerColor.WHITE) {
     this.gameMode = gameMode;
     this.boardRenderer = boardRenderer;
+    this.playerColor = playerColor;
 
     // Set up input handling
     this.boardRenderer.setOnPositionClick(this.handlePositionClick.bind(this));
@@ -67,21 +70,38 @@ export class GameController {
 
     this.selectedPosition = null;
     this.validMoves = [];
+    this.isAiThinking = false;
 
     // Update visual display
     this.updateDisplay();
 
-    // Enable input
-    this.boardRenderer.setInputEnabled(true);
+    // Enable input for player's turn
+    const isPlayerTurn = this.gameMode !== GameMode.SINGLE_PLAYER || 
+                        this.currentGameState.currentPlayer === this.playerColor;
+    this.boardRenderer.setInputEnabled(isPlayerTurn);
 
     console.log(`Started new ${this.gameMode} game`);
+    
+    // If AI goes first in single-player mode, trigger AI move
+    if (this.gameMode === GameMode.SINGLE_PLAYER && 
+        this.currentGameState.currentPlayer !== this.playerColor) {
+      setTimeout(() => {
+        this.handleAIMove();
+      }, 1000); // Give a moment for the UI to settle
+    }
   }
 
   /**
    * Handle position clicks from the board renderer
    */
   public handlePositionClick(position: number): void {
-    if (!this.currentGameState || this.currentGameState.isGameOver) {
+    if (!this.currentGameState || this.currentGameState.isGameOver || this.isAiThinking) {
+      return;
+    }
+
+    // In single-player mode, only allow input when it's the player's turn
+    if (this.gameMode === GameMode.SINGLE_PLAYER && 
+        this.currentGameState.currentPlayer !== this.playerColor) {
       return;
     }
 
@@ -229,9 +249,102 @@ export class GameController {
       // Switch players and continue
       this.switchPlayer();
       this.checkGameEnd();
+      
+      // Check if AI should move next in single-player mode
+      this.checkForAIMove();
     }
 
     this.updateDisplay();
+  }
+
+  /**
+   * Check if AI should make a move and trigger it
+   */
+  private checkForAIMove(): void {
+    if (this.gameMode === GameMode.SINGLE_PLAYER && 
+        this.currentGameState && 
+        !this.currentGameState.isGameOver &&
+        !this.currentGameState.millFormed &&
+        this.currentGameState.currentPlayer !== this.playerColor) {
+      
+      // Delay AI move slightly for better UX
+      setTimeout(() => {
+        this.handleAIMove();
+      }, 500);
+    }
+  }
+
+  /**
+   * Handle AI move in single-player mode
+   */
+  private async handleAIMove(): Promise<void> {
+    if (!this.currentGameState || this.isAiThinking) {
+      return;
+    }
+
+    this.isAiThinking = true;
+    this.boardRenderer.setInputEnabled(false);
+    
+    // Show AI thinking indicator
+    console.log('AI is thinking...');
+    this.updateDisplay();
+
+    try {
+      // Call backend API to get AI move
+      const aiMove = await this.getAIMoveFromBackend();
+      
+      if (aiMove) {
+        // Apply the AI move
+        this.applyMove(aiMove);
+      } else {
+        console.error('Failed to get AI move');
+      }
+    } catch (error) {
+      console.error('Error getting AI move:', error);
+    } finally {
+      this.isAiThinking = false;
+      
+      // Re-enable input if it's player's turn
+      if (this.currentGameState && 
+          this.currentGameState.currentPlayer === this.playerColor &&
+          !this.currentGameState.isGameOver) {
+        this.boardRenderer.setInputEnabled(true);
+      }
+      
+      this.updateDisplay();
+    }
+  }
+
+  /**
+   * Get AI move from backend API
+   */
+  private async getAIMoveFromBackend(): Promise<Move | null> {
+    if (!this.currentGameState) {
+      return null;
+    }
+
+    try {
+      const response = await fetch('/api/game/ai-move', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          gameId: this.currentGameState.gameId,
+          gameState: this.currentGameState,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const aiMove = await response.json();
+      return aiMove;
+    } catch (error) {
+      console.error('Failed to get AI move:', error);
+      return null;
+    }
   }
 
   /**
@@ -337,6 +450,10 @@ export class GameController {
     this.currentGameState.millFormed = false;
     this.switchPlayer();
     this.checkGameEnd();
+    
+    // Check if AI should move next
+    this.checkForAIMove();
+    
     this.updateDisplay();
   }
 
@@ -633,7 +750,8 @@ export class GameController {
       this.currentGameState.currentPlayer,
       this.currentGameState.phase,
       this.currentGameState.whitePiecesRemaining,
-      this.currentGameState.blackPiecesRemaining
+      this.currentGameState.blackPiecesRemaining,
+      this.isAiThinking
     );
   }
 
@@ -656,5 +774,19 @@ export class GameController {
    */
   public getGameMode(): GameMode {
     return this.gameMode;
+  }
+
+  /**
+   * Get the player's color in single-player mode
+   */
+  public getPlayerColor(): PlayerColor {
+    return this.playerColor;
+  }
+
+  /**
+   * Check if AI is currently thinking
+   */
+  public isAIThinking(): boolean {
+    return this.isAiThinking;
   }
 }

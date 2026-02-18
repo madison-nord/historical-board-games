@@ -452,13 +452,15 @@ export class BoardRenderer {
    * @param phase Current game phase
    * @param whitePiecesRemaining Remaining white pieces to place
    * @param blackPiecesRemaining Remaining black pieces to place
+   * @param isAiThinking Whether AI is currently thinking
    */
   public render(
     board: (PlayerColor | null)[],
     currentPlayer?: PlayerColor,
     phase?: GamePhase,
     whitePiecesRemaining?: number,
-    blackPiecesRemaining?: number
+    blackPiecesRemaining?: number,
+    isAiThinking?: boolean
   ): void {
     this.updateCanvasSize();
     this.drawBoard();
@@ -469,7 +471,7 @@ export class BoardRenderer {
     this.animationQueue.renderAnimations(this.ctx);
 
     if (currentPlayer !== undefined && phase !== undefined) {
-      this.drawGameInfo(currentPlayer, phase, whitePiecesRemaining, blackPiecesRemaining);
+      this.drawGameInfo(currentPlayer, phase, whitePiecesRemaining, blackPiecesRemaining, isAiThinking);
     }
   }
 
@@ -480,7 +482,8 @@ export class BoardRenderer {
     currentPlayer: PlayerColor,
     phase: GamePhase,
     whitePiecesRemaining?: number,
-    blackPiecesRemaining?: number
+    blackPiecesRemaining?: number,
+    isAiThinking?: boolean
   ): void {
     const padding = 20;
     const fontSize = Math.max(14, this.boardSize * 0.035);
@@ -489,25 +492,37 @@ export class BoardRenderer {
     this.ctx.textAlign = 'left';
     this.ctx.textBaseline = 'top';
 
+    let yOffset = padding;
+
+    // AI thinking indicator
+    if (isAiThinking) {
+      this.ctx.fillStyle = '#ffaa00';
+      this.ctx.fillText('AI is thinking...', padding, yOffset);
+      yOffset += fontSize + 10;
+    }
+
     // Current player indicator
     const playerColor = currentPlayer === PlayerColor.WHITE ? '#ffffff' : '#333333';
     const playerText = currentPlayer === PlayerColor.WHITE ? 'White' : 'Black';
 
     this.ctx.fillStyle = '#ffffff';
-    this.ctx.fillText(`Current Player: ${playerText}`, padding, padding);
+    this.ctx.fillText(`Current Player: ${playerText}`, padding, yOffset);
 
     // Draw current player indicator circle
     this.ctx.fillStyle = playerColor;
     this.ctx.strokeStyle = playerColor === '#ffffff' ? '#cccccc' : '#000000';
     this.ctx.lineWidth = 2;
     this.ctx.beginPath();
-    this.ctx.arc(padding + 140, padding + fontSize / 2, 8, 0, 2 * Math.PI);
+    this.ctx.arc(padding + 140, yOffset + fontSize / 2, 8, 0, 2 * Math.PI);
     this.ctx.fill();
     this.ctx.stroke();
 
+    yOffset += fontSize + 10;
+
     // Game phase
     this.ctx.fillStyle = '#ffffff';
-    this.ctx.fillText(`Phase: ${phase}`, padding, padding + fontSize + 10);
+    this.ctx.fillText(`Phase: ${phase}`, padding, yOffset);
+    yOffset += fontSize + 10;
 
     // Remaining pieces (only during placement phase)
     if (
@@ -515,16 +530,9 @@ export class BoardRenderer {
       whitePiecesRemaining !== undefined &&
       blackPiecesRemaining !== undefined
     ) {
-      this.ctx.fillText(
-        `White pieces remaining: ${whitePiecesRemaining}`,
-        padding,
-        padding + (fontSize + 10) * 2
-      );
-      this.ctx.fillText(
-        `Black pieces remaining: ${blackPiecesRemaining}`,
-        padding,
-        padding + (fontSize + 10) * 3
-      );
+      this.ctx.fillText(`White pieces remaining: ${whitePiecesRemaining}`, padding, yOffset);
+      yOffset += fontSize + 10;
+      this.ctx.fillText(`Black pieces remaining: ${blackPiecesRemaining}`, padding, yOffset);
     }
   }
 

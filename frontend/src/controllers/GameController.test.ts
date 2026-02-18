@@ -3,6 +3,9 @@ import { GameController } from './GameController.js';
 import { BoardRenderer } from '../rendering/BoardRenderer.js';
 import { GameMode, GamePhase, PlayerColor } from '../models/index.js';
 
+// Mock fetch for AI move API calls
+global.fetch = vi.fn();
+
 describe('GameController', () => {
   let gameController: GameController;
   let mockCanvas: HTMLCanvasElement;

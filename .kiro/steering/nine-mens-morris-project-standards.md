@@ -29,6 +29,13 @@ inclusion: always
 - Configure Maven properly with M2_HOME and system PATH
 - Never rely on temporary PATH modifications
 
+**Maven Environment Setup (Permanent Configuration)**:
+- Maven installation location: `C:\tools\apache-maven-3.9.9`
+- User environment variable `M2_HOME`: `C:\tools\apache-maven-3.9.9`
+- User PATH includes: `C:\tools\apache-maven-3.9.9\bin`
+- JAVA_HOME: `C:\Program Files\Java\jdk-25.0.2`
+- These settings persist across all sessions and don't need daily reconfiguration
+
 ### Spring Boot Standards
 - Follow Spring Boot 3.4.x conventions and best practices
 - Use proper dependency injection patterns

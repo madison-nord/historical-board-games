@@ -1,7 +1,11 @@
 package com.ninemensmorris.service;
 
 import com.ninemensmorris.engine.GameState;
-import com.ninemensmorris.model.*;
+import com.ninemensmorris.model.GameMode;
+import com.ninemensmorris.model.GamePhase;
+import com.ninemensmorris.model.Move;
+import com.ninemensmorris.model.MoveType;
+import com.ninemensmorris.model.PlayerColor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 

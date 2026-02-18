@@ -342,7 +342,7 @@ The implementation uses:
     - _Requirements: 1.1, 1.2, 1.5_
 
 - [ ] 18. Implement single-player mode with AI
-  - [ ] 18.1 Add AI integration to GameController
+  - [x] 18.1 Add AI integration to GameController
     - Implement `handleAIMove()` method
     - Call backend API to get AI move
     - Apply AI move to game state
@@ -351,7 +351,7 @@ The implementation uses:
     - Implement color selection (player chooses white or black)
     - _Requirements: 3.1, 3.2, 3.4, 3.5_
   
-  - [ ] 18.2 Write integration tests for single-player mode
+  - [x] 18.2 Write integration tests for single-player mode
     - Test that AI makes moves automatically
     - Test that AI moves are legal
     - Test complete single-player game
