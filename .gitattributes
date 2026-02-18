@@ -1,0 +1,29 @@
+# Set default behavior to automatically normalize line endings
+* text=auto
+
+# Force LF line endings for all text files in frontend
+frontend/**/*.ts text eol=lf
+frontend/**/*.tsx text eol=lf
+frontend/**/*.js text eol=lf
+frontend/**/*.jsx text eol=lf
+frontend/**/*.json text eol=lf
+frontend/**/*.md text eol=lf
+frontend/**/*.css text eol=lf
+frontend/**/*.html text eol=lf
+
+# Force LF for configuration files
+*.config.js text eol=lf
+.prettierrc text eol=lf
+.prettierignore text eol=lf
+eslint.config.js text eol=lf
+
+# Ensure shell scripts use LF
+*.sh text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
