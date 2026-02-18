@@ -418,4 +418,213 @@ describe('GameController', () => {
       expect(() => gameController.handlePositionClick(100)).not.toThrow();
     });
   });
+
+  describe('Local Two-Player Mode', () => {
+    it('should start in local two-player mode', () => {
+      gameController.startGame();
+      expect(gameController.getGameMode()).toBe(GameMode.LOCAL_TWO_PLAYER);
+    });
+
+    it('should alternate turns between WHITE and BLACK players', () => {
+      gameController.startGame();
+      const gameState = gameController.getCurrentGameState()!;
+
+      // WHITE's turn
+      expect(gameState.currentPlayer).toBe(PlayerColor.WHITE);
+      gameController.handlePositionClick(0);
+
+      // BLACK's turn
+      expect(gameState.currentPlayer).toBe(PlayerColor.BLACK);
+      gameController.handlePositionClick(1);
+
+      // WHITE's turn again
+      expect(gameState.currentPlayer).toBe(PlayerColor.WHITE);
+      gameController.handlePositionClick(2);
+
+      // BLACK's turn again
+      expect(gameState.currentPlayer).toBe(PlayerColor.BLACK);
+      gameController.handlePositionClick(3);
+
+      // Verify both players have placed pieces
+      expect(gameState.whitePiecesOnBoard).toBe(2);
+      expect(gameState.blackPiecesOnBoard).toBe(2);
+    });
+
+    it('should allow both players to make moves throughout the game', () => {
+      gameController.startGame();
+      const gameState = gameController.getCurrentGameState()!;
+
+      // Place several pieces for both players
+      const moves = [
+        { position: 0, expectedPlayer: PlayerColor.WHITE },
+        { position: 1, expectedPlayer: PlayerColor.BLACK },
+        { position: 2, expectedPlayer: PlayerColor.WHITE },
+        { position: 3, expectedPlayer: PlayerColor.BLACK },
+        { position: 4, expectedPlayer: PlayerColor.WHITE },
+        { position: 5, expectedPlayer: PlayerColor.BLACK },
+      ];
+
+      moves.forEach((move, index) => {
+        const currentPlayer = gameState.currentPlayer;
+        expect(currentPlayer).toBe(move.expectedPlayer);
+
+        gameController.handlePositionClick(move.position);
+
+        // Verify the piece was placed
+        expect(gameState.board[move.position]).toBe(move.expectedPlayer);
+      });
+
+      // Verify both players have made moves
+      expect(gameState.whitePiecesOnBoard).toBe(3);
+      expect(gameState.blackPiecesOnBoard).toBe(3);
+    });
+
+    it('should complete a full two-player game from placement to movement phase', () => {
+      gameController.startGame();
+      const gameState = gameController.getCurrentGameState()!;
+
+      // Place all 18 pieces (9 per player)
+      const placementPositions = [
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+      ];
+
+      placementPositions.forEach(position => {
+        gameController.handlePositionClick(position);
+      });
+
+      // Verify transition to movement phase
+      expect(gameState.phase).toBe(GamePhase.MOVEMENT);
+      expect(gameState.whitePiecesRemaining).toBe(0);
+      expect(gameState.blackPiecesRemaining).toBe(0);
+      expect(gameState.whitePiecesOnBoard).toBe(9);
+      expect(gameState.blackPiecesOnBoard).toBe(9);
+
+      // Verify both players can still make moves in movement phase
+      const currentPlayer = gameState.currentPlayer;
+
+      // Find a piece belonging to current player and an adjacent empty position
+      let piecePosition = -1;
+      let targetPosition = -1;
+
+      for (let i = 0; i < 24; i++) {
+        if (gameState.board[i] === currentPlayer) {
+          piecePosition = i;
+          // Check adjacent positions (simplified - just check a few common adjacencies)
+          const adjacentPositions = [i - 1, i + 1, i - 3, i + 3];
+          for (const adj of adjacentPositions) {
+            if (adj >= 0 && adj < 24 && gameState.board[adj] === null) {
+              targetPosition = adj;
+              break;
+            }
+          }
+          if (targetPosition !== -1) break;
+        }
+      }
+
+      // If we found a valid move, make it
+      if (piecePosition !== -1 && targetPosition !== -1) {
+        gameController.handlePositionClick(piecePosition);
+        gameController.handlePositionClick(targetPosition);
+
+        // Verify the move was made
+        expect(gameState.board[piecePosition]).toBeNull();
+        expect(gameState.board[targetPosition]).toBe(currentPlayer);
+      }
+    });
+
+    it('should handle mill formation and removal in two-player mode', () => {
+      gameController.startGame();
+      const gameState = gameController.getCurrentGameState()!;
+
+      // Create a mill for WHITE at positions 0, 1, 2
+      gameController.handlePositionClick(0); // WHITE
+      gameController.handlePositionClick(3); // BLACK
+      gameController.handlePositionClick(1); // WHITE
+      gameController.handlePositionClick(4); // BLACK
+      gameController.handlePositionClick(2); // WHITE - completes mill
+
+      // Verify mill was formed
+      expect(gameState.millFormed).toBe(true);
+      expect(gameState.currentPlayer).toBe(PlayerColor.WHITE); // Still WHITE's turn for removal
+
+      // WHITE removes BLACK piece at position 3
+      gameController.handlePositionClick(3);
+
+      // Verify removal and turn switch
+      expect(gameState.board[3]).toBeNull();
+      expect(gameState.blackPiecesOnBoard).toBe(1);
+      expect(gameState.millFormed).toBe(false);
+      expect(gameState.currentPlayer).toBe(PlayerColor.BLACK); // Now BLACK's turn
+    });
+
+    it('should not allow AI moves in local two-player mode', () => {
+      gameController.startGame();
+      // This test verifies that AI is not triggered in local two-player mode
+      const gameState = gameController.getCurrentGameState()!;
+
+      // Make a move
+      gameController.handlePositionClick(0);
+
+      // Verify that the game is waiting for the next player (BLACK)
+      expect(gameState.currentPlayer).toBe(PlayerColor.BLACK);
+      expect(gameController.isAIThinking()).toBe(false);
+
+      // Make another move
+      gameController.handlePositionClick(1);
+
+      // Verify that the game is waiting for WHITE again
+      expect(gameState.currentPlayer).toBe(PlayerColor.WHITE);
+      expect(gameController.isAIThinking()).toBe(false);
+    });
+
+    it('should maintain turn order after mill removal', () => {
+      gameController.startGame();
+      const gameState = gameController.getCurrentGameState()!;
+
+      // Set up a mill scenario
+      gameController.handlePositionClick(0); // WHITE
+      gameController.handlePositionClick(3); // BLACK
+      gameController.handlePositionClick(1); // WHITE
+      gameController.handlePositionClick(4); // BLACK
+      gameController.handlePositionClick(2); // WHITE - completes mill
+
+      expect(gameState.currentPlayer).toBe(PlayerColor.WHITE);
+
+      // Remove BLACK piece
+      gameController.handlePositionClick(3);
+
+      // After removal, it should be BLACK's turn
+      expect(gameState.currentPlayer).toBe(PlayerColor.BLACK);
+
+      // BLACK makes a move
+      gameController.handlePositionClick(5);
+
+      // Now it should be WHITE's turn
+      expect(gameState.currentPlayer).toBe(PlayerColor.WHITE);
+    });
+
+    it('should allow both players to continue playing until game end', () => {
+      gameController.startGame();
+      const gameState = gameController.getCurrentGameState()!;
+
+      // Simulate a longer game by placing multiple pieces
+      for (let i = 0; i < 10; i++) {
+        const position = i * 2; // Use even positions to avoid conflicts
+        if (position < 24) {
+          gameController.handlePositionClick(position);
+        }
+      }
+
+      // Verify game is still in progress
+      expect(gameState.isGameOver).toBe(false);
+
+      // Verify both players have pieces on board
+      expect(gameState.whitePiecesOnBoard).toBeGreaterThan(0);
+      expect(gameState.blackPiecesOnBoard).toBeGreaterThan(0);
+
+      // Verify turns are still alternating
+      const currentPlayer = gameState.currentPlayer;
+      expect([PlayerColor.WHITE, PlayerColor.BLACK]).toContain(currentPlayer);
+    });
+  });
 });

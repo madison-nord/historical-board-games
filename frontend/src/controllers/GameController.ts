@@ -599,21 +599,27 @@ export class GameController {
    * Switch to the next player
    */
   private switchPlayer(): void {
-    if (!this.currentGameState) {
-      return;
+      if (!this.currentGameState) {
+        return;
+      }
+
+      this.currentGameState.currentPlayer =
+        this.currentGameState.currentPlayer === PlayerColor.WHITE
+          ? PlayerColor.BLACK
+          : PlayerColor.WHITE;
+
+      // Update phase if necessary
+      this.updateGamePhase();
+
+      // Check for game end conditions after switching players
+      this.checkGameEnd();
+
+      // Enable input for local two-player mode (always enabled)
+      // For single-player, input is managed by AI move handling
+      if (this.gameMode === GameMode.LOCAL_TWO_PLAYER && !this.currentGameState.isGameOver) {
+        this.boardRenderer.setInputEnabled(true);
+      }
     }
-
-    this.currentGameState.currentPlayer =
-      this.currentGameState.currentPlayer === PlayerColor.WHITE
-        ? PlayerColor.BLACK
-        : PlayerColor.WHITE;
-
-    // Update phase if necessary
-    this.updateGamePhase();
-
-    // Check for game end conditions after switching players
-    this.checkGameEnd();
-  }
 
   /**
    * Update the game phase based on current state

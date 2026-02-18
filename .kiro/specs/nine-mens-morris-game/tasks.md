@@ -358,13 +358,13 @@ The implementation uses:
     - _Requirements: 3.1, 3.2_
 
 - [ ] 19. Implement local two-player mode
-  - [ ] 19.1 Add local multiplayer to GameController
+  - [x] 19.1 Add local multiplayer to GameController
     - Implement turn-based control for two local players
     - Display current player indicator
     - Alternate control between players
     - _Requirements: 4.1, 4.2, 4.3_
   
-  - [ ] 19.2 Write integration tests for local two-player mode
+  - [x] 19.2 Write integration tests for local two-player mode
     - Test turn alternation
     - Test that both players can make moves
     - Test complete two-player game
