@@ -49,7 +49,7 @@ Object.defineProperty(window, 'devicePixelRatio', {
 });
 
 // Mock requestAnimationFrame and performance.now for animations
-global.requestAnimationFrame = vi.fn((callback) => {
+global.requestAnimationFrame = vi.fn(callback => {
   setTimeout(callback, 16);
   return 1;
 });
@@ -110,7 +110,7 @@ describe('BoardRenderer', () => {
     // Test that positions are calculated based on board size
     const pos0 = renderer.getPositionCoordinates(0);
     const pos12 = renderer.getPositionCoordinates(12);
-    
+
     // Position 0 should be in top-left area, position 12 should be in bottom-right area
     expect(pos0.x).toBeLessThan(pos12.x);
     expect(pos0.y).toBeLessThan(pos12.y);
@@ -118,7 +118,7 @@ describe('BoardRenderer', () => {
 
   it('should draw board without errors', () => {
     renderer.drawBoard();
-    
+
     // Verify that drawing methods were called
     expect(mockContext.clearRect).toHaveBeenCalled();
     expect(mockContext.beginPath).toHaveBeenCalled();
@@ -129,9 +129,9 @@ describe('BoardRenderer', () => {
     const board = new Array(24).fill(null);
     board[0] = PlayerColor.WHITE;
     board[12] = PlayerColor.BLACK;
-    
+
     renderer.drawPieces(board);
-    
+
     // Should have called arc for each piece (plus shadows)
     expect(mockContext.arc).toHaveBeenCalled();
     expect(mockContext.fill).toHaveBeenCalled();
@@ -139,19 +139,17 @@ describe('BoardRenderer', () => {
 
   it('should throw error for invalid board size', () => {
     const invalidBoard = new Array(23).fill(null); // Wrong size
-    
-    expect(() => renderer.drawPieces(invalidBoard)).toThrow(
-      'Board must have exactly 24 positions'
-    );
+
+    expect(() => renderer.drawPieces(invalidBoard)).toThrow('Board must have exactly 24 positions');
   });
 
   it('should render complete board with pieces', () => {
     const board = new Array(24).fill(null);
     board[0] = PlayerColor.WHITE;
     board[1] = PlayerColor.BLACK;
-    
+
     renderer.render(board);
-    
+
     // Should clear, draw board, and draw pieces
     expect(mockContext.clearRect).toHaveBeenCalled();
     expect(mockContext.beginPath).toHaveBeenCalled();
@@ -161,9 +159,9 @@ describe('BoardRenderer', () => {
   it('should render complete board with game info', () => {
     const board = new Array(24).fill(null);
     board[0] = PlayerColor.WHITE;
-    
+
     renderer.render(board, PlayerColor.WHITE, GamePhase.PLACEMENT, 8, 9);
-    
+
     // Should draw everything including game info
     expect(mockContext.clearRect).toHaveBeenCalled();
     expect(mockContext.fillText).toHaveBeenCalled();
@@ -171,10 +169,10 @@ describe('BoardRenderer', () => {
 
   it('should highlight valid moves', () => {
     renderer.highlightValidMoves([0, 1, 2]);
-    
+
     const board = new Array(24).fill(null);
     renderer.render(board);
-    
+
     // Should draw highlights
     expect(mockContext.arc).toHaveBeenCalled();
     expect(mockContext.fill).toHaveBeenCalled();
@@ -183,20 +181,20 @@ describe('BoardRenderer', () => {
   it('should clear highlights', () => {
     renderer.highlightValidMoves([0, 1, 2]);
     renderer.clearHighlights();
-    
+
     const board = new Array(24).fill(null);
     renderer.render(board);
-    
+
     // Should not draw highlights after clearing
     expect(mockContext.clearRect).toHaveBeenCalled();
   });
 
   it('should set hover position', () => {
     renderer.setHoverPosition(5);
-    
+
     const board = new Array(24).fill(null);
     renderer.render(board);
-    
+
     // Should draw hover effect
     expect(mockContext.arc).toHaveBeenCalled();
   });
@@ -204,21 +202,21 @@ describe('BoardRenderer', () => {
   it('should clear hover position', () => {
     renderer.setHoverPosition(5);
     renderer.setHoverPosition(null);
-    
+
     const board = new Array(24).fill(null);
     renderer.render(board);
-    
+
     // Should not draw hover effect after clearing
     expect(mockContext.clearRect).toHaveBeenCalled();
   });
 
   it('should get position from coordinates', () => {
     const pos0 = renderer.getPositionCoordinates(0);
-    
+
     // Should return position 0 when clicking near its coordinates
     const foundPosition = renderer.getPositionFromCoordinates(pos0.x, pos0.y);
     expect(foundPosition).toBe(0);
-    
+
     // Should return null when clicking far from any position
     const notFound = renderer.getPositionFromCoordinates(-100, -100);
     expect(notFound).toBeNull();
@@ -226,42 +224,42 @@ describe('BoardRenderer', () => {
 
   it('should animate piece placement', () => {
     renderer.animatePlacement(0, PlayerColor.WHITE);
-    
+
     expect(renderer.hasActiveAnimations()).toBe(true);
-    
+
     const board = new Array(24).fill(null);
     renderer.render(board);
-    
+
     // Should render animations
     expect(mockContext.clearRect).toHaveBeenCalled();
   });
 
   it('should animate piece movement', () => {
     renderer.animateMovement(0, 1, PlayerColor.BLACK);
-    
+
     expect(renderer.hasActiveAnimations()).toBe(true);
   });
 
   it('should animate piece removal', () => {
     renderer.animateRemoval(5, PlayerColor.WHITE);
-    
+
     expect(renderer.hasActiveAnimations()).toBe(true);
   });
 
   it('should animate mill formation', () => {
     renderer.animateMill([0, 1, 2]);
-    
+
     expect(renderer.hasActiveAnimations()).toBe(true);
   });
 
   it('should clear all animations', () => {
     renderer.animatePlacement(0, PlayerColor.WHITE);
     renderer.animateMovement(1, 2, PlayerColor.BLACK);
-    
+
     expect(renderer.hasActiveAnimations()).toBe(true);
-    
+
     renderer.clearAnimations();
-    
+
     expect(renderer.hasActiveAnimations()).toBe(false);
   });
 
@@ -276,14 +274,16 @@ describe('BoardRenderer', () => {
 
   it('should throw error for invalid mill positions', () => {
     expect(() => renderer.animateMill([0, 1])).toThrow('Mill must contain exactly 3 positions');
-    expect(() => renderer.animateMill([0, 1, 2, 3])).toThrow('Mill must contain exactly 3 positions');
+    expect(() => renderer.animateMill([0, 1, 2, 3])).toThrow(
+      'Mill must contain exactly 3 positions'
+    );
     expect(() => renderer.animateMill([-1, 0, 1])).toThrow('Invalid mill position: -1');
     expect(() => renderer.animateMill([0, 1, 24])).toThrow('Invalid mill position: 24');
   });
 
   it('should handle resize events', () => {
     renderer.handleResize();
-    
+
     // Should recalculate canvas setup
     expect(mockContext.scale).toHaveBeenCalled();
   });
@@ -293,7 +293,7 @@ describe('BoardRenderer', () => {
     for (let i = 0; i < 24; i++) {
       coords.push(renderer.getPositionCoordinates(i));
     }
-    
+
     // Check that all coordinates are unique
     const uniqueCoords = new Set(coords.map(c => `${c.x},${c.y}`));
     expect(uniqueCoords.size).toBe(24);
@@ -304,7 +304,7 @@ describe('BoardRenderer', () => {
     it('should set position click callback', () => {
       const mockCallback = vi.fn();
       renderer.setOnPositionClick(mockCallback);
-      
+
       // Test that callback is set (we can't directly access private property)
       // but we can test the public interface
       expect(() => renderer.setOnPositionClick(mockCallback)).not.toThrow();
@@ -312,10 +312,10 @@ describe('BoardRenderer', () => {
 
     it('should enable and disable input', () => {
       expect(renderer.isInputEnabledState()).toBe(true);
-      
+
       renderer.setInputEnabled(false);
       expect(renderer.isInputEnabledState()).toBe(false);
-      
+
       renderer.setInputEnabled(true);
       expect(renderer.isInputEnabledState()).toBe(true);
     });
@@ -323,7 +323,7 @@ describe('BoardRenderer', () => {
     it('should handle position click when input is enabled', () => {
       const mockCallback = vi.fn();
       renderer.setOnPositionClick(mockCallback);
-      
+
       renderer.handlePositionClick(5);
       expect(mockCallback).toHaveBeenCalledWith(5);
     });
@@ -332,7 +332,7 @@ describe('BoardRenderer', () => {
       const mockCallback = vi.fn();
       renderer.setOnPositionClick(mockCallback);
       renderer.setInputEnabled(false);
-      
+
       renderer.handlePositionClick(5);
       expect(mockCallback).not.toHaveBeenCalled();
     });
@@ -342,7 +342,7 @@ describe('BoardRenderer', () => {
       const centerX = 200;
       const centerY = 200;
       const position = renderer.getPositionFromCoordinates(centerX, centerY);
-      
+
       if (position !== null) {
         expect(position).toBeTypeOf('number');
         expect(position).toBeGreaterThanOrEqual(0);
@@ -368,7 +368,7 @@ describe('BoardRenderer', () => {
     it('should clear hover position when input is disabled', () => {
       renderer.setHoverPosition(5);
       renderer.setInputEnabled(false);
-      
+
       // After disabling input, hover should be cleared
       // We can't directly test the private hoveredPosition, but we can test the behavior
       expect(() => renderer.setInputEnabled(false)).not.toThrow();
@@ -383,13 +383,13 @@ describe('BoardRenderer', () => {
     it('should validate position bounds in handlePositionClick', () => {
       const mockCallback = vi.fn();
       renderer.setOnPositionClick(mockCallback);
-      
+
       // Test valid position
       renderer.handlePositionClick(0);
       expect(mockCallback).toHaveBeenCalledWith(0);
-      
+
       mockCallback.mockClear();
-      
+
       // Test another valid position
       renderer.handlePositionClick(23);
       expect(mockCallback).toHaveBeenCalledWith(23);

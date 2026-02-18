@@ -23,21 +23,22 @@ export class BoardRenderer {
   private boardSize: number = 400; // Default size, will be adjusted for responsive design
   private pieceRadius: number = 12;
   private lineWidth: number = 2;
-  
+
   // Board layout constants - Nine Men's Morris has 3 concentric squares
   private readonly positions: PositionCoordinates[] = [];
-  
+
   // Highlighting state
   private highlightedPositions: Set<number> = new Set();
   private hoveredPosition: number | null = null;
-  
+
   // Animation system
   private animationQueue: AnimationQueue = new AnimationQueue();
-  
+
   // Input handling
+  // eslint-disable-next-line no-unused-vars
   private onPositionClick: ((position: number) => void) | null = null;
   private isInputEnabled: boolean = true;
-  
+
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     const context = canvas.getContext('2d');
@@ -45,7 +46,7 @@ export class BoardRenderer {
       throw new Error('Could not get 2D rendering context from canvas');
     }
     this.ctx = context;
-    
+
     this.initializePositions();
     this.setupCanvas();
     this.setupInputHandling();
@@ -60,36 +61,36 @@ export class BoardRenderer {
     const outerSize = this.boardSize * 0.4;
     const middleSize = this.boardSize * 0.27;
     const innerSize = this.boardSize * 0.14;
-    
+
     // Outer square (positions 0-7)
     this.positions[0] = { x: center - outerSize, y: center - outerSize }; // Top-left
-    this.positions[1] = { x: center, y: center - outerSize };             // Top-center
+    this.positions[1] = { x: center, y: center - outerSize }; // Top-center
     this.positions[2] = { x: center + outerSize, y: center - outerSize }; // Top-right
-    this.positions[3] = { x: center + outerSize, y: center };             // Right-center
+    this.positions[3] = { x: center + outerSize, y: center }; // Right-center
     this.positions[4] = { x: center + outerSize, y: center + outerSize }; // Bottom-right
-    this.positions[5] = { x: center, y: center + outerSize };             // Bottom-center
+    this.positions[5] = { x: center, y: center + outerSize }; // Bottom-center
     this.positions[6] = { x: center - outerSize, y: center + outerSize }; // Bottom-left
-    this.positions[7] = { x: center - outerSize, y: center };             // Left-center
-    
+    this.positions[7] = { x: center - outerSize, y: center }; // Left-center
+
     // Middle square (positions 8-15)
     this.positions[8] = { x: center - middleSize, y: center - middleSize }; // Top-left
-    this.positions[9] = { x: center, y: center - middleSize };              // Top-center
+    this.positions[9] = { x: center, y: center - middleSize }; // Top-center
     this.positions[10] = { x: center + middleSize, y: center - middleSize }; // Top-right
-    this.positions[11] = { x: center + middleSize, y: center };              // Right-center
+    this.positions[11] = { x: center + middleSize, y: center }; // Right-center
     this.positions[12] = { x: center + middleSize, y: center + middleSize }; // Bottom-right
-    this.positions[13] = { x: center, y: center + middleSize };              // Bottom-center
+    this.positions[13] = { x: center, y: center + middleSize }; // Bottom-center
     this.positions[14] = { x: center - middleSize, y: center + middleSize }; // Bottom-left
-    this.positions[15] = { x: center - middleSize, y: center };              // Left-center
-    
+    this.positions[15] = { x: center - middleSize, y: center }; // Left-center
+
     // Inner square (positions 16-23)
     this.positions[16] = { x: center - innerSize, y: center - innerSize }; // Top-left
-    this.positions[17] = { x: center, y: center - innerSize };             // Top-center
+    this.positions[17] = { x: center, y: center - innerSize }; // Top-center
     this.positions[18] = { x: center + innerSize, y: center - innerSize }; // Top-right
-    this.positions[19] = { x: center + innerSize, y: center };             // Right-center
+    this.positions[19] = { x: center + innerSize, y: center }; // Right-center
     this.positions[20] = { x: center + innerSize, y: center + innerSize }; // Bottom-right
-    this.positions[21] = { x: center, y: center + innerSize };             // Bottom-center
+    this.positions[21] = { x: center, y: center + innerSize }; // Bottom-center
     this.positions[22] = { x: center - innerSize, y: center + innerSize }; // Bottom-left
-    this.positions[23] = { x: center - innerSize, y: center };             // Left-center
+    this.positions[23] = { x: center - innerSize, y: center }; // Left-center
   }
 
   /**
@@ -97,14 +98,14 @@ export class BoardRenderer {
    */
   private setupCanvas(): void {
     this.updateCanvasSize();
-    
+
     // Set up high DPI support
     const dpr = window.devicePixelRatio || 1;
     const rect = this.canvas.getBoundingClientRect();
-    
+
     this.canvas.width = rect.width * dpr;
     this.canvas.height = rect.height * dpr;
-    
+
     this.ctx.scale(dpr, dpr);
     this.canvas.style.width = rect.width + 'px';
     this.canvas.style.height = rect.height + 'px';
@@ -115,19 +116,21 @@ export class BoardRenderer {
    */
   private updateCanvasSize(): void {
     const container = this.canvas.parentElement;
-    if (!container) return;
-    
+    if (!container) {
+      return;
+    }
+
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
     const size = Math.min(containerWidth, containerHeight) * 0.9; // 90% of container
-    
+
     this.boardSize = size;
     this.pieceRadius = size * 0.03; // Scale piece size with board
     this.lineWidth = Math.max(1, size * 0.005); // Scale line width
-    
+
     this.canvas.style.width = size + 'px';
     this.canvas.style.height = size + 'px';
-    
+
     // Recalculate positions with new size
     this.initializePositions();
   }
@@ -137,13 +140,13 @@ export class BoardRenderer {
    */
   public drawBoard(): void {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    
+
     // Set line style
     this.ctx.strokeStyle = '#ffffff';
     this.ctx.lineWidth = this.lineWidth;
     this.ctx.lineCap = 'round';
     this.ctx.lineJoin = 'round';
-    
+
     this.drawSquares();
     this.drawConnectingLines();
     this.drawPositionMarkers();
@@ -155,11 +158,11 @@ export class BoardRenderer {
   private drawSquares(): void {
     const center = this.boardSize / 2;
     const sizes = [
-      this.boardSize * 0.4,  // Outer square
+      this.boardSize * 0.4, // Outer square
       this.boardSize * 0.27, // Middle square
-      this.boardSize * 0.14  // Inner square
+      this.boardSize * 0.14, // Inner square
     ];
-    
+
     sizes.forEach(size => {
       this.ctx.beginPath();
       this.ctx.rect(center - size, center - size, size * 2, size * 2);
@@ -174,11 +177,11 @@ export class BoardRenderer {
     const center = this.boardSize / 2;
     const outerSize = this.boardSize * 0.4;
     const innerSize = this.boardSize * 0.14;
-    
+
     // Horizontal connecting lines
     this.drawLine(center - outerSize, center, center - innerSize, center); // Left
     this.drawLine(center + innerSize, center, center + outerSize, center); // Right
-    
+
     // Vertical connecting lines
     this.drawLine(center, center - outerSize, center, center - innerSize); // Top
     this.drawLine(center, center + innerSize, center, center + outerSize); // Bottom
@@ -199,7 +202,7 @@ export class BoardRenderer {
    */
   private drawPositionMarkers(): void {
     this.ctx.fillStyle = '#666666';
-    
+
     this.positions.forEach(pos => {
       this.ctx.beginPath();
       this.ctx.arc(pos.x, pos.y, 3, 0, 2 * Math.PI);
@@ -215,7 +218,7 @@ export class BoardRenderer {
     if (board.length !== 24) {
       throw new Error('Board must have exactly 24 positions');
     }
-    
+
     board.forEach((piece, index) => {
       if (piece !== null) {
         this.drawPiece(index, piece);
@@ -230,23 +233,23 @@ export class BoardRenderer {
     if (position < 0 || position >= 24) {
       throw new Error(`Invalid position: ${position}. Must be 0-23.`);
     }
-    
+
     const pos = this.positions[position];
     const pieceColor = color === PlayerColor.WHITE ? '#ffffff' : '#333333';
     const borderColor = color === PlayerColor.WHITE ? '#cccccc' : '#000000';
-    
+
     // Draw piece shadow
     this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
     this.ctx.beginPath();
     this.ctx.arc(pos.x + 2, pos.y + 2, this.pieceRadius, 0, 2 * Math.PI);
     this.ctx.fill();
-    
+
     // Draw piece
     this.ctx.fillStyle = pieceColor;
     this.ctx.beginPath();
     this.ctx.arc(pos.x, pos.y, this.pieceRadius, 0, 2 * Math.PI);
     this.ctx.fill();
-    
+
     // Draw piece border
     this.ctx.strokeStyle = borderColor;
     this.ctx.lineWidth = 2;
@@ -303,7 +306,11 @@ export class BoardRenderer {
 
     // Draw hover effect
     if (this.hoveredPosition !== null && this.hoveredPosition >= 0 && this.hoveredPosition < 24) {
-      this.drawPositionHighlight(this.hoveredPosition, 'rgba(255, 255, 0, 0.2)', 'rgba(255, 255, 0, 0.5)');
+      this.drawPositionHighlight(
+        this.hoveredPosition,
+        'rgba(255, 255, 0, 0.2)',
+        'rgba(255, 255, 0, 0.5)'
+      );
     }
   }
 
@@ -331,11 +338,15 @@ export class BoardRenderer {
   /**
    * Animate placing a piece at the specified position
    */
-  public animatePlacement(position: number, playerColor: PlayerColor, onComplete?: () => void): void {
+  public animatePlacement(
+    position: number,
+    playerColor: PlayerColor,
+    onComplete?: () => void
+  ): void {
     if (position < 0 || position >= 24) {
       throw new Error(`Invalid position: ${position}. Must be 0-23.`);
     }
-    
+
     const coordinates = this.getPositionCoordinates(position);
     const animation = new PlacementAnimation(
       position,
@@ -344,7 +355,7 @@ export class BoardRenderer {
       this.pieceRadius,
       onComplete
     );
-    
+
     this.animationQueue.addAnimation(animation);
   }
 
@@ -352,15 +363,15 @@ export class BoardRenderer {
    * Animate moving a piece from one position to another
    */
   public animateMovement(
-    fromPosition: number, 
-    toPosition: number, 
-    playerColor: PlayerColor, 
+    fromPosition: number,
+    toPosition: number,
+    playerColor: PlayerColor,
     onComplete?: () => void
   ): void {
     if (fromPosition < 0 || fromPosition >= 24 || toPosition < 0 || toPosition >= 24) {
       throw new Error(`Invalid positions: ${fromPosition} to ${toPosition}. Must be 0-23.`);
     }
-    
+
     const fromCoordinates = this.getPositionCoordinates(fromPosition);
     const toCoordinates = this.getPositionCoordinates(toPosition);
     const animation = new MovementAnimation(
@@ -372,7 +383,7 @@ export class BoardRenderer {
       this.pieceRadius,
       onComplete
     );
-    
+
     this.animationQueue.addAnimation(animation);
   }
 
@@ -383,7 +394,7 @@ export class BoardRenderer {
     if (position < 0 || position >= 24) {
       throw new Error(`Invalid position: ${position}. Must be 0-23.`);
     }
-    
+
     const coordinates = this.getPositionCoordinates(position);
     const animation = new RemovalAnimation(
       position,
@@ -392,7 +403,7 @@ export class BoardRenderer {
       this.pieceRadius,
       onComplete
     );
-    
+
     this.animationQueue.addAnimation(animation);
   }
 
@@ -403,20 +414,20 @@ export class BoardRenderer {
     if (millPositions.length !== 3) {
       throw new Error('Mill must contain exactly 3 positions');
     }
-    
+
     for (const pos of millPositions) {
       if (pos < 0 || pos >= 24) {
         throw new Error(`Invalid mill position: ${pos}. Must be 0-23.`);
       }
     }
-    
+
     const animation = new MillAnimation(
       millPositions,
       this.positions,
       this.pieceRadius,
       onComplete
     );
-    
+
     this.animationQueue.addAnimation(animation);
   }
 
@@ -453,10 +464,10 @@ export class BoardRenderer {
     this.drawBoard();
     this.drawHighlights();
     this.drawPieces(board);
-    
+
     // Render animations on top of everything else
     this.animationQueue.renderAnimations(this.ctx);
-    
+
     if (currentPlayer !== undefined && phase !== undefined) {
       this.drawGameInfo(currentPlayer, phase, whitePiecesRemaining, blackPiecesRemaining);
     }
@@ -473,7 +484,7 @@ export class BoardRenderer {
   ): void {
     const padding = 20;
     const fontSize = Math.max(14, this.boardSize * 0.035);
-    
+
     this.ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
     this.ctx.textAlign = 'left';
     this.ctx.textBaseline = 'top';
@@ -481,7 +492,7 @@ export class BoardRenderer {
     // Current player indicator
     const playerColor = currentPlayer === PlayerColor.WHITE ? '#ffffff' : '#333333';
     const playerText = currentPlayer === PlayerColor.WHITE ? 'White' : 'Black';
-    
+
     this.ctx.fillStyle = '#ffffff';
     this.ctx.fillText(`Current Player: ${playerText}`, padding, padding);
 
@@ -499,9 +510,21 @@ export class BoardRenderer {
     this.ctx.fillText(`Phase: ${phase}`, padding, padding + fontSize + 10);
 
     // Remaining pieces (only during placement phase)
-    if (phase === GamePhase.PLACEMENT && whitePiecesRemaining !== undefined && blackPiecesRemaining !== undefined) {
-      this.ctx.fillText(`White pieces remaining: ${whitePiecesRemaining}`, padding, padding + (fontSize + 10) * 2);
-      this.ctx.fillText(`Black pieces remaining: ${blackPiecesRemaining}`, padding, padding + (fontSize + 10) * 3);
+    if (
+      phase === GamePhase.PLACEMENT &&
+      whitePiecesRemaining !== undefined &&
+      blackPiecesRemaining !== undefined
+    ) {
+      this.ctx.fillText(
+        `White pieces remaining: ${whitePiecesRemaining}`,
+        padding,
+        padding + (fontSize + 10) * 2
+      );
+      this.ctx.fillText(
+        `Black pieces remaining: ${blackPiecesRemaining}`,
+        padding,
+        padding + (fontSize + 10) * 3
+      );
     }
   }
 
@@ -513,16 +536,16 @@ export class BoardRenderer {
    */
   public getPositionFromCoordinates(x: number, y: number): number | null {
     const clickRadius = this.pieceRadius + 10; // Allow some tolerance for clicking
-    
+
     for (let i = 0; i < this.positions.length; i++) {
       const pos = this.positions[i];
       const distance = Math.sqrt((x - pos.x) ** 2 + (y - pos.y) ** 2);
-      
+
       if (distance <= clickRadius) {
         return i;
       }
     }
-    
+
     return null;
   }
 
@@ -541,31 +564,33 @@ export class BoardRenderer {
     if (typeof this.canvas.addEventListener !== 'function') {
       return;
     }
-    
+
     // Mouse events
     this.canvas.addEventListener('click', this.handleClick.bind(this));
     this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
     this.canvas.addEventListener('mouseleave', this.handleMouseLeave.bind(this));
-    
+
     // Touch events for mobile support
     this.canvas.addEventListener('touchstart', this.handleTouchStart.bind(this));
     this.canvas.addEventListener('touchend', this.handleTouchEnd.bind(this));
-    
+
     // Prevent default touch behaviors that might interfere with game
-    this.canvas.addEventListener('touchmove', (e) => e.preventDefault());
-    this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    this.canvas.addEventListener('touchmove', e => e.preventDefault());
+    this.canvas.addEventListener('contextmenu', e => e.preventDefault());
   }
 
   /**
    * Handle mouse click events
    */
   private handleClick(event: MouseEvent): void {
-    if (!this.isInputEnabled) return;
-    
+    if (!this.isInputEnabled) {
+      return;
+    }
+
     const rect = this.canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    
+
     const position = this.getPositionFromCoordinates(x, y);
     if (position !== null && this.onPositionClick) {
       this.onPositionClick(position);
@@ -576,12 +601,14 @@ export class BoardRenderer {
    * Handle mouse move events for hover effects
    */
   private handleMouseMove(event: MouseEvent): void {
-    if (!this.isInputEnabled) return;
-    
+    if (!this.isInputEnabled) {
+      return;
+    }
+
     const rect = this.canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    
+
     const position = this.getPositionFromCoordinates(x, y);
     this.setHoverPosition(position);
   }
@@ -604,16 +631,18 @@ export class BoardRenderer {
    * Handle touch end events
    */
   private handleTouchEnd(event: TouchEvent): void {
-    if (!this.isInputEnabled) return;
-    
+    if (!this.isInputEnabled) {
+      return;
+    }
+
     event.preventDefault();
-    
+
     if (event.changedTouches.length > 0) {
       const touch = event.changedTouches[0];
       const rect = this.canvas.getBoundingClientRect();
       const x = touch.clientX - rect.left;
       const y = touch.clientY - rect.top;
-      
+
       const position = this.getPositionFromCoordinates(x, y);
       if (position !== null && this.onPositionClick) {
         this.onPositionClick(position);
@@ -624,6 +653,7 @@ export class BoardRenderer {
   /**
    * Set the callback function for position clicks
    */
+  // eslint-disable-next-line no-unused-vars
   public setOnPositionClick(callback: (position: number) => void): void {
     this.onPositionClick = callback;
   }
@@ -649,11 +679,13 @@ export class BoardRenderer {
    * Handle position click with validation and feedback
    */
   public handlePositionClick(position: number): void {
-    if (!this.isInputEnabled) return;
-    
+    if (!this.isInputEnabled) {
+      return;
+    }
+
     // Provide immediate visual feedback
     this.setHoverPosition(position);
-    
+
     // Call the registered callback if available
     if (this.onPositionClick) {
       this.onPositionClick(position);

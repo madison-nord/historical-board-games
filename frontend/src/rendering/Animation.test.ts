@@ -8,7 +8,7 @@ import { Easing } from './Animation.js';
 import { PlayerColor } from '../models/index.js';
 
 // Mock requestAnimationFrame and cancelAnimationFrame
-global.requestAnimationFrame = vi.fn((callback) => {
+global.requestAnimationFrame = vi.fn(callback => {
   setTimeout(callback, 16); // ~60fps
   return 1;
 });
@@ -42,13 +42,13 @@ describe('Animation System', () => {
       expect(Easing.linear(0.5)).toBe(0.5);
       expect(Easing.linear(0)).toBe(0);
       expect(Easing.linear(1)).toBe(1);
-      
+
       expect(Easing.easeIn(0)).toBe(0);
       expect(Easing.easeIn(1)).toBe(1);
-      
+
       expect(Easing.easeOut(0)).toBe(0);
       expect(Easing.easeOut(1)).toBe(1);
-      
+
       expect(Easing.easeInOut(0)).toBe(0);
       expect(Easing.easeInOut(1)).toBe(1);
       expect(Easing.easeInOut(0.5)).toBeGreaterThan(0.4);
@@ -76,9 +76,9 @@ describe('Animation System', () => {
 
     it('should add animations to queue', () => {
       expect(queue.hasActiveAnimations()).toBe(false);
-      
+
       queue.addAnimation(mockAnimation);
-      
+
       expect(queue.hasActiveAnimations()).toBe(true);
       expect(queue.getActiveAnimations()).toHaveLength(1);
     });
@@ -86,28 +86,28 @@ describe('Animation System', () => {
     it('should remove animations from queue', () => {
       queue.addAnimation(mockAnimation);
       expect(queue.hasActiveAnimations()).toBe(true);
-      
+
       queue.removeAnimation('test-animation');
-      
+
       expect(queue.hasActiveAnimations()).toBe(false);
     });
 
     it('should clear all animations', () => {
       queue.addAnimation(mockAnimation);
       queue.addAnimation({ ...mockAnimation, id: 'test-2' });
-      
+
       expect(queue.getActiveAnimations()).toHaveLength(2);
-      
+
       queue.clearAll();
-      
+
       expect(queue.hasActiveAnimations()).toBe(false);
     });
 
     it('should render all active animations', () => {
       queue.addAnimation(mockAnimation);
-      
+
       queue.renderAnimations(mockContext as any);
-      
+
       expect(mockAnimation.render).toHaveBeenCalledWith(mockContext, 0);
     });
   });
@@ -119,13 +119,7 @@ describe('Animation System', () => {
 
     beforeEach(() => {
       vi.clearAllMocks();
-      animation = new PlacementAnimation(
-        0,
-        mockCoordinates,
-        PlayerColor.WHITE,
-        12,
-        onComplete
-      );
+      animation = new PlacementAnimation(0, mockCoordinates, PlayerColor.WHITE, 12, onComplete);
     });
 
     it('should initialize correctly', () => {
@@ -137,7 +131,7 @@ describe('Animation System', () => {
 
     it('should update animation progress', () => {
       const shouldContinue = animation.update(150);
-      
+
       expect(animation.elapsed).toBe(150);
       expect(shouldContinue).toBe(true);
       expect(animation.completed).toBe(false);
@@ -146,7 +140,7 @@ describe('Animation System', () => {
 
     it('should complete animation', () => {
       const shouldContinue = animation.update(300);
-      
+
       expect(animation.elapsed).toBe(300);
       expect(shouldContinue).toBe(false);
       expect(animation.completed).toBe(true);
@@ -155,7 +149,7 @@ describe('Animation System', () => {
 
     it('should render animation frame', () => {
       animation.render(mockContext as any, 0.5);
-      
+
       expect(mockContext.save).toHaveBeenCalled();
       expect(mockContext.restore).toHaveBeenCalled();
       expect(mockContext.arc).toHaveBeenCalled();
@@ -189,7 +183,7 @@ describe('Animation System', () => {
 
     it('should render interpolated position', () => {
       animation.render(mockContext as any, 0.5);
-      
+
       expect(mockContext.arc).toHaveBeenCalled();
       // Should render at interpolated position (100, 100)
       const arcCalls = mockContext.arc.mock.calls;
@@ -203,12 +197,7 @@ describe('Animation System', () => {
 
     beforeEach(() => {
       vi.clearAllMocks();
-      animation = new RemovalAnimation(
-        5,
-        mockCoordinates,
-        PlayerColor.WHITE,
-        12
-      );
+      animation = new RemovalAnimation(5, mockCoordinates, PlayerColor.WHITE, 12);
     });
 
     it('should initialize correctly', () => {
@@ -218,7 +207,7 @@ describe('Animation System', () => {
 
     it('should render fading piece', () => {
       animation.render(mockContext as any, 0.5);
-      
+
       expect(mockContext.save).toHaveBeenCalled();
       expect(mockContext.restore).toHaveBeenCalled();
       expect(mockContext.globalAlpha).toBeLessThan(1);
@@ -236,11 +225,7 @@ describe('Animation System', () => {
 
     beforeEach(() => {
       vi.clearAllMocks();
-      animation = new MillAnimation(
-        millPositions,
-        positionCoordinates,
-        12
-      );
+      animation = new MillAnimation(millPositions, positionCoordinates, 12);
     });
 
     it('should initialize correctly', () => {
@@ -250,7 +235,7 @@ describe('Animation System', () => {
 
     it('should render mill highlights', () => {
       animation.render(mockContext as any, 0.5);
-      
+
       expect(mockContext.save).toHaveBeenCalled();
       expect(mockContext.restore).toHaveBeenCalled();
       expect(mockContext.arc).toHaveBeenCalledTimes(3); // 3 positions, each calls arc once for fill and once for stroke

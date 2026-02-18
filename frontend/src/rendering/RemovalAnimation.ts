@@ -10,7 +10,7 @@ export class RemovalAnimation implements Animation {
   public duration: number = 300; // 300ms fade out
   public elapsed: number = 0;
   public completed: boolean = false;
-  
+
   constructor(
     private position: number,
     private coordinates: PositionCoordinates,
@@ -20,10 +20,10 @@ export class RemovalAnimation implements Animation {
   ) {
     this.id = `removal-${position}-${Date.now()}`;
   }
-  
+
   update(deltaTime: number): boolean {
     this.elapsed += deltaTime;
-    
+
     if (this.elapsed >= this.duration) {
       this.completed = true;
       if (this.onComplete) {
@@ -31,50 +31,44 @@ export class RemovalAnimation implements Animation {
       }
       return false;
     }
-    
+
     return true;
   }
-  
+
   render(ctx: CanvasRenderingContext2D, progress: number): void {
     const easedProgress = Easing.easeIn(progress);
     const alpha = 1 - easedProgress;
-    const scale = 1 - (0.3 * easedProgress); // Scale down to 70%
-    
+    const scale = 1 - 0.3 * easedProgress; // Scale down to 70%
+
     const pieceColor = this.playerColor === PlayerColor.WHITE ? '#ffffff' : '#333333';
     const borderColor = this.playerColor === PlayerColor.WHITE ? '#cccccc' : '#000000';
-    
+
     ctx.save();
     ctx.globalAlpha = alpha;
-    
+
     // Draw piece shadow with scaling
     ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
     ctx.beginPath();
     ctx.arc(
-      this.coordinates.x + 2, 
-      this.coordinates.y + 2, 
-      this.pieceRadius * scale, 
-      0, 
+      this.coordinates.x + 2,
+      this.coordinates.y + 2,
+      this.pieceRadius * scale,
+      0,
       2 * Math.PI
     );
     ctx.fill();
-    
+
     // Draw piece with scaling
     ctx.fillStyle = pieceColor;
     ctx.beginPath();
-    ctx.arc(
-      this.coordinates.x, 
-      this.coordinates.y, 
-      this.pieceRadius * scale, 
-      0, 
-      2 * Math.PI
-    );
+    ctx.arc(this.coordinates.x, this.coordinates.y, this.pieceRadius * scale, 0, 2 * Math.PI);
     ctx.fill();
-    
+
     // Draw piece border
     ctx.strokeStyle = borderColor;
     ctx.lineWidth = 2;
     ctx.stroke();
-    
+
     ctx.restore();
   }
 }

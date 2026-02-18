@@ -5,5 +5,5 @@
 export enum MoveType {
   PLACE = 'PLACE',
   MOVE = 'MOVE',
-  REMOVE = 'REMOVE'
+  REMOVE = 'REMOVE',
 }

@@ -5,5 +5,5 @@
 export enum GamePhase {
   PLACEMENT = 'PLACEMENT',
   MOVEMENT = 'MOVEMENT',
-  FLYING = 'FLYING'
+  FLYING = 'FLYING',
 }

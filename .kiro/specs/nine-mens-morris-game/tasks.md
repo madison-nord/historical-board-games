@@ -285,7 +285,7 @@ The implementation uses:
     - _Requirements: 2.3, 2.4_
 
 
-- [x] 15. Implement animation system
+- [ ] 15. Implement animation system
   - [x] 15.1 Create Animation class and queue system
     - Create `Animation` interface with update and complete callbacks
     - Implement `PlacementAnimation` class (fade in over 300ms)
@@ -321,8 +321,8 @@ The implementation uses:
 
 ### Phase 6: Game Controller and Local Gameplay
 
-- [ ] 17. Implement GameController for game orchestration
-  - [ ] 17.1 Create GameController class
+- [x] 17. Implement GameController for game orchestration
+  - [x] 17.1 Create GameController class
     - Implement constructor with game mode parameter
     - Implement `startGame()` method
     - Implement `handlePositionClick(position)` method with game logic
@@ -334,7 +334,7 @@ The implementation uses:
     - Detect and display game end conditions
     - _Requirements: 1.1, 1.2, 1.9, 4.2_
   
-  - [ ] 17.2 Write integration tests for GameController
+  - [x] 17.2 Write integration tests for GameController
     - Test complete game flow from start to finish
     - Test phase transitions
     - Test mill formation and removal

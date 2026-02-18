@@ -14,7 +14,7 @@ export class AnimationQueue {
    */
   public addAnimation(animation: Animation): void {
     this.animations.push(animation);
-    
+
     // Start the animation loop if not already running
     if (!this.isRunning) {
       this.start();
@@ -26,7 +26,7 @@ export class AnimationQueue {
    */
   public removeAnimation(animationId: string): void {
     this.animations = this.animations.filter(anim => anim.id !== animationId);
-    
+
     // Stop the loop if no animations remain
     if (this.animations.length === 0) {
       this.stop();
@@ -59,8 +59,10 @@ export class AnimationQueue {
    * Start the animation loop
    */
   private start(): void {
-    if (this.isRunning) return;
-    
+    if (this.isRunning) {
+      return;
+    }
+
     this.isRunning = true;
     this.lastFrameTime = performance.now();
     this.gameLoop();
@@ -103,11 +105,11 @@ export class AnimationQueue {
     // Update animations and remove completed ones
     this.animations = this.animations.filter(animation => {
       const shouldContinue = animation.update(deltaTime);
-      
+
       if (!shouldContinue && animation.onComplete) {
         animation.onComplete();
       }
-      
+
       return shouldContinue;
     });
   }

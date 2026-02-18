@@ -8,16 +8,16 @@ import { PlayerColor } from './PlayerColor.js';
 export interface Move {
   /** Type of move being made */
   type: MoveType;
-  
+
   /** Source position (for MOVE operations, -1 for PLACE/REMOVE) */
   from: number;
-  
+
   /** Target position */
   to: number;
-  
+
   /** Player making the move */
   player: PlayerColor;
-  
+
   /** Position of removed piece (for mill captures, -1 if none) */
   removed?: number;
 }

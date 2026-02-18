@@ -31,7 +31,7 @@ describe('Frontend Models', () => {
       type: MoveType.PLACE,
       from: -1,
       to: 0,
-      player: PlayerColor.WHITE
+      player: PlayerColor.WHITE,
     };
 
     expect(move.type).toBe(MoveType.PLACE);
@@ -51,7 +51,7 @@ describe('Frontend Models', () => {
       whitePiecesOnBoard: 0,
       blackPiecesOnBoard: 0,
       gameOver: false,
-      winner: null
+      winner: null,
     };
 
     expect(gameState.gameId).toBe('test-game-123');
