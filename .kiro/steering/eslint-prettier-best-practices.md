@@ -20,9 +20,20 @@
 - This can cause thousands of formatting errors when Prettier expects LF endings
 - Auto-fix resolves most of these issues: `npm run lint:fix`
 
-### File Encoding
+### File Encoding and Git Configuration
 - Ensure all files use UTF-8 encoding
 - Configure editors to use LF line endings for consistency across platforms
+- **Critical**: Create `.gitattributes` file to enforce LF line endings in Git:
+```gitattributes
+# Force LF line endings for all text files in frontend
+frontend/**/*.ts text eol=lf
+frontend/**/*.tsx text eol=lf
+frontend/**/*.js text eol=lf
+frontend/**/*.json text eol=lf
+*.config.js text eol=lf
+.prettierrc text eol=lf
+```
+- This prevents Git `autocrlf` warnings and ensures consistency with Prettier configuration
 
 ## ESLint Configuration Best Practices
 
@@ -206,6 +217,7 @@ npm test -- --silent
 1. **"'MouseEvent' is not defined"** - Add DOM globals to ESLint config
 2. **"Delete ␍" errors** - Line ending issue, run `lint:fix`
 3. **"Unused eslint-disable directive"** - Wrong rule name, use `no-unused-vars` not `@typescript-eslint/no-unused-vars` for disable comments
+4. **Git line ending warnings** - Create `.gitattributes` file to enforce LF endings
 
 ### Debugging Configuration
 - Use `--print-config` to see effective ESLint configuration
