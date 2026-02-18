@@ -1,5 +1,6 @@
 import { BoardRenderer } from '../rendering/BoardRenderer.js';
 import { GameMode, GamePhase, PlayerColor, Move, MoveType } from '../models/index.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Interface representing the current game state
@@ -40,7 +41,11 @@ export class GameController {
   private playerColor: PlayerColor = PlayerColor.WHITE; // Player's color in single-player mode
   private isAiThinking: boolean = false;
 
-  constructor(gameMode: GameMode, boardRenderer: BoardRenderer, playerColor: PlayerColor = PlayerColor.WHITE) {
+  constructor(
+    gameMode: GameMode,
+    boardRenderer: BoardRenderer,
+    playerColor: PlayerColor = PlayerColor.WHITE
+  ) {
     this.gameMode = gameMode;
     this.boardRenderer = boardRenderer;
     this.playerColor = playerColor;
@@ -76,15 +81,18 @@ export class GameController {
     this.updateDisplay();
 
     // Enable input for player's turn
-    const isPlayerTurn = this.gameMode !== GameMode.SINGLE_PLAYER || 
-                        this.currentGameState.currentPlayer === this.playerColor;
+    const isPlayerTurn =
+      this.gameMode !== GameMode.SINGLE_PLAYER ||
+      this.currentGameState.currentPlayer === this.playerColor;
     this.boardRenderer.setInputEnabled(isPlayerTurn);
 
-    console.log(`Started new ${this.gameMode} game`);
-    
+    logger.info(`Started new ${this.gameMode} game with ID: ${this.currentGameState.gameId}`);
+
     // If AI goes first in single-player mode, trigger AI move
-    if (this.gameMode === GameMode.SINGLE_PLAYER && 
-        this.currentGameState.currentPlayer !== this.playerColor) {
+    if (
+      this.gameMode === GameMode.SINGLE_PLAYER &&
+      this.currentGameState.currentPlayer !== this.playerColor
+    ) {
       setTimeout(() => {
         this.handleAIMove();
       }, 1000); // Give a moment for the UI to settle
@@ -100,12 +108,14 @@ export class GameController {
     }
 
     // In single-player mode, only allow input when it's the player's turn
-    if (this.gameMode === GameMode.SINGLE_PLAYER && 
-        this.currentGameState.currentPlayer !== this.playerColor) {
+    if (
+      this.gameMode === GameMode.SINGLE_PLAYER &&
+      this.currentGameState.currentPlayer !== this.playerColor
+    ) {
       return;
     }
 
-    console.log(`Position clicked: ${position}`);
+    logger.debug(`Position clicked: ${position}`);
 
     // Handle piece removal after mill formation
     if (this.currentGameState.millFormed) {
@@ -134,7 +144,7 @@ export class GameController {
 
     // Check if position is empty
     if (this.currentGameState.board[position] !== null) {
-      console.log('Position already occupied');
+      logger.debug('Position already occupied');
       return;
     }
 
@@ -145,7 +155,7 @@ export class GameController {
         : this.currentGameState.blackPiecesRemaining;
 
     if (piecesRemaining <= 0) {
-      console.log('No pieces remaining to place');
+      logger.debug('No pieces remaining to place');
       return;
     }
 
@@ -178,9 +188,9 @@ export class GameController {
         this.selectedPosition = position;
         this.validMoves = this.getValidMovesFrom(position);
         this.boardRenderer.highlightValidMoves(this.validMoves);
-        console.log(`Selected piece at position ${position}`);
+        logger.debug(`Selected piece at position ${position}`);
       } else {
-        console.log('Must select your own piece');
+        logger.debug('Must select your own piece');
       }
     } else {
       // Second click - move the selected piece
@@ -200,7 +210,7 @@ export class GameController {
         this.applyMove(move);
         this.clearSelection();
       } else {
-        console.log('Invalid move');
+        logger.debug('Invalid move');
       }
     }
   }
@@ -213,7 +223,7 @@ export class GameController {
       return;
     }
 
-    console.log(`Applying move:`, move);
+    logger.debug('Applying move:', move);
 
     // Update board state
     if (move.type === MoveType.PLACE) {
@@ -243,13 +253,13 @@ export class GameController {
     this.currentGameState.millFormed = millFormed;
 
     if (millFormed) {
-      console.log('Mill formed! Select opponent piece to remove');
+      logger.info('Mill formed! Select opponent piece to remove');
       this.handleMillFormed();
     } else {
       // Switch players and continue
       this.switchPlayer();
       this.checkGameEnd();
-      
+
       // Check if AI should move next in single-player mode
       this.checkForAIMove();
     }
@@ -261,12 +271,13 @@ export class GameController {
    * Check if AI should make a move and trigger it
    */
   private checkForAIMove(): void {
-    if (this.gameMode === GameMode.SINGLE_PLAYER && 
-        this.currentGameState && 
-        !this.currentGameState.isGameOver &&
-        !this.currentGameState.millFormed &&
-        this.currentGameState.currentPlayer !== this.playerColor) {
-      
+    if (
+      this.gameMode === GameMode.SINGLE_PLAYER &&
+      this.currentGameState &&
+      !this.currentGameState.isGameOver &&
+      !this.currentGameState.millFormed &&
+      this.currentGameState.currentPlayer !== this.playerColor
+    ) {
       // Delay AI move slightly for better UX
       setTimeout(() => {
         this.handleAIMove();
@@ -284,33 +295,35 @@ export class GameController {
 
     this.isAiThinking = true;
     this.boardRenderer.setInputEnabled(false);
-    
+
     // Show AI thinking indicator
-    console.log('AI is thinking...');
+    logger.info('AI is thinking...');
     this.updateDisplay();
 
     try {
       // Call backend API to get AI move
       const aiMove = await this.getAIMoveFromBackend();
-      
+
       if (aiMove) {
         // Apply the AI move
         this.applyMove(aiMove);
       } else {
-        console.error('Failed to get AI move');
+        logger.error('Failed to get AI move');
       }
     } catch (error) {
-      console.error('Error getting AI move:', error);
+      logger.error('Error getting AI move:', error);
     } finally {
       this.isAiThinking = false;
-      
+
       // Re-enable input if it's player's turn
-      if (this.currentGameState && 
-          this.currentGameState.currentPlayer === this.playerColor &&
-          !this.currentGameState.isGameOver) {
+      if (
+        this.currentGameState &&
+        this.currentGameState.currentPlayer === this.playerColor &&
+        !this.currentGameState.isGameOver
+      ) {
         this.boardRenderer.setInputEnabled(true);
       }
-      
+
       this.updateDisplay();
     }
   }
@@ -342,7 +355,7 @@ export class GameController {
       const aiMove = await response.json();
       return aiMove;
     } catch (error) {
-      console.error('Failed to get AI move:', error);
+      logger.error('Failed to get AI move:', error);
       return null;
     }
   }
@@ -367,7 +380,7 @@ export class GameController {
       this.removePiece(position);
       this.boardRenderer.clearHighlights();
     } else {
-      console.log('Must select a removable opponent piece');
+      logger.debug('Must select a removable opponent piece');
     }
   }
 
@@ -414,7 +427,7 @@ export class GameController {
         this.boardRenderer.setOnPositionClick(originalHandler);
         this.boardRenderer.clearHighlights();
       } else {
-        console.log('Must select a removable opponent piece');
+        logger.debug('Must select a removable opponent piece');
       }
     });
   }
@@ -444,16 +457,16 @@ export class GameController {
     // Animate removal
     this.boardRenderer.animateRemoval(position, removedColor);
 
-    console.log(`Removed ${removedColor} piece from position ${position}`);
+    logger.info(`Removed ${removedColor} piece from position ${position}`);
 
     // Clear mill formation flag and switch players
     this.currentGameState.millFormed = false;
     this.switchPlayer();
     this.checkGameEnd();
-    
+
     // Check if AI should move next
     this.checkForAIMove();
-    
+
     this.updateDisplay();
   }
 
@@ -599,27 +612,27 @@ export class GameController {
    * Switch to the next player
    */
   private switchPlayer(): void {
-      if (!this.currentGameState) {
-        return;
-      }
-
-      this.currentGameState.currentPlayer =
-        this.currentGameState.currentPlayer === PlayerColor.WHITE
-          ? PlayerColor.BLACK
-          : PlayerColor.WHITE;
-
-      // Update phase if necessary
-      this.updateGamePhase();
-
-      // Check for game end conditions after switching players
-      this.checkGameEnd();
-
-      // Enable input for local two-player mode (always enabled)
-      // For single-player, input is managed by AI move handling
-      if (this.gameMode === GameMode.LOCAL_TWO_PLAYER && !this.currentGameState.isGameOver) {
-        this.boardRenderer.setInputEnabled(true);
-      }
+    if (!this.currentGameState) {
+      return;
     }
+
+    this.currentGameState.currentPlayer =
+      this.currentGameState.currentPlayer === PlayerColor.WHITE
+        ? PlayerColor.BLACK
+        : PlayerColor.WHITE;
+
+    // Update phase if necessary
+    this.updateGamePhase();
+
+    // Check for game end conditions after switching players
+    this.checkGameEnd();
+
+    // Enable input for local two-player mode (always enabled)
+    // For single-player, input is managed by AI move handling
+    if (this.gameMode === GameMode.LOCAL_TWO_PLAYER && !this.currentGameState.isGameOver) {
+      this.boardRenderer.setInputEnabled(true);
+    }
+  }
 
   /**
    * Update the game phase based on current state
@@ -729,7 +742,7 @@ export class GameController {
     this.boardRenderer.setInputEnabled(false);
     this.clearSelection();
 
-    console.log(`Game Over! Winner: ${winner}`);
+    logger.info(`Game Over! Winner: ${winner}`);
     this.updateDisplay();
   }
 

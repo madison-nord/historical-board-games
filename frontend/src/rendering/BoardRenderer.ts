@@ -471,7 +471,13 @@ export class BoardRenderer {
     this.animationQueue.renderAnimations(this.ctx);
 
     if (currentPlayer !== undefined && phase !== undefined) {
-      this.drawGameInfo(currentPlayer, phase, whitePiecesRemaining, blackPiecesRemaining, isAiThinking);
+      this.drawGameInfo(
+        currentPlayer,
+        phase,
+        whitePiecesRemaining,
+        blackPiecesRemaining,
+        isAiThinking
+      );
     }
   }
 

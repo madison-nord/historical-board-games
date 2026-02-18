@@ -18,11 +18,13 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@stomp/stompjs": "^7.0.0"
+    "@stomp/stompjs": "^7.0.0",
+    "loglevel": "^1.9.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.49.0",
+    "@types/loglevel": "^1.5.4",
     "@types/node": "^22.10.2",
     "@typescript-eslint/eslint-plugin": "^8.56.0",
     "@typescript-eslint/parser": "^8.56.0",

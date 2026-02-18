@@ -464,7 +464,7 @@ describe('GameController', () => {
         { position: 5, expectedPlayer: PlayerColor.BLACK },
       ];
 
-      moves.forEach((move, index) => {
+      moves.forEach(move => {
         const currentPlayer = gameState.currentPlayer;
         expect(currentPlayer).toBe(move.expectedPlayer);
 
@@ -484,9 +484,7 @@ describe('GameController', () => {
       const gameState = gameController.getCurrentGameState()!;
 
       // Place all 18 pieces (9 per player)
-      const placementPositions = [
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
-      ];
+      const placementPositions = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
 
       placementPositions.forEach(position => {
         gameController.handlePositionClick(position);
@@ -517,7 +515,9 @@ describe('GameController', () => {
               break;
             }
           }
-          if (targetPosition !== -1) break;
+          if (targetPosition !== -1) {
+            break;
+          }
         }
       }
 

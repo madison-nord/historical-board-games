@@ -27,6 +27,7 @@ export default [
         TouchEvent: 'readonly',
         global: 'readonly',
         setTimeout: 'readonly',
+        fetch: 'readonly',
       },
     },
     plugins: {
