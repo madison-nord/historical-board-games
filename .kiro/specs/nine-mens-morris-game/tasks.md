@@ -415,8 +415,8 @@ The implementation uses:
 
 ### Phase 8: UI and Menus
 
-- [ ] 22. Implement UIManager for menus and dialogs
-  - [ ] 22.1 Create UIManager class
+- [x] 22. Implement UIManager for menus and dialogs
+  - [x] 22.1 Create UIManager class
     - Implement `showMainMenu()` method with game mode buttons
     - Implement `showGameModeSelection()` method
     - Implement `showColorSelection()` method for single-player
@@ -426,7 +426,7 @@ The implementation uses:
     - Use HTML dialog elements for modals
     - _Requirements: 3.5, 4.1_
   
-  - [ ] 22.2 Create CSS styling for UI
+  - [x] 22.2 Create CSS styling for UI
     - Design modern, clean main menu
     - Style game board and pieces with cohesive color scheme
     - Style dialogs and buttons
@@ -434,7 +434,7 @@ The implementation uses:
     - Ensure consistent typography
     - _Requirements: 10.4_
   
-  - [ ] 22.3 Write unit tests for UIManager
+  - [x] 22.3 Write unit tests for UIManager
     - Test menu display and navigation
     - Test dialog creation and closing
     - _Requirements: 3.5, 4.1_
