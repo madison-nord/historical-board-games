@@ -36,7 +36,11 @@ describe('LocalStorage Unit Tests', () => {
         millFormed: false,
       };
 
-      const result = LocalStorage.saveGameState(gameState, GameMode.SINGLE_PLAYER, PlayerColor.WHITE);
+      const result = LocalStorage.saveGameState(
+        gameState,
+        GameMode.SINGLE_PLAYER,
+        PlayerColor.WHITE
+      );
 
       expect(result).toBe(true);
       expect(LocalStorage.hasSavedGame()).toBe(true);
@@ -82,7 +86,11 @@ describe('LocalStorage Unit Tests', () => {
         millFormed: false,
       };
 
-      const result = LocalStorage.saveGameState(gameState, GameMode.SINGLE_PLAYER, PlayerColor.WHITE);
+      const result = LocalStorage.saveGameState(
+        gameState,
+        GameMode.SINGLE_PLAYER,
+        PlayerColor.WHITE
+      );
 
       expect(result).toBe(false);
       expect(LocalStorage.hasSavedGame()).toBe(false);

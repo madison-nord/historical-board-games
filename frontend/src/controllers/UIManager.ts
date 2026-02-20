@@ -25,7 +25,7 @@ export class UIManager {
     content.className = 'dialog-content main-menu-content';
 
     const title = document.createElement('h1');
-    title.textContent = 'Nine Men\'s Morris';
+    title.textContent = "Nine Men's Morris";
     title.className = 'menu-title';
 
     const subtitle = document.createElement('p');
@@ -178,9 +178,10 @@ export class UIManager {
 
     const message = document.createElement('p');
     message.className = 'result-message';
-    message.textContent = winner === null
-      ? 'The game ended in a draw.'
-      : `${winner === PlayerColor.WHITE ? 'White' : 'Black'} player has won the game!`;
+    message.textContent =
+      winner === null
+        ? 'The game ended in a draw.'
+        : `${winner === PlayerColor.WHITE ? 'White' : 'Black'} player has won the game!`;
 
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'result-buttons';
@@ -349,7 +350,7 @@ export class UIManager {
     dialog.className = 'game-dialog';
 
     // Close on backdrop click
-    dialog.addEventListener('click', (e) => {
+    dialog.addEventListener('click', e => {
       const rect = dialog.getBoundingClientRect();
       const isInDialog =
         rect.top <= e.clientY &&

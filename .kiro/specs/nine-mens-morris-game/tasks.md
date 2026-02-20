@@ -439,8 +439,8 @@ The implementation uses:
     - Test dialog creation and closing
     - _Requirements: 3.5, 4.1_
 
-- [ ] 23. Implement responsive design
-  - [ ] 23.1 Add responsive CSS and layout
+- [x] 23. Implement responsive design
+  - [x] 23.1 Add responsive CSS and layout
     - Implement CSS Grid/Flexbox for responsive layout
     - Add media queries for mobile (min 375px) and desktop (min 1024px)
     - Scale canvas proportionally to fit screen
@@ -448,7 +448,7 @@ The implementation uses:
     - Test layout at various viewport sizes
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.6_
   
-  - [ ] 23.2 Write property test for state preservation during resize
+  - [x] 23.2 Write property test for state preservation during resize
     - **Property 20: State Preservation During Resize**
     - **Validates: Requirements 9.3**
     - Test that resize events don't modify game state

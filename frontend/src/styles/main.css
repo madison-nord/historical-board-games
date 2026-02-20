@@ -15,6 +15,13 @@ body {
     color: #ffffff;
     overflow: hidden;
     min-height: 100vh;
+    /* Prevent text selection during gameplay */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    /* Prevent pull-to-refresh on mobile */
+    overscroll-behavior: none;
 }
 
 #app {
@@ -24,13 +31,24 @@ body {
     justify-content: center;
     align-items: center;
     position: relative;
+    /* Use CSS Grid for better responsive control */
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    place-items: center;
 }
 
 #game-canvas {
     max-width: 100%;
     max-height: 100%;
+    width: auto;
+    height: auto;
     border-radius: 8px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    /* Ensure canvas scales proportionally */
+    object-fit: contain;
+    /* Prevent canvas from being dragged on mobile */
+    touch-action: none;
 }
 
 #ui-container {
@@ -53,6 +71,9 @@ body {
     align-items: center;
     gap: 16px;
     padding: 20px;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 /* Game info display */
@@ -62,17 +83,18 @@ body {
     border-radius: 8px;
     text-align: center;
     min-width: 300px;
+    max-width: 100%;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .game-info h2 {
-    font-size: 18px;
+    font-size: clamp(16px, 4vw, 18px);
     margin-bottom: 8px;
     color: #4a90e2;
 }
 
 .game-info p {
-    font-size: 14px;
+    font-size: clamp(12px, 3vw, 14px);
     color: #b0b0b0;
     margin: 4px 0;
 }
@@ -124,11 +146,83 @@ body {
     }
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
+/* ============================================
+   Responsive Design - Desktop First
+   ============================================ */
+
+/* Large Desktop (1920px and above) */
+@media (min-width: 1920px) {
+    #game-canvas {
+        max-width: 900px;
+        max-height: 900px;
+    }
+
+    .game-info {
+        min-width: 400px;
+        padding: 20px 32px;
+    }
+
+    .game-info h2 {
+        font-size: 20px;
+    }
+
+    .game-info p {
+        font-size: 16px;
+    }
+}
+
+/* Standard Desktop (1024px - 1919px) */
+@media (min-width: 1024px) and (max-width: 1919px) {
+    #game-canvas {
+        max-width: min(80vw, 80vh);
+        max-height: min(80vw, 80vh);
+    }
+
+    .game-container {
+        padding: 16px;
+    }
+
+    .game-info {
+        min-width: 350px;
+    }
+}
+
+/* Tablet Landscape (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+    #game-canvas {
+        max-width: min(85vw, 85vh);
+        max-height: min(85vw, 85vh);
+    }
+
     .game-container {
         padding: 12px;
         gap: 12px;
+    }
+
+    .game-info {
+        min-width: 300px;
+        padding: 14px 20px;
+    }
+
+    .game-info h2 {
+        font-size: 17px;
+    }
+
+    .game-info p {
+        font-size: 13px;
+    }
+}
+
+/* Tablet Portrait and Mobile Landscape (481px - 767px) */
+@media (min-width: 481px) and (max-width: 767px) {
+    #game-canvas {
+        max-width: min(90vw, 90vh);
+        max-height: min(90vw, 90vh);
+    }
+
+    .game-container {
+        padding: 10px;
+        gap: 10px;
     }
 
     .game-info {
@@ -145,7 +239,18 @@ body {
     }
 }
 
-@media (max-width: 480px) {
+/* Mobile Portrait (375px - 480px) */
+@media (min-width: 375px) and (max-width: 480px) {
+    #app {
+        padding: 8px;
+    }
+
+    #game-canvas {
+        max-width: 95vw;
+        max-height: 70vh;
+        border-radius: 4px;
+    }
+
     .game-container {
         padding: 8px;
         gap: 8px;
@@ -153,6 +258,179 @@ body {
 
     .game-info {
         min-width: 200px;
-        padding: 8px 12px;
+        padding: 10px 12px;
+    }
+
+    .game-info h2 {
+        font-size: 15px;
+        margin-bottom: 6px;
+    }
+
+    .game-info p {
+        font-size: 11px;
+        margin: 3px 0;
+    }
+
+    .current-player-indicator {
+        width: 10px;
+        height: 10px;
+        margin-right: 6px;
+    }
+}
+
+/* Small Mobile (below 375px) */
+@media (max-width: 374px) {
+    #app {
+        padding: 4px;
+    }
+
+    #game-canvas {
+        max-width: 98vw;
+        max-height: 65vh;
+        border-radius: 4px;
+    }
+
+    .game-container {
+        padding: 4px;
+        gap: 6px;
+    }
+
+    .game-info {
+        min-width: 180px;
+        padding: 8px 10px;
+    }
+
+    .game-info h2 {
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+
+    .game-info p {
+        font-size: 10px;
+        margin: 2px 0;
+    }
+
+    .current-player-indicator {
+        width: 8px;
+        height: 8px;
+        margin-right: 4px;
+    }
+
+    .spinner {
+        width: 32px;
+        height: 32px;
+        border-width: 3px;
+    }
+}
+
+/* ============================================
+   Orientation-Specific Adjustments
+   ============================================ */
+
+/* Landscape orientation on mobile devices */
+@media (max-width: 767px) and (orientation: landscape) {
+    #app {
+        flex-direction: row;
+        padding: 8px;
+    }
+
+    #game-canvas {
+        max-width: 60vw;
+        max-height: 90vh;
+    }
+
+    .game-container {
+        flex-direction: row;
+        justify-content: space-around;
+    }
+
+    .game-info {
+        max-width: 35vw;
+        min-width: 200px;
+    }
+}
+
+/* Portrait orientation optimization */
+@media (orientation: portrait) {
+    #game-canvas {
+        max-width: 95vw;
+        max-height: 70vh;
+    }
+}
+
+/* ============================================
+   Touch-Friendly Enhancements for Mobile
+   ============================================ */
+
+/* Ensure all interactive elements meet minimum touch target size */
+@media (max-width: 767px) {
+    /* Touch targets should be at least 44x44 pixels */
+    button,
+    .clickable,
+    .interactive {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 12px;
+    }
+
+    /* Increase spacing between interactive elements */
+    .game-info {
+        line-height: 1.6;
+    }
+
+    /* Prevent accidental zooming on double-tap */
+    * {
+        touch-action: manipulation;
+    }
+}
+
+/* ============================================
+   High DPI / Retina Display Support
+   ============================================ */
+
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    #game-canvas {
+        /* Canvas will be scaled by JavaScript for crisp rendering */
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+}
+
+/* ============================================
+   Accessibility - Reduced Motion
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .spinner {
+        animation: none;
+        border-top-color: transparent;
+    }
+}
+
+/* ============================================
+   Print Styles (Optional)
+   ============================================ */
+
+@media print {
+    body {
+        background: white;
+        color: black;
+    }
+
+    #game-canvas {
+        max-width: 100%;
+        border: 1px solid black;
+    }
+
+    .game-info {
+        background-color: white;
+        color: black;
+        border: 1px solid black;
     }
 }
