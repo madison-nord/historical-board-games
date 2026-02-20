@@ -54,7 +54,19 @@ export class BoardRenderer {
 
   /**
    * Initialize the 24 position coordinates for Nine Men's Morris board
-   * Positions are numbered 0-23 following the standard layout
+   * Positions are numbered 0-23 following Board.java layout:
+   *
+   * Outer square (0-8):     Middle square (9-17):    Inner square (18-23):
+  /**
+   * Initialize the 24 position coordinates for Nine Men's Morris board
+   * Following STANDARD layout: 8 positions per square (4 corners + 4 midpoints)
+   * 
+   * Outer (0-7):    Middle (8-15):   Inner (16-23):
+   * 0---1---2       8---9--10        16--17--18
+   * |       |       |       |        |       |
+   * 7       3       15      11       23      19
+   * |       |       |       |        |       |
+   * 6---5---4       14--13--12       22--21--20
    */
   private initializePositions(): void {
     const center = this.boardSize / 2;
@@ -62,35 +74,35 @@ export class BoardRenderer {
     const middleSize = this.boardSize * 0.27;
     const innerSize = this.boardSize * 0.14;
 
-    // Outer square (positions 0-7)
-    this.positions[0] = { x: center - outerSize, y: center - outerSize }; // Top-left
-    this.positions[1] = { x: center, y: center - outerSize }; // Top-center
-    this.positions[2] = { x: center + outerSize, y: center - outerSize }; // Top-right
-    this.positions[3] = { x: center + outerSize, y: center }; // Right-center
-    this.positions[4] = { x: center + outerSize, y: center + outerSize }; // Bottom-right
-    this.positions[5] = { x: center, y: center + outerSize }; // Bottom-center
-    this.positions[6] = { x: center - outerSize, y: center + outerSize }; // Bottom-left
-    this.positions[7] = { x: center - outerSize, y: center }; // Left-center
+    // Outer square (positions 0-7) - clockwise from top-left
+    this.positions[0] = { x: center - outerSize, y: center - outerSize }; // Top-left corner
+    this.positions[1] = { x: center, y: center - outerSize }; // Top midpoint
+    this.positions[2] = { x: center + outerSize, y: center - outerSize }; // Top-right corner
+    this.positions[3] = { x: center + outerSize, y: center }; // Right midpoint
+    this.positions[4] = { x: center + outerSize, y: center + outerSize }; // Bottom-right corner
+    this.positions[5] = { x: center, y: center + outerSize }; // Bottom midpoint
+    this.positions[6] = { x: center - outerSize, y: center + outerSize }; // Bottom-left corner
+    this.positions[7] = { x: center - outerSize, y: center }; // Left midpoint
 
-    // Middle square (positions 8-15)
-    this.positions[8] = { x: center - middleSize, y: center - middleSize }; // Top-left
-    this.positions[9] = { x: center, y: center - middleSize }; // Top-center
-    this.positions[10] = { x: center + middleSize, y: center - middleSize }; // Top-right
-    this.positions[11] = { x: center + middleSize, y: center }; // Right-center
-    this.positions[12] = { x: center + middleSize, y: center + middleSize }; // Bottom-right
-    this.positions[13] = { x: center, y: center + middleSize }; // Bottom-center
-    this.positions[14] = { x: center - middleSize, y: center + middleSize }; // Bottom-left
-    this.positions[15] = { x: center - middleSize, y: center }; // Left-center
+    // Middle square (positions 8-15) - clockwise from top-left
+    this.positions[8] = { x: center - middleSize, y: center - middleSize }; // Top-left corner
+    this.positions[9] = { x: center, y: center - middleSize }; // Top midpoint
+    this.positions[10] = { x: center + middleSize, y: center - middleSize }; // Top-right corner
+    this.positions[11] = { x: center + middleSize, y: center }; // Right midpoint
+    this.positions[12] = { x: center + middleSize, y: center + middleSize }; // Bottom-right corner
+    this.positions[13] = { x: center, y: center + middleSize }; // Bottom midpoint
+    this.positions[14] = { x: center - middleSize, y: center + middleSize }; // Bottom-left corner
+    this.positions[15] = { x: center - middleSize, y: center }; // Left midpoint
 
-    // Inner square (positions 16-23)
-    this.positions[16] = { x: center - innerSize, y: center - innerSize }; // Top-left
-    this.positions[17] = { x: center, y: center - innerSize }; // Top-center
-    this.positions[18] = { x: center + innerSize, y: center - innerSize }; // Top-right
-    this.positions[19] = { x: center + innerSize, y: center }; // Right-center
-    this.positions[20] = { x: center + innerSize, y: center + innerSize }; // Bottom-right
-    this.positions[21] = { x: center, y: center + innerSize }; // Bottom-center
-    this.positions[22] = { x: center - innerSize, y: center + innerSize }; // Bottom-left
-    this.positions[23] = { x: center - innerSize, y: center }; // Left-center
+    // Inner square (positions 16-23) - clockwise from top-left
+    this.positions[16] = { x: center - innerSize, y: center - innerSize }; // Top-left corner
+    this.positions[17] = { x: center, y: center - innerSize }; // Top midpoint
+    this.positions[18] = { x: center + innerSize, y: center - innerSize }; // Top-right corner
+    this.positions[19] = { x: center + innerSize, y: center }; // Right midpoint
+    this.positions[20] = { x: center + innerSize, y: center + innerSize }; // Bottom-right corner
+    this.positions[21] = { x: center, y: center + innerSize }; // Bottom midpoint
+    this.positions[22] = { x: center - innerSize, y: center + innerSize }; // Bottom-left corner
+    this.positions[23] = { x: center - innerSize, y: center }; // Left midpoint
   }
 
   /**
@@ -128,7 +140,9 @@ export class BoardRenderer {
     this.pieceRadius = size * 0.03; // Scale piece size with board
     this.lineWidth = Math.max(1, size * 0.005); // Scale line width
 
-    this.canvas.style.width = size + 'px';
+    // Make canvas wider to accommodate text on the right
+    const textWidth = 200; // Space for text on the right
+    this.canvas.style.width = size + textWidth + 'px';
     this.canvas.style.height = size + 'px';
 
     // Recalculate positions with new size
@@ -460,7 +474,9 @@ export class BoardRenderer {
     phase?: GamePhase,
     whitePiecesRemaining?: number,
     blackPiecesRemaining?: number,
-    isAiThinking?: boolean
+    isAiThinking?: boolean,
+    isGameOver?: boolean,
+    winner?: PlayerColor | null
   ): void {
     this.updateCanvasSize();
     this.drawBoard();
@@ -476,20 +492,25 @@ export class BoardRenderer {
         phase,
         whitePiecesRemaining,
         blackPiecesRemaining,
-        isAiThinking
+        isAiThinking,
+        isGameOver,
+        winner
       );
     }
   }
 
   /**
    * Draw game information (current player, phase, remaining pieces)
+   * Text is positioned to the RIGHT of the board
    */
   private drawGameInfo(
     currentPlayer: PlayerColor,
     phase: GamePhase,
     whitePiecesRemaining?: number,
     blackPiecesRemaining?: number,
-    isAiThinking?: boolean
+    isAiThinking?: boolean,
+    isGameOver?: boolean,
+    winner?: PlayerColor | null
   ): void {
     const padding = 20;
     const fontSize = Math.max(14, this.boardSize * 0.035);
@@ -498,12 +519,30 @@ export class BoardRenderer {
     this.ctx.textAlign = 'left';
     this.ctx.textBaseline = 'top';
 
+    // Position text to the RIGHT of the board
+    const textX = this.boardSize + padding;
     let yOffset = padding;
+
+    // Game Over message (most important, show first)
+    if (isGameOver && winner) {
+      const winnerText = winner === PlayerColor.WHITE ? 'White' : 'Black';
+      this.ctx.font = `bold ${fontSize * 1.5}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+      this.ctx.fillStyle = '#00ff00';
+      this.ctx.fillText('GAME OVER!', textX, yOffset);
+      yOffset += fontSize * 1.5 + 10;
+
+      this.ctx.fillStyle = '#ffff00';
+      this.ctx.fillText(`${winnerText} Wins!`, textX, yOffset);
+
+      // Reset font for remaining text
+      this.ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+      return; // Don't show other info when game is over
+    }
 
     // AI thinking indicator
     if (isAiThinking) {
       this.ctx.fillStyle = '#ffaa00';
-      this.ctx.fillText('AI is thinking...', padding, yOffset);
+      this.ctx.fillText('AI thinking...', textX, yOffset);
       yOffset += fontSize + 10;
     }
 
@@ -512,14 +551,14 @@ export class BoardRenderer {
     const playerText = currentPlayer === PlayerColor.WHITE ? 'White' : 'Black';
 
     this.ctx.fillStyle = '#ffffff';
-    this.ctx.fillText(`Current Player: ${playerText}`, padding, yOffset);
+    this.ctx.fillText(`Player: ${playerText}`, textX, yOffset);
 
     // Draw current player indicator circle
     this.ctx.fillStyle = playerColor;
     this.ctx.strokeStyle = playerColor === '#ffffff' ? '#cccccc' : '#000000';
     this.ctx.lineWidth = 2;
     this.ctx.beginPath();
-    this.ctx.arc(padding + 140, yOffset + fontSize / 2, 8, 0, 2 * Math.PI);
+    this.ctx.arc(textX + 80, yOffset + fontSize / 2, 8, 0, 2 * Math.PI);
     this.ctx.fill();
     this.ctx.stroke();
 
@@ -527,7 +566,7 @@ export class BoardRenderer {
 
     // Game phase
     this.ctx.fillStyle = '#ffffff';
-    this.ctx.fillText(`Phase: ${phase}`, padding, yOffset);
+    this.ctx.fillText(`Phase: ${phase}`, textX, yOffset);
     yOffset += fontSize + 10;
 
     // Remaining pieces (only during placement phase)
@@ -536,9 +575,9 @@ export class BoardRenderer {
       whitePiecesRemaining !== undefined &&
       blackPiecesRemaining !== undefined
     ) {
-      this.ctx.fillText(`White pieces remaining: ${whitePiecesRemaining}`, padding, yOffset);
+      this.ctx.fillText(`White left: ${whitePiecesRemaining}`, textX, yOffset);
       yOffset += fontSize + 10;
-      this.ctx.fillText(`Black pieces remaining: ${blackPiecesRemaining}`, padding, yOffset);
+      this.ctx.fillText(`Black left: ${blackPiecesRemaining}`, textX, yOffset);
     }
   }
 
@@ -597,7 +636,9 @@ export class BoardRenderer {
    * Handle mouse click events
    */
   private handleClick(event: MouseEvent): void {
+    console.log(`[handleClick] isInputEnabled=${this.isInputEnabled}`);
     if (!this.isInputEnabled) {
+      console.log('[handleClick] Input disabled, ignoring click');
       return;
     }
 
@@ -606,6 +647,7 @@ export class BoardRenderer {
     const y = event.clientY - rect.top;
 
     const position = this.getPositionFromCoordinates(x, y);
+    console.log(`[handleClick] position=${position}, hasCallback=${!!this.onPositionClick}`);
     if (position !== null && this.onPositionClick) {
       this.onPositionClick(position);
     }
@@ -676,6 +718,7 @@ export class BoardRenderer {
    * Enable or disable input handling
    */
   public setInputEnabled(enabled: boolean): void {
+    console.log(`[BoardRenderer] setInputEnabled(${enabled})`);
     this.isInputEnabled = enabled;
     if (!enabled) {
       this.setHoverPosition(null);

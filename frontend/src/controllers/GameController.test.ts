@@ -133,8 +133,29 @@ describe('GameController', () => {
     });
 
     it('should transition to movement phase after all pieces placed', () => {
-      // Place all 18 pieces (9 per player)
-      const positions = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
+      // Place all 18 pieces (9 per player) very carefully to avoid ALL mills
+      // We need to ensure no 3 positions from any mill pattern are placed
+      // Mill patterns to avoid: see checkMillFormed() in GameController
+      const positions = [
+        0, // WHITE - outer top-left
+        11, // BLACK - middle right midpoint
+        3, // WHITE - outer right midpoint
+        14, // BLACK - middle bottom-left
+        8, // WHITE - middle top-left
+        19, // BLACK - inner right midpoint
+        16, // WHITE - inner top-left
+        5, // BLACK - outer bottom midpoint
+        10, // WHITE - middle top-right
+        22, // BLACK - inner bottom-left
+        1, // WHITE - outer top midpoint (careful: 0,1,2 is a mill, but 2 not placed)
+        15, // BLACK - middle left midpoint
+        17, // WHITE - inner top midpoint (careful: 16,17,18 is a mill, but 18 not placed)
+        7, // BLACK - outer left midpoint
+        23, // WHITE - inner left midpoint (careful: 16,23,22 is a mill, but all 3 would be placed - SKIP!)
+        4, // BLACK - outer bottom-right
+        20, // WHITE - inner bottom-right (careful: 18,19,20 is a mill, but 18 not placed)
+        12, // BLACK - middle bottom-right
+      ];
 
       for (let i = 0; i < positions.length; i++) {
         gameController.handlePositionClick(positions[i]);
@@ -218,17 +239,18 @@ describe('GameController', () => {
     it('should move piece to adjacent empty position', () => {
       const gameState = gameController.getCurrentGameState()!;
 
-      // Clear position 9 to make it available for movement
-      gameState.board[9] = null;
+      // Position 0 is adjacent to positions 1 and 7
+      // Position 1 is occupied by BLACK, so we need to clear position 7
+      gameState.board[7] = null;
 
       // Select WHITE piece at position 0
       gameController.handlePositionClick(0);
 
-      // Move to adjacent position 9
-      gameController.handlePositionClick(9);
+      // Move to adjacent position 7
+      gameController.handlePositionClick(7);
 
       expect(gameState.board[0]).toBeNull(); // Original position should be empty
-      expect(gameState.board[9]).toBe(PlayerColor.WHITE); // New position should have WHITE piece
+      expect(gameState.board[7]).toBe(PlayerColor.WHITE); // New position should have WHITE piece
     });
 
     it('should not allow movement to non-adjacent position', () => {
@@ -308,9 +330,10 @@ describe('GameController', () => {
       gameState.board[6] = PlayerColor.WHITE;
 
       // Trigger game end check by making a valid move
-      // Position 0 is adjacent to position 9, so this should be a valid move
+      // Position 0 is adjacent to positions 1 and 7 (not 9!)
+      // Position 1 is occupied by BLACK, so move to position 7
       gameController.handlePositionClick(0); // Select BLACK piece at position 0
-      gameController.handlePositionClick(9); // Move to adjacent empty position 9 (should trigger checkGameEnd)
+      gameController.handlePositionClick(7); // Move to adjacent empty position 7 (should trigger checkGameEnd)
 
       expect(gameState.isGameOver).toBe(true);
       expect(gameState.winner).toBe(PlayerColor.WHITE);
@@ -483,8 +506,27 @@ describe('GameController', () => {
       gameController.startGame();
       const gameState = gameController.getCurrentGameState()!;
 
-      // Place all 18 pieces (9 per player)
-      const placementPositions = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
+      // Place all 18 pieces (9 per player) very carefully to avoid ALL mills
+      const placementPositions = [
+        0, // WHITE - outer top-left
+        11, // BLACK - middle right midpoint
+        3, // WHITE - outer right midpoint
+        14, // BLACK - middle bottom-left
+        8, // WHITE - middle top-left
+        19, // BLACK - inner right midpoint
+        16, // WHITE - inner top-left
+        5, // BLACK - outer bottom midpoint
+        10, // WHITE - middle top-right
+        22, // BLACK - inner bottom-left
+        1, // WHITE - outer top midpoint
+        15, // BLACK - middle left midpoint
+        17, // WHITE - inner top midpoint
+        7, // BLACK - outer left midpoint
+        20, // WHITE - inner bottom-right
+        4, // BLACK - outer bottom-right
+        23, // WHITE - inner left midpoint
+        12, // BLACK - middle bottom-right
+      ];
 
       placementPositions.forEach(position => {
         gameController.handlePositionClick(position);

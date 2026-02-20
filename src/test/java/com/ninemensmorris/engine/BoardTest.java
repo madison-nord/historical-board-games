@@ -1,16 +1,22 @@
 package com.ninemensmorris.engine;
 
-import com.ninemensmorris.model.PlayerColor;
-import com.ninemensmorris.model.Position;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Nested;
-
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+import com.ninemensmorris.model.PlayerColor;
+import com.ninemensmorris.model.Position;
 
 /**
  * Unit tests for the Board class.
@@ -48,17 +54,19 @@ class BoardTest {
         @Test
         @DisplayName("should have correct mill patterns")
         void shouldHaveCorrectMillPatterns() {
+            // STANDARD Nine Men's Morris: 16 mills (6 horizontal + 6 vertical edges + 4 radial)
             int[][] expectedMillPatterns = {
-                // Outer square horizontal lines
-                {0, 1, 2}, {3, 4, 5}, {6, 7, 8},
-                // Middle square horizontal lines
-                {9, 10, 11}, {12, 13, 14}, {15, 16, 17},
-                // Inner square horizontal lines
-                {18, 19, 20}, {21, 22, 23},
-                // Vertical lines connecting all three squares
-                {0, 9, 21}, {3, 10, 18}, {6, 11, 15},
-                {1, 4, 7}, {16, 19, 22},
-                {8, 12, 17}, {5, 13, 20}, {2, 14, 23}
+                // Horizontal mills (6)
+                {0, 1, 2}, {6, 5, 4},      // Outer
+                {8, 9, 10}, {14, 13, 12},  // Middle
+                {16, 17, 18}, {22, 21, 20}, // Inner
+                
+                // Vertical mills - edges (6)
+                {0, 7, 6}, {8, 15, 14}, {16, 23, 22}, // Left edges
+                {2, 3, 4}, {10, 11, 12}, {18, 19, 20}, // Right edges
+                
+                // Radial mills (4)
+                {1, 9, 17}, {3, 11, 19}, {5, 13, 21}, {7, 15, 23}
             };
 
             int[][] actualMillPatterns = Board.getMillPatterns();
@@ -82,33 +90,40 @@ class BoardTest {
         @Test
         @DisplayName("should have correct adjacency map")
         void shouldHaveCorrectAdjacencyMap() {
-            // Test specific adjacency relationships based on Nine Men's Morris layout
+            // Test specific adjacency relationships based on STANDARD Nine Men's Morris layout
+            // Outer square (0-7): 8 positions clockwise from top-left
             
             // Corner positions of outer square
-            assertEquals(Arrays.asList(1, 9), board.getAdjacentPositions(0));
-            assertEquals(Arrays.asList(1, 14), board.getAdjacentPositions(2));
-            assertEquals(Arrays.asList(7, 11), board.getAdjacentPositions(6));
-            assertEquals(Arrays.asList(7, 12), board.getAdjacentPositions(8));
+            assertEquals(Arrays.asList(1, 7), board.getAdjacentPositions(0)); // Top-left
+            assertEquals(Arrays.asList(1, 3), board.getAdjacentPositions(2)); // Top-right
+            assertEquals(Arrays.asList(3, 5), board.getAdjacentPositions(4)); // Bottom-right
+            assertEquals(Arrays.asList(5, 7), board.getAdjacentPositions(6)); // Bottom-left
             
-            // Middle positions of outer square
-            assertEquals(Arrays.asList(0, 2, 4), board.getAdjacentPositions(1));
-            assertEquals(Arrays.asList(1, 3, 5, 7), board.getAdjacentPositions(4));
-            assertEquals(Arrays.asList(4, 6, 8), board.getAdjacentPositions(7));
+            // Midpoint positions of outer square (connect to adjacent square)
+            assertEquals(Arrays.asList(0, 2, 9), board.getAdjacentPositions(1)); // Top midpoint
+            assertEquals(Arrays.asList(2, 4, 11), board.getAdjacentPositions(3)); // Right midpoint
+            assertEquals(Arrays.asList(4, 6, 13), board.getAdjacentPositions(5)); // Bottom midpoint
+            assertEquals(Arrays.asList(6, 0, 15), board.getAdjacentPositions(7)); // Left midpoint
             
-            // Corner positions of middle square
-            assertEquals(Arrays.asList(0, 10, 21), board.getAdjacentPositions(9));
-            assertEquals(Arrays.asList(8, 13, 17), board.getAdjacentPositions(12));
-            assertEquals(Arrays.asList(2, 13, 23), board.getAdjacentPositions(14));
-            assertEquals(Arrays.asList(11, 16), board.getAdjacentPositions(15));
+            // Middle square (8-15): 8 positions clockwise from top-left
+            assertEquals(Arrays.asList(9, 15), board.getAdjacentPositions(8)); // Top-left corner
+            assertEquals(Arrays.asList(8, 10, 1, 17), board.getAdjacentPositions(9)); // Top midpoint
+            assertEquals(Arrays.asList(9, 11), board.getAdjacentPositions(10)); // Top-right corner
+            assertEquals(Arrays.asList(10, 12, 3, 19), board.getAdjacentPositions(11)); // Right midpoint
+            assertEquals(Arrays.asList(11, 13), board.getAdjacentPositions(12)); // Bottom-right corner
+            assertEquals(Arrays.asList(12, 14, 5, 21), board.getAdjacentPositions(13)); // Bottom midpoint
+            assertEquals(Arrays.asList(13, 15), board.getAdjacentPositions(14)); // Bottom-left corner
+            assertEquals(Arrays.asList(14, 8, 7, 23), board.getAdjacentPositions(15)); // Left midpoint
             
-            // Corner positions of inner square
-            assertEquals(Arrays.asList(10, 19), board.getAdjacentPositions(18));
-            assertEquals(Arrays.asList(13, 19), board.getAdjacentPositions(20));
-            assertEquals(Arrays.asList(9, 22), board.getAdjacentPositions(21));
-            assertEquals(Arrays.asList(14, 22), board.getAdjacentPositions(23));
-            
-            // Center positions with 4 adjacencies
-            assertEquals(Arrays.asList(16, 18, 20, 22), board.getAdjacentPositions(19));
+            // Inner square (16-23): 8 positions clockwise from top-left
+            assertEquals(Arrays.asList(17, 23), board.getAdjacentPositions(16)); // Top-left corner
+            assertEquals(Arrays.asList(16, 18, 9), board.getAdjacentPositions(17)); // Top midpoint
+            assertEquals(Arrays.asList(17, 19), board.getAdjacentPositions(18)); // Top-right corner
+            assertEquals(Arrays.asList(18, 20, 11), board.getAdjacentPositions(19)); // Right midpoint
+            assertEquals(Arrays.asList(19, 21), board.getAdjacentPositions(20)); // Bottom-right corner
+            assertEquals(Arrays.asList(20, 22, 13), board.getAdjacentPositions(21)); // Bottom midpoint
+            assertEquals(Arrays.asList(21, 23), board.getAdjacentPositions(22)); // Bottom-left corner
+            assertEquals(Arrays.asList(22, 16, 15), board.getAdjacentPositions(23)); // Left midpoint
         }
     }
 

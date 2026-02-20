@@ -103,7 +103,12 @@ export class GameController {
    * Handle position clicks from the board renderer
    */
   public handlePositionClick(position: number): void {
+    console.log(
+      `[handlePositionClick] position=${position}, phase=${this.currentGameState?.phase}, isGameOver=${this.currentGameState?.isGameOver}, isAiThinking=${this.isAiThinking}, millFormed=${this.currentGameState?.millFormed}`
+    );
+
     if (!this.currentGameState || this.currentGameState.isGameOver || this.isAiThinking) {
+      console.log('[handlePositionClick] Returning early - game over or AI thinking');
       return;
     }
 
@@ -112,6 +117,7 @@ export class GameController {
       this.gameMode === GameMode.SINGLE_PLAYER &&
       this.currentGameState.currentPlayer !== this.playerColor
     ) {
+      console.log('[handlePositionClick] Returning early - not player turn in single-player');
       return;
     }
 
@@ -119,10 +125,12 @@ export class GameController {
 
     // Handle piece removal after mill formation
     if (this.currentGameState.millFormed) {
+      console.log('[handlePositionClick] Handling removal click');
       this.handleRemovalClick(position);
       return;
     }
 
+    console.log(`[handlePositionClick] Routing to phase handler: ${this.currentGameState.phase}`);
     switch (this.currentGameState.phase) {
       case GamePhase.PLACEMENT:
         this.handlePlacementClick(position);
@@ -175,6 +183,10 @@ export class GameController {
    * Handle clicks during movement/flying phase
    */
   private handleMovementClick(position: number): void {
+    console.log(
+      `[handleMovementClick] position=${position}, selectedPosition=${this.selectedPosition}, currentPlayer=${this.currentGameState?.currentPlayer}, pieceAtPosition=${this.currentGameState?.board[position]}`
+    );
+
     if (!this.currentGameState) {
       return;
     }
@@ -187,18 +199,24 @@ export class GameController {
       if (pieceAtPosition === currentPlayer) {
         this.selectedPosition = position;
         this.validMoves = this.getValidMovesFrom(position);
+        console.log(`[handleMovementClick] Selected piece, validMoves=${this.validMoves.length}`);
         this.boardRenderer.highlightValidMoves(this.validMoves);
+        this.updateDisplay(); // IMMEDIATE visual feedback
         logger.debug(`Selected piece at position ${position}`);
       } else {
+        console.log('[handleMovementClick] Must select your own piece');
         logger.debug('Must select your own piece');
       }
     } else {
       // Second click - move the selected piece
       if (position === this.selectedPosition) {
         // Clicked same position - deselect
+        console.log('[handleMovementClick] Deselecting piece');
         this.clearSelection();
+        this.updateDisplay(); // IMMEDIATE visual feedback
       } else if (this.validMoves.includes(position)) {
         // Valid move
+        console.log('[handleMovementClick] Valid move, applying');
         const move: Move = {
           type: MoveType.MOVE,
           from: this.selectedPosition,
@@ -210,6 +228,7 @@ export class GameController {
         this.applyMove(move);
         this.clearSelection();
       } else {
+        console.log('[handleMovementClick] Invalid move');
         logger.debug('Invalid move');
       }
     }
@@ -238,33 +257,67 @@ export class GameController {
         this.currentGameState.blackPiecesOnBoard++;
       }
 
-      // Animate placement
+      // Update display IMMEDIATELY after state change
+      this.updateDisplay();
+
+      // THEN animate placement (animation draws over the updated board)
       this.boardRenderer.animatePlacement(move.to, move.player);
     } else if (move.type === MoveType.MOVE) {
+      // Update board state FIRST (move piece from old to new position)
       this.currentGameState.board[move.from] = null;
       this.currentGameState.board[move.to] = move.player;
 
-      // Animate movement
+      // Update display IMMEDIATELY after state change
+      this.updateDisplay();
+
+      // THEN animate movement (animation draws over the updated board)
       this.boardRenderer.animateMovement(move.from, move.to, move.player);
+
+      // Check for mill formation after the move
+      const millFormed = this.checkMillFormed(move.to, move.player);
+      this.currentGameState.millFormed = millFormed;
+
+      logger.debug(
+        `After move: millFormed=${millFormed}, white remaining=${this.currentGameState.whitePiecesRemaining}, black remaining=${this.currentGameState.blackPiecesRemaining}`
+      );
+
+      if (millFormed) {
+        logger.info('Mill formed! Select opponent piece to remove');
+        this.handleMillFormed();
+        this.updateDisplay();
+      } else {
+        logger.debug('No mill formed, switching players');
+        this.switchPlayer();
+        this.checkGameEnd();
+        this.updateDisplay();
+        this.checkForAIMove();
+      }
+
+      return; // Exit early for MOVE type
     }
 
-    // Check for mill formation
+    // Check for mill formation (for PLACE moves only, MOVE is handled above)
     const millFormed = this.checkMillFormed(move.to, move.player);
     this.currentGameState.millFormed = millFormed;
+
+    logger.debug(
+      `After move: millFormed=${millFormed}, white remaining=${this.currentGameState.whitePiecesRemaining}, black remaining=${this.currentGameState.blackPiecesRemaining}`
+    );
 
     if (millFormed) {
       logger.info('Mill formed! Select opponent piece to remove');
       this.handleMillFormed();
+      this.updateDisplay(); // Update display to show mill highlights
     } else {
       // Switch players and continue
+      logger.debug('No mill formed, switching players');
       this.switchPlayer();
       this.checkGameEnd();
+      this.updateDisplay(); // Update display after switching players
 
       // Check if AI should move next in single-player mode
       this.checkForAIMove();
     }
-
-    this.updateDisplay();
   }
 
   /**
@@ -402,34 +455,14 @@ export class GameController {
 
     if (removablePieces.length > 0) {
       this.boardRenderer.highlightValidMoves(removablePieces);
-      // Set up temporary click handler for piece removal
-      this.setupRemovalMode(removablePieces);
+      // The main handlePositionClick will route to handleRemovalClick
+      // No need for setupRemovalMode
     } else {
       // No pieces can be removed, continue game
       this.currentGameState.millFormed = false;
       this.switchPlayer();
       this.checkGameEnd();
     }
-  }
-
-  /**
-   * Set up removal mode after mill formation
-   */
-  private setupRemovalMode(removablePieces: number[]): void {
-    // Store original click handler
-    const originalHandler = this.handlePositionClick.bind(this);
-
-    // Set temporary removal handler
-    this.boardRenderer.setOnPositionClick((position: number) => {
-      if (removablePieces.includes(position)) {
-        this.removePiece(position);
-        // Restore original handler
-        this.boardRenderer.setOnPositionClick(originalHandler);
-        this.boardRenderer.clearHighlights();
-      } else {
-        logger.debug('Must select a removable opponent piece');
-      }
-    });
   }
 
   /**
@@ -445,6 +478,12 @@ export class GameController {
       return;
     }
 
+    logger.info(`Removing ${removedColor} piece from position ${position}`);
+
+    // Clear highlights immediately
+    this.boardRenderer.clearHighlights();
+
+    // Update board state FIRST (remove piece from board array)
     this.currentGameState.board[position] = null;
 
     // Update piece counts
@@ -454,47 +493,54 @@ export class GameController {
       this.currentGameState.blackPiecesOnBoard--;
     }
 
-    // Animate removal
-    this.boardRenderer.animateRemoval(position, removedColor);
-
-    logger.info(`Removed ${removedColor} piece from position ${position}`);
-
-    // Clear mill formation flag and switch players
+    // Clear mill formation flag
     this.currentGameState.millFormed = false;
+
+    // Switch player and update phase BEFORE updating display
     this.switchPlayer();
     this.checkGameEnd();
 
+    // Update display AFTER switching player
+    // This ensures the UI shows the correct current player and phase
+    this.updateDisplay();
+
+    // NOW start the removal animation
+    // The animation will draw the fading piece OVER the updated board
+    // When animation completes, the piece will be gone
+    this.boardRenderer.animateRemoval(position, removedColor);
+
     // Check if AI should move next
     this.checkForAIMove();
-
-    this.updateDisplay();
   }
 
   /**
    * Check if a mill is formed at the given position
+   * MUST match Board.java MILL_PATTERNS exactly
    */
   private checkMillFormed(position: number, color: PlayerColor): boolean {
+    // Mill patterns matching Board.java exactly - STANDARD Nine Men's Morris
     const millPatterns = [
-      // Outer square horizontal lines
-      [0, 1, 2],
-      [3, 4, 5],
-      [6, 7, 8],
-      // Middle square horizontal lines
-      [9, 10, 11],
-      [12, 13, 14],
-      [15, 16, 17],
-      // Inner square horizontal lines
-      [18, 19, 20],
-      [21, 22, 23],
-      // Vertical lines connecting all three squares
-      [0, 9, 21],
-      [3, 10, 18],
-      [6, 11, 15],
-      [1, 4, 7],
-      [16, 19, 22],
-      [8, 12, 17],
-      [5, 13, 20],
-      [2, 14, 23],
+      // Horizontal mills (6 total)
+      [0, 1, 2], // Outer top
+      [6, 5, 4], // Outer bottom
+      [8, 9, 10], // Middle top
+      [14, 13, 12], // Middle bottom
+      [16, 17, 18], // Inner top
+      [22, 21, 20], // Inner bottom
+
+      // Vertical mills - edges (6 total)
+      [0, 7, 6], // Outer left
+      [8, 15, 14], // Middle left
+      [16, 23, 22], // Inner left
+      [2, 3, 4], // Outer right
+      [10, 11, 12], // Middle right
+      [18, 19, 20], // Inner right
+
+      // Radial mills - connecting across squares (4 total)
+      [1, 9, 17], // Top center
+      [3, 11, 19], // Right center
+      [5, 13, 21], // Bottom center
+      [7, 15, 23], // Left center
     ];
 
     for (const pattern of millPatterns) {
@@ -548,16 +594,26 @@ export class GameController {
     }
 
     const validMoves: number[] = [];
+    const currentPlayer = this.currentGameState.currentPlayer;
+    const piecesOnBoard =
+      currentPlayer === PlayerColor.WHITE
+        ? this.currentGameState.whitePiecesOnBoard
+        : this.currentGameState.blackPiecesOnBoard;
 
-    if (this.currentGameState.phase === GamePhase.FLYING) {
-      // In flying phase, can move to any empty position
+    // Check if this is the current player's piece
+    if (this.currentGameState.board[position] !== currentPlayer) {
+      return [];
+    }
+
+    if (this.currentGameState.phase === GamePhase.FLYING && piecesOnBoard === 3) {
+      // In flying phase with exactly 3 pieces, can move to any empty position
       for (let i = 0; i < 24; i++) {
         if (this.currentGameState.board[i] === null) {
           validMoves.push(i);
         }
       }
     } else {
-      // In movement phase, can only move to adjacent empty positions
+      // In movement phase or flying phase with >3 pieces, can only move to adjacent empty positions
       const adjacentPositions = this.getAdjacentPositions(position);
       for (const adjPos of adjacentPositions) {
         if (this.currentGameState.board[adjPos] === null) {
@@ -571,38 +627,39 @@ export class GameController {
 
   /**
    * Get adjacent positions for a given position
+   * MUST match Board.java adjacency map exactly
    */
   private getAdjacentPositions(position: number): number[] {
     const adjacencyMap: { [key: number]: number[] } = {
-      // Outer square
-      0: [1, 9],
-      1: [0, 2, 4],
-      2: [1, 14],
-      3: [4, 10],
-      4: [1, 3, 5, 7],
-      5: [4, 13],
-      6: [7, 11],
-      7: [4, 6, 8],
-      8: [7, 12],
+      // Outer square (positions 0-7)
+      0: [1, 7],
+      1: [0, 2, 9],
+      2: [1, 3],
+      3: [2, 4, 11],
+      4: [3, 5],
+      5: [4, 6, 13],
+      6: [5, 7],
+      7: [6, 0, 15],
 
-      // Middle square
-      9: [0, 10, 21],
-      10: [3, 9, 11, 18],
-      11: [6, 10, 15],
-      12: [8, 13, 17],
-      13: [5, 12, 14, 20],
-      14: [2, 13, 23],
-      15: [11, 16],
-      16: [15, 17, 19],
-      17: [12, 16],
+      // Middle square (positions 8-15)
+      8: [9, 15],
+      9: [8, 10, 1, 17],
+      10: [9, 11],
+      11: [10, 12, 3, 19],
+      12: [11, 13],
+      13: [12, 14, 5, 21],
+      14: [13, 15],
+      15: [14, 8, 7, 23],
 
-      // Inner square
-      18: [10, 19],
-      19: [16, 18, 20, 22],
-      20: [13, 19],
-      21: [9, 22],
-      22: [19, 21, 23],
-      23: [14, 22],
+      // Inner square (positions 16-23)
+      16: [17, 23],
+      17: [16, 18, 9],
+      18: [17, 19],
+      19: [18, 20, 11],
+      20: [19, 21],
+      21: [20, 22, 13],
+      22: [21, 23],
+      23: [22, 16, 15],
     };
 
     return adjacencyMap[position] || [];
@@ -621,16 +678,36 @@ export class GameController {
         ? PlayerColor.BLACK
         : PlayerColor.WHITE;
 
+    // Clear selection and highlights when switching players
+    this.clearSelection();
+
     // Update phase if necessary
     this.updateGamePhase();
 
     // Check for game end conditions after switching players
     this.checkGameEnd();
 
-    // Enable input for local two-player mode (always enabled)
-    // For single-player, input is managed by AI move handling
-    if (this.gameMode === GameMode.LOCAL_TWO_PLAYER && !this.currentGameState.isGameOver) {
-      this.boardRenderer.setInputEnabled(true);
+    // Enable input for the appropriate player
+    console.log(
+      `[switchPlayer] isGameOver=${this.currentGameState.isGameOver}, millFormed=${this.currentGameState.millFormed}, gameMode=${this.gameMode}, phase=${this.currentGameState.phase}`
+    );
+
+    if (!this.currentGameState.isGameOver && !this.currentGameState.millFormed) {
+      // In local two-player mode, always enable input
+      if (this.gameMode === GameMode.LOCAL_TWO_PLAYER) {
+        console.log('[switchPlayer] Enabling input for local two-player mode');
+        this.boardRenderer.setInputEnabled(true);
+      }
+      // In single-player mode, enable input only if it's the player's turn
+      else if (this.gameMode === GameMode.SINGLE_PLAYER) {
+        const isPlayerTurn = this.currentGameState.currentPlayer === this.playerColor;
+        console.log(
+          `[switchPlayer] Single-player mode: isPlayerTurn=${isPlayerTurn}, isAiThinking=${this.isAiThinking}`
+        );
+        this.boardRenderer.setInputEnabled(isPlayerTurn && !this.isAiThinking);
+      }
+    } else {
+      console.log('[switchPlayer] Input NOT enabled - game over or mill formed');
     }
   }
 
@@ -642,26 +719,40 @@ export class GameController {
       return;
     }
 
-    // Still placing pieces
+    const oldPhase = this.currentGameState.phase;
+
+    // Debug logging
+    logger.debug(
+      `updateGamePhase: white remaining=${this.currentGameState.whitePiecesRemaining}, black remaining=${this.currentGameState.blackPiecesRemaining}, white on board=${this.currentGameState.whitePiecesOnBoard}, black on board=${this.currentGameState.blackPiecesOnBoard}`
+    );
+
+    // Still placing pieces - BOTH players must have 0 remaining
     if (
       this.currentGameState.whitePiecesRemaining > 0 ||
       this.currentGameState.blackPiecesRemaining > 0
     ) {
       this.currentGameState.phase = GamePhase.PLACEMENT;
-      return;
+      logger.debug('Phase set to PLACEMENT (pieces remaining)');
     }
-
     // Flying phase if either player has exactly 3 pieces
-    if (
+    else if (
       this.currentGameState.whitePiecesOnBoard === 3 ||
       this.currentGameState.blackPiecesOnBoard === 3
     ) {
       this.currentGameState.phase = GamePhase.FLYING;
-      return;
+      logger.debug('Phase set to FLYING');
+    }
+    // Otherwise, movement phase
+    else {
+      this.currentGameState.phase = GamePhase.MOVEMENT;
+      logger.debug('Phase set to MOVEMENT');
     }
 
-    // Otherwise, movement phase
-    this.currentGameState.phase = GamePhase.MOVEMENT;
+    // Clear selection and highlights when phase changes
+    if (oldPhase !== this.currentGameState.phase) {
+      this.clearSelection();
+      logger.info(`Phase changed from ${oldPhase} to ${this.currentGameState.phase}`);
+    }
   }
 
   /**
@@ -674,22 +765,33 @@ export class GameController {
 
     // Game ends if a player has fewer than 3 pieces (after placement phase)
     if (this.currentGameState.phase !== GamePhase.PLACEMENT) {
+      console.log(
+        `[checkGameEnd] Checking piece counts: WHITE=${this.currentGameState.whitePiecesOnBoard}, BLACK=${this.currentGameState.blackPiecesOnBoard}`
+      );
       if (this.currentGameState.whitePiecesOnBoard < 3) {
+        console.log('[checkGameEnd] WHITE has < 3 pieces, BLACK wins');
         this.endGame(PlayerColor.BLACK);
         return;
       }
       if (this.currentGameState.blackPiecesOnBoard < 3) {
+        console.log('[checkGameEnd] BLACK has < 3 pieces, WHITE wins');
         this.endGame(PlayerColor.WHITE);
         return;
       }
     }
 
     // Game ends if current player has no legal moves
-    if (!this.hasLegalMoves(this.currentGameState.currentPlayer)) {
+    const hasLegalMoves = this.hasLegalMoves(this.currentGameState.currentPlayer);
+    console.log(
+      `[checkGameEnd] Current player ${this.currentGameState.currentPlayer} hasLegalMoves=${hasLegalMoves}`
+    );
+
+    if (!hasLegalMoves) {
       const winner =
         this.currentGameState.currentPlayer === PlayerColor.WHITE
           ? PlayerColor.BLACK
           : PlayerColor.WHITE;
+      console.log(`[checkGameEnd] No legal moves, ${winner} wins`);
       this.endGame(winner);
     }
   }
@@ -712,14 +814,15 @@ export class GameController {
       if (piecesRemaining > 0) {
         return this.currentGameState.board.some(pos => pos === null);
       }
-    } else {
-      // In movement/flying phase, check if any piece can move
-      for (let i = 0; i < 24; i++) {
-        if (this.currentGameState.board[i] === player) {
-          const validMoves = this.getValidMovesFrom(i);
-          if (validMoves.length > 0) {
-            return true;
-          }
+      // If no pieces remaining in PLACEMENT phase, fall through to movement check
+    }
+
+    // In movement/flying phase (or placement with 0 remaining), check if any piece can move
+    for (let i = 0; i < 24; i++) {
+      if (this.currentGameState.board[i] === player) {
+        const validMoves = this.getValidMovesFrom(i);
+        if (validMoves.length > 0) {
+          return true;
         }
       }
     }
@@ -770,7 +873,9 @@ export class GameController {
       this.currentGameState.phase,
       this.currentGameState.whitePiecesRemaining,
       this.currentGameState.blackPiecesRemaining,
-      this.isAiThinking
+      this.isAiThinking,
+      this.currentGameState.isGameOver,
+      this.currentGameState.winner
     );
   }
 
@@ -778,7 +883,7 @@ export class GameController {
    * Generate a unique game ID
    */
   private generateGameId(): string {
-    return `game-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `game-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
   }
 
   /**

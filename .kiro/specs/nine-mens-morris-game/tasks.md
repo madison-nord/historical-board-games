@@ -285,7 +285,7 @@ The implementation uses:
     - _Requirements: 2.3, 2.4_
 
 
-- [ ] 15. Implement animation system
+- [x] 15. Implement animation system
   - [x] 15.1 Create Animation class and queue system
     - Create `Animation` interface with update and complete callbacks
     - Implement `PlacementAnimation` class (fade in over 300ms)
@@ -341,7 +341,7 @@ The implementation uses:
     - Test win condition detection
     - _Requirements: 1.1, 1.2, 1.5_
 
-- [ ] 18. Implement single-player mode with AI
+- [x] 18. Implement single-player mode with AI
   - [x] 18.1 Add AI integration to GameController
     - Implement `handleAIMove()` method
     - Call backend API to get AI move
@@ -357,7 +357,7 @@ The implementation uses:
     - Test complete single-player game
     - _Requirements: 3.1, 3.2_
 
-- [ ] 19. Implement local two-player mode
+- [x] 19. Implement local two-player mode
   - [x] 19.1 Add local multiplayer to GameController
     - Implement turn-based control for two local players
     - Display current player indicator
@@ -370,7 +370,7 @@ The implementation uses:
     - Test complete two-player game
     - _Requirements: 4.1, 4.2_
 
-- [ ] 20. Checkpoint - Local gameplay complete
+- [x] 20. Checkpoint - Local gameplay complete
   - Ensure single-player and local two-player modes work end-to-end
   - Test on different screen sizes
   - Ask the user if questions arise
