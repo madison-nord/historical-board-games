@@ -1,6 +1,7 @@
 import { BoardRenderer } from '../rendering/BoardRenderer.js';
 import { GameMode, GamePhase, PlayerColor, Move, MoveType } from '../models/index.js';
 import { logger } from '../utils/logger.js';
+import { LocalStorage } from '../utils/LocalStorage.js';
 
 /**
  * Interface representing the current game state
@@ -58,6 +59,9 @@ export class GameController {
    * Start a new game with the specified mode
    */
   public startGame(): void {
+    // Clear any existing saved game when starting new
+    this.clearSavedGame();
+
     // Initialize new game state
     this.currentGameState = {
       gameId: this.generateGameId(),
@@ -79,6 +83,9 @@ export class GameController {
 
     // Update visual display
     this.updateDisplay();
+
+    // Save initial game state
+    this.saveGameState();
 
     // Enable input for player's turn
     const isPlayerTurn =
@@ -285,11 +292,13 @@ export class GameController {
         logger.info('Mill formed! Select opponent piece to remove');
         this.handleMillFormed();
         this.updateDisplay();
+        this.saveGameState(); // Save after mill formation
       } else {
         logger.debug('No mill formed, switching players');
         this.switchPlayer();
         this.checkGameEnd();
         this.updateDisplay();
+        this.saveGameState(); // Save after move
         this.checkForAIMove();
       }
 
@@ -308,12 +317,14 @@ export class GameController {
       logger.info('Mill formed! Select opponent piece to remove');
       this.handleMillFormed();
       this.updateDisplay(); // Update display to show mill highlights
+      this.saveGameState(); // Save after mill formation
     } else {
       // Switch players and continue
       logger.debug('No mill formed, switching players');
       this.switchPlayer();
       this.checkGameEnd();
       this.updateDisplay(); // Update display after switching players
+      this.saveGameState(); // Save after placement
 
       // Check if AI should move next in single-player mode
       this.checkForAIMove();
@@ -503,6 +514,9 @@ export class GameController {
     // Update display AFTER switching player
     // This ensures the UI shows the correct current player and phase
     this.updateDisplay();
+
+    // Save game state after piece removal
+    this.saveGameState();
 
     // NOW start the removal animation
     // The animation will draw the fading piece OVER the updated board
@@ -845,6 +859,9 @@ export class GameController {
     this.boardRenderer.setInputEnabled(false);
     this.clearSelection();
 
+    // Clear saved game state on completion
+    this.clearSavedGame();
+
     logger.info(`Game Over! Winner: ${winner}`);
     this.updateDisplay();
   }
@@ -912,5 +929,96 @@ export class GameController {
    */
   public isAIThinking(): boolean {
     return this.isAiThinking;
+  }
+
+  /**
+   * Save current game state to localStorage
+   * Only saves local games (single-player and local two-player)
+   */
+  private saveGameState(): void {
+    if (!this.currentGameState) {
+      return;
+    }
+
+    LocalStorage.saveGameState(this.currentGameState, this.gameMode, this.playerColor);
+  }
+
+  /**
+   * Load saved game state from localStorage
+   * @returns true if a game was loaded, false otherwise
+   */
+  public loadSavedGame(): boolean {
+    const savedGame = LocalStorage.loadGameState();
+    if (!savedGame) {
+      return false;
+    }
+
+    // Restore game state
+    this.gameMode = savedGame.gameMode;
+    this.playerColor = savedGame.playerColor;
+    this.currentGameState = {
+      gameId: savedGame.gameId,
+      phase: savedGame.phase,
+      currentPlayer: savedGame.currentPlayer,
+      whitePiecesRemaining: savedGame.whitePiecesRemaining,
+      blackPiecesRemaining: savedGame.blackPiecesRemaining,
+      whitePiecesOnBoard: savedGame.whitePiecesOnBoard,
+      blackPiecesOnBoard: savedGame.blackPiecesOnBoard,
+      board: savedGame.board,
+      isGameOver: savedGame.isGameOver,
+      winner: savedGame.winner,
+      millFormed: savedGame.millFormed,
+    };
+
+    this.selectedPosition = null;
+    this.validMoves = [];
+    this.isAiThinking = false;
+
+    // Update visual display
+    this.updateDisplay();
+
+    // Enable input for player's turn
+    const isPlayerTurn =
+      this.gameMode !== GameMode.SINGLE_PLAYER ||
+      this.currentGameState.currentPlayer === this.playerColor;
+    this.boardRenderer.setInputEnabled(isPlayerTurn && !this.currentGameState.millFormed);
+
+    logger.info(`Loaded saved game: ${this.currentGameState.gameId}`);
+
+    // If AI's turn in single-player mode, trigger AI move
+    if (
+      this.gameMode === GameMode.SINGLE_PLAYER &&
+      this.currentGameState.currentPlayer !== this.playerColor &&
+      !this.currentGameState.millFormed &&
+      !this.currentGameState.isGameOver
+    ) {
+      setTimeout(() => {
+        this.handleAIMove();
+      }, 1000);
+    }
+
+    return true;
+  }
+
+  /**
+   * Clear saved game state from localStorage
+   */
+  public clearSavedGame(): void {
+    LocalStorage.clearGameState();
+  }
+
+  /**
+   * Check if a saved game exists
+   */
+  public static hasSavedGame(): boolean {
+    return LocalStorage.hasSavedGame();
+  }
+
+  /**
+   * Abandon current game and clear saved state
+   */
+  public abandonGame(): void {
+    this.clearSavedGame();
+    logger.info('Game abandoned, saved state cleared');
   }
 }
