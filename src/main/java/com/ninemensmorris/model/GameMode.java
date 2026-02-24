@@ -7,6 +7,7 @@ package com.ninemensmorris.model;
  * - Single player against AI
  * - Local two-player on the same device
  * - Online multiplayer against remote players
+ * - Tutorial mode for learning the game
  */
 public enum GameMode {
     
@@ -26,5 +27,11 @@ public enum GameMode {
      * Online multiplayer mode where players compete against remote opponents.
      * Includes matchmaking, real-time synchronization, and chat functionality.
      */
-    ONLINE_MULTIPLAYER
+    ONLINE_MULTIPLAYER,
+    
+    /**
+     * Tutorial mode where the player learns the game through interactive guidance.
+     * Provides step-by-step instructions and validates player actions.
+     */
+    TUTORIAL
 }
