@@ -1,17 +1,19 @@
 package com.ninemensmorris.service;
 
-import com.ninemensmorris.engine.GameState;
-import com.ninemensmorris.engine.RuleEngine;
-import com.ninemensmorris.model.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.Map;
-import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.ninemensmorris.engine.GameState;
+import com.ninemensmorris.engine.RuleEngine;
+import com.ninemensmorris.model.GameMode;
+import com.ninemensmorris.model.Move;
+import com.ninemensmorris.model.PlayerColor;
 
 /**
  * Service class for orchestrating Nine Men's Morris games.
@@ -72,14 +74,13 @@ public class GameService {
         
         // Validate player2Id based on game mode
         switch (mode) {
-            case SINGLE_PLAYER:
-                // In single-player mode, player2Id should be null (AI will be the opponent)
+            case SINGLE_PLAYER, TUTORIAL -> {
+                // In single-player and tutorial modes, player2Id should be null (AI/system will guide)
                 if (player2Id != null) {
-                    throw new IllegalArgumentException("Player 2 ID must be null for single-player mode");
+                    throw new IllegalArgumentException("Player 2 ID must be null for single-player and tutorial modes");
                 }
-                break;
-            case LOCAL_TWO_PLAYER:
-            case ONLINE_MULTIPLAYER:
+            }
+            case LOCAL_TWO_PLAYER, ONLINE_MULTIPLAYER -> {
                 // In multiplayer modes, player2Id is required
                 if (player2Id == null || player2Id.trim().isEmpty()) {
                     throw new IllegalArgumentException("Player 2 ID cannot be null or empty for multiplayer modes");
@@ -87,7 +88,7 @@ public class GameService {
                 if (player1Id.equals(player2Id)) {
                     throw new IllegalArgumentException("Player 1 and Player 2 cannot have the same ID");
                 }
-                break;
+            }
         }
         
         // Generate unique game ID
@@ -101,9 +102,11 @@ public class GameService {
         gameModes.put(gameId, mode);
         
         // Store player mapping
-        String playerMapping = mode == GameMode.SINGLE_PLAYER 
-            ? player1Id + ":AI" 
-            : player1Id + ":" + player2Id;
+        String playerMapping = switch (mode) {
+            case SINGLE_PLAYER -> player1Id + ":AI";
+            case TUTORIAL -> player1Id + ":TUTORIAL";
+            case LOCAL_TWO_PLAYER, ONLINE_MULTIPLAYER -> player1Id + ":" + player2Id;
+        };
         gamePlayerMappings.put(gameId, playerMapping);
         
         return gameState;

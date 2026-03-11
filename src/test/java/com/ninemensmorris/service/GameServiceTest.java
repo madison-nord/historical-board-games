@@ -1,12 +1,22 @@
 package com.ninemensmorris.service;
 
-import com.ninemensmorris.engine.GameState;
-import com.ninemensmorris.model.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import com.ninemensmorris.engine.GameState;
+import com.ninemensmorris.model.GameMode;
+import com.ninemensmorris.model.GamePhase;
+import com.ninemensmorris.model.Move;
+import com.ninemensmorris.model.MoveType;
+import com.ninemensmorris.model.PlayerColor;
 
 /**
  * Unit tests for GameService.
@@ -75,6 +85,29 @@ public class GameServiceTest {
         assertEquals(PlayerColor.WHITE, gameState.getCurrentPlayer(), "Game should start with WHITE player");
         assertEquals(GameMode.ONLINE_MULTIPLAYER, gameService.getGameMode(gameState.getGameId()));
         assertEquals("online-player1:online-player2", gameService.getPlayerMapping(gameState.getGameId()));
+    }
+    
+    @Test
+    @DisplayName("Create tutorial game successfully")
+    void testCreateTutorialGame() {
+        String player1Id = "tutorial-player";
+        
+        GameState gameState = gameService.createGame(GameMode.TUTORIAL, player1Id, null);
+        
+        assertNotNull(gameState, "Game state should not be null");
+        assertNotNull(gameState.getGameId(), "Game ID should not be null");
+        assertEquals(GamePhase.PLACEMENT, gameState.getPhase(), "Game should start in placement phase");
+        assertEquals(PlayerColor.WHITE, gameState.getCurrentPlayer(), "Game should start with WHITE player");
+        assertEquals(GameMode.TUTORIAL, gameService.getGameMode(gameState.getGameId()));
+        assertEquals("tutorial-player:TUTORIAL", gameService.getPlayerMapping(gameState.getGameId()));
+    }
+    
+    @Test
+    @DisplayName("Reject tutorial game with non-null player2 ID")
+    void testCreateTutorialGameWithPlayer2() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            gameService.createGame(GameMode.TUTORIAL, "player1", "player2");
+        }, "Should throw exception when player2 ID is provided for tutorial mode");
     }
     
     @Test
