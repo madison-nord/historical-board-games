@@ -499,15 +499,15 @@ The implementation uses:
 
 ### Phase 10: Online Multiplayer - Backend
 
-- [ ] 26. Configure Spring WebSocket with STOMP
-  - [ ] 26.1 Set up WebSocket configuration
+- [x] 26. Configure Spring WebSocket with STOMP
+  - [x] 26.1 Set up WebSocket configuration
     - Create `WebSocketConfig` class extending `AbstractWebSocketMessageBrokerConfigurer`
     - Configure STOMP endpoint with SockJS fallback
     - Configure message broker for pub/sub
     - Set application destination prefix
     - _Requirements: 12.3_
   
-  - [ ] 26.2 Create WebSocket message DTOs
+  - [x] 26.2 Create WebSocket message DTOs
     - Create `PlacePieceMessage` class
     - Create `MovePieceMessage` class
     - Create `RemovePieceMessage` class
