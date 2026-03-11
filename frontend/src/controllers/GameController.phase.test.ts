@@ -25,7 +25,14 @@ describe('GameController - Phase Transition Bug', () => {
         top: 0,
         width: 400,
         height: 400,
+        x: 0,
+        y: 0,
+        right: 400,
+        bottom: 400,
+        toJSON: () => ({}),
       })),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
     } as any;
 
     mockContext = {
@@ -65,35 +72,13 @@ describe('GameController - Phase Transition Bug', () => {
     expect(gameState.blackPiecesRemaining).toBe(9);
 
     // Place all 18 pieces (9 per player) - carefully avoiding ALL 16 mill patterns
-    // Strategy: Spread pieces across different squares and avoid completing any line of 3
-    const placementPositions = [
-      0, // WHITE - outer top-left corner
-      9, // BLACK - middle top midpoint
-      3, // WHITE - outer right midpoint
-      13, // BLACK - middle bottom midpoint
-      6, // WHITE - outer bottom-left corner
-      17, // BLACK - inner top midpoint
-      10, // WHITE - middle top-right corner
-      21, // BLACK - inner bottom midpoint
-      14, // WHITE - middle bottom-left corner
-      19, // BLACK - inner right midpoint
-      2, // WHITE - outer top-right corner
-      23, // BLACK - inner left midpoint
-      12, // WHITE - middle bottom-right corner
-      7, // BLACK - outer left midpoint
-      18, // WHITE - inner top-right corner
-      11, // BLACK - middle right midpoint
-      22, // WHITE - inner bottom-left corner
-      15, // BLACK - middle left midpoint
-    ];
+    const placementPositions = [0, 9, 3, 13, 6, 17, 10, 21, 14, 19, 2, 23, 12, 7, 18, 11, 22, 15];
 
     placementPositions.forEach(position => {
       gameController.handlePositionClick(position);
     });
 
-    // CRITICAL: After all pieces placed, phase should be MOVEMENT
-    // Note: A mill may have been formed on the last placement, which is fine
-    // The important thing is that pieces remaining should be 0
+    // CRITICAL: After all pieces placed, pieces remaining should be 0
     expect(gameState.whitePiecesRemaining).toBe(0);
     expect(gameState.blackPiecesRemaining).toBe(0);
     // If a mill was formed, the game is waiting for piece removal before transitioning
@@ -103,7 +88,7 @@ describe('GameController - Phase Transition Bug', () => {
     }
   });
 
-  it('should enable input after transitioning to MOVEMENT phase', () => {
+  it('should enable input after transitioning', () => {
     gameController.startGame();
     const gameState = gameController.getCurrentGameState()!;
 
@@ -138,18 +123,24 @@ describe('GameController - Phase Transition Bug', () => {
     gameController.startGame();
     const gameState = gameController.getCurrentGameState()!;
 
-    // Place all 18 pieces (9 per player) - carefully avoiding ALL 16 mill patterns
+    // Place all 18 pieces (9 per player) - using same sequence as first test
     const placementPositions = [0, 9, 3, 13, 6, 17, 10, 21, 14, 19, 2, 23, 12, 7, 18, 11, 22, 15];
 
     placementPositions.forEach(pos => {
       gameController.handlePositionClick(pos);
     });
 
-    // Check if a mill was formed on the last placement
+    // If a mill was formed on last placement, handle the removal first
     if (gameState.millFormed) {
-      // BLACK formed a mill, needs to remove a WHITE piece
-      // Find a WHITE piece to remove (position 0 has WHITE)
-      gameController.handlePositionClick(0);
+      // Find and remove an opponent piece to complete the mill handling
+      const opponentColor =
+        gameState.currentPlayer === PlayerColor.WHITE ? PlayerColor.BLACK : PlayerColor.WHITE;
+      for (let i = 0; i < 24; i++) {
+        if (gameState.board[i] === opponentColor) {
+          gameController.handlePositionClick(i);
+          break;
+        }
+      }
     }
 
     // Now in MOVEMENT phase, WHITE's turn
@@ -159,8 +150,19 @@ describe('GameController - Phase Transition Bug', () => {
     // Spy on highlightValidMoves to verify piece selection works
     const highlightSpy = vi.spyOn(boardRenderer, 'highlightValidMoves');
 
-    // Click on WHITE piece at position 3 (should still be there after removal)
-    gameController.handlePositionClick(3);
+    // Find a WHITE piece on the board (position 0 might have been removed)
+    let whitePiecePosition = -1;
+    for (let i = 0; i < 24; i++) {
+      if (gameState.board[i] === PlayerColor.WHITE) {
+        whitePiecePosition = i;
+        break;
+      }
+    }
+
+    expect(whitePiecePosition).toBeGreaterThanOrEqual(0); // Ensure we found a WHITE piece
+
+    // Click on the WHITE piece
+    gameController.handlePositionClick(whitePiecePosition);
 
     // CRITICAL: Valid moves should be highlighted (piece was selected)
     expect(highlightSpy).toHaveBeenCalled();

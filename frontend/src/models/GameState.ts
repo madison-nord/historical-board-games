@@ -35,4 +35,10 @@ export interface GameState {
 
   /** Winner of the game (null if game not over or draw) */
   winner: PlayerColor | null;
+
+  /** Whether the game is over (alternative property name used in GameController) */
+  isGameOver?: boolean;
+
+  /** Whether a mill was just formed (requires piece removal) */
+  millFormed?: boolean;
 }

@@ -492,7 +492,7 @@ The implementation uses:
     - Test back navigation
     - _Requirements: 7.5_
 
-- [ ] 25. Checkpoint - Tutorial and UI complete
+- [x] 25. Checkpoint - Tutorial and UI complete
   - Test complete tutorial flow
   - Verify responsive design on mobile and desktop
   - Ask the user if questions arise

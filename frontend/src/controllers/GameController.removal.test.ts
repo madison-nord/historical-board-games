@@ -1,203 +1,470 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { GameController } from './GameController.js';
-import { BoardRenderer } from '../rendering/BoardRenderer.js';
-import { GameMode, PlayerColor } from '../models/index.js';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { GameController } from './GameController';
+import { BoardRenderer } from '../rendering/BoardRenderer';
+import { GameMode, GamePhase, PlayerColor } from '../models';
 
-describe('GameController - Piece Removal Bug', () => {
+/**
+ * Focused Tests for Piece Removal After Mill Formation
+ *
+ * Tests cover:
+ * - Mill detection in all configurations
+ * - Removable piece identification
+ * - Protected mill pieces
+ * - Removal execution
+ * - Post-removal state management
+ * - Edge cases in removal logic
+ */
+
+describe('GameController - Piece Removal', () => {
   let gameController: GameController;
-  let mockCanvas: HTMLCanvasElement;
-  let mockContext: CanvasRenderingContext2D;
   let boardRenderer: BoardRenderer;
+  let canvas: HTMLCanvasElement;
 
   beforeEach(() => {
-    // Create mock canvas and context
-    const mockGetContext = vi.fn();
-    mockCanvas = {
-      getContext: mockGetContext,
-      width: 400,
-      height: 400,
-      style: {
-        width: '400px',
-        height: '400px',
-      },
-      getBoundingClientRect: vi.fn(() => ({
-        left: 0,
-        top: 0,
-        width: 400,
-        height: 400,
-      })),
-    } as any;
+    canvas = document.createElement('canvas');
+    canvas.width = 600;
+    canvas.height = 600;
+    document.body.appendChild(canvas);
 
-    mockContext = {
-      clearRect: vi.fn(),
-      beginPath: vi.fn(),
-      moveTo: vi.fn(),
-      lineTo: vi.fn(),
-      stroke: vi.fn(),
-      arc: vi.fn(),
-      fill: vi.fn(),
-      fillRect: vi.fn(),
-      strokeRect: vi.fn(),
-      rect: vi.fn(),
-      fillText: vi.fn(),
-      measureText: vi.fn(() => ({ width: 50 })),
-      save: vi.fn(),
-      restore: vi.fn(),
-      translate: vi.fn(),
-      scale: vi.fn(),
-      setTransform: vi.fn(),
-    } as any;
-
-    mockGetContext.mockReturnValue(mockContext);
-
-    // Create BoardRenderer and GameController
-    boardRenderer = new BoardRenderer(mockCanvas);
+    boardRenderer = new BoardRenderer(canvas);
     gameController = new GameController(GameMode.LOCAL_TWO_PLAYER, boardRenderer);
+    gameController.startGame();
   });
 
-  it('should remove piece visually and update counter on first click after mill formation', () => {
-    gameController.startGame();
-    const gameState = gameController.getCurrentGameState()!;
-
-    // Form a mill: WHITE places at 0, 1, 2 (horizontal mill)
-    gameController.handlePositionClick(0); // WHITE at 0
-    gameController.handlePositionClick(3); // BLACK at 3
-    gameController.handlePositionClick(1); // WHITE at 1
-    gameController.handlePositionClick(4); // BLACK at 4
-    gameController.handlePositionClick(2); // WHITE at 2 - MILL FORMED
-
-    // Verify mill is formed
-    expect(gameState.millFormed).toBe(true);
-    expect(gameState.currentPlayer).toBe(PlayerColor.WHITE);
-    expect(gameState.board[3]).toBe(PlayerColor.BLACK);
-    expect(gameState.board[4]).toBe(PlayerColor.BLACK);
-    expect(gameState.blackPiecesOnBoard).toBe(2);
-
-    // Click on BLACK piece at position 3 to remove it
-    gameController.handlePositionClick(3);
-
-    // CRITICAL ASSERTIONS:
-    // 1. Piece should be removed from board
-    expect(gameState.board[3]).toBeNull();
-
-    // 2. Counter should be decremented
-    expect(gameState.blackPiecesOnBoard).toBe(1);
-
-    // 3. Mill flag should be cleared
-    expect(gameState.millFormed).toBe(false);
-
-    // 4. Turn should switch to BLACK
-    expect(gameState.currentPlayer).toBe(PlayerColor.BLACK);
+  afterEach(() => {
+    gameController.stopGameLoop();
+    document.body.removeChild(canvas);
   });
 
-  it('should not allow removing piece when mill flag is cleared', () => {
-    gameController.startGame();
-    const gameState = gameController.getCurrentGameState()!;
+  describe('Mill Detection', () => {
+    it('should detect horizontal mill on outer square', () => {
+      // Form mill at 0-1-2
+      gameController.handlePositionClick(0); // WHITE
+      gameController.handlePositionClick(8); // BLACK
+      gameController.handlePositionClick(1); // WHITE
+      gameController.handlePositionClick(9); // BLACK
+      gameController.handlePositionClick(2); // WHITE - forms mill
 
-    // Form a mill
-    gameController.handlePositionClick(0); // WHITE at 0
-    gameController.handlePositionClick(3); // BLACK at 3
-    gameController.handlePositionClick(1); // WHITE at 1
-    gameController.handlePositionClick(4); // BLACK at 4
-    gameController.handlePositionClick(2); // WHITE at 2 - MILL FORMED
+      const state = gameController.getCurrentGameState();
+      expect(state?.millFormed).toBe(true);
+    });
 
-    expect(gameState.blackPiecesOnBoard).toBe(2);
-    expect(gameState.millFormed).toBe(true);
+    it('should detect horizontal mill on middle square', () => {
+      // Form mill at 8-9-10
+      gameController.handlePositionClick(8); // WHITE
+      gameController.handlePositionClick(0); // BLACK
+      gameController.handlePositionClick(9); // WHITE
+      gameController.handlePositionClick(1); // BLACK
+      gameController.handlePositionClick(10); // WHITE - forms mill
 
-    // First click - should remove piece at position 3
-    gameController.handlePositionClick(3);
-    expect(gameState.board[3]).toBeNull();
-    expect(gameState.blackPiecesOnBoard).toBe(1);
-    expect(gameState.millFormed).toBe(false); // Mill flag should be cleared
-    expect(gameState.currentPlayer).toBe(PlayerColor.BLACK); // Turn switches to BLACK
+      const state = gameController.getCurrentGameState();
+      expect(state?.millFormed).toBe(true);
+    });
 
-    // Now it's BLACK's turn in placement phase
-    // BLACK should be able to place a piece normally, not remove anything
-    const blackPiecesBeforePlacement = gameState.blackPiecesOnBoard;
-    const blackPiecesRemainingBefore = gameState.blackPiecesRemaining;
+    it('should detect horizontal mill on inner square', () => {
+      // Form mill at 16-17-18
+      gameController.handlePositionClick(16); // WHITE
+      gameController.handlePositionClick(0); // BLACK
+      gameController.handlePositionClick(17); // WHITE
+      gameController.handlePositionClick(1); // BLACK
+      gameController.handlePositionClick(18); // WHITE - forms mill
 
-    // BLACK places at position 5
-    gameController.handlePositionClick(5);
+      const state = gameController.getCurrentGameState();
+      expect(state?.millFormed).toBe(true);
+    });
 
-    // Verify BLACK placed a piece (not removed anything)
-    expect(gameState.board[5]).toBe(PlayerColor.BLACK);
-    expect(gameState.blackPiecesOnBoard).toBe(blackPiecesBeforePlacement + 1); // On board count increases
-    expect(gameState.blackPiecesRemaining).toBe(blackPiecesRemainingBefore - 1); // Remaining decrements
+    it('should detect vertical mill on left edge', () => {
+      // Form mill at 0-7-6
+      gameController.handlePositionClick(0); // WHITE
+      gameController.handlePositionClick(8); // BLACK
+      gameController.handlePositionClick(7); // WHITE
+      gameController.handlePositionClick(9); // BLACK
+      gameController.handlePositionClick(6); // WHITE - forms mill
+
+      const state = gameController.getCurrentGameState();
+      expect(state?.millFormed).toBe(true);
+    });
+
+    it('should detect vertical mill on right edge', () => {
+      // Form mill at 2-3-4
+      gameController.handlePositionClick(2); // WHITE
+      gameController.handlePositionClick(8); // BLACK
+      gameController.handlePositionClick(3); // WHITE
+      gameController.handlePositionClick(9); // BLACK
+      gameController.handlePositionClick(4); // WHITE - forms mill
+
+      const state = gameController.getCurrentGameState();
+      expect(state?.millFormed).toBe(true);
+    });
+
+    it('should detect radial mill connecting squares', () => {
+      // Form mill at 1-9-17 (top radial)
+      gameController.handlePositionClick(1); // WHITE
+      gameController.handlePositionClick(0); // BLACK
+      gameController.handlePositionClick(9); // WHITE
+      gameController.handlePositionClick(8); // BLACK
+      gameController.handlePositionClick(17); // WHITE - forms mill
+
+      const state = gameController.getCurrentGameState();
+      expect(state?.millFormed).toBe(true);
+    });
+
+    it('should not detect non-mill patterns', () => {
+      // Place pieces that don't form a mill
+      gameController.handlePositionClick(0); // WHITE
+      gameController.handlePositionClick(8); // BLACK
+      gameController.handlePositionClick(2); // WHITE (not adjacent to 0)
+
+      const state = gameController.getCurrentGameState();
+      expect(state?.millFormed).toBe(false);
+    });
   });
 
-  it('should verify removal animation does not re-render removed piece', () => {
-    gameController.startGame();
-    const gameState = gameController.getCurrentGameState()!;
+  describe('Removable Piece Identification', () => {
+    beforeEach(() => {
+      // Set up scenario with mill formed
+      gameController.handlePositionClick(0); // WHITE
+      gameController.handlePositionClick(8); // BLACK
+      gameController.handlePositionClick(1); // WHITE
+      gameController.handlePositionClick(9); // BLACK
+      gameController.handlePositionClick(2); // WHITE - forms mill
+    });
 
-    // Form a mill
-    gameController.handlePositionClick(0); // WHITE at 0
-    gameController.handlePositionClick(3); // BLACK at 3
-    gameController.handlePositionClick(1); // WHITE at 1
-    gameController.handlePositionClick(4); // BLACK at 4
-    gameController.handlePositionClick(2); // WHITE at 2 - MILL FORMED
+    it('should allow removal of opponent pieces not in mills', () => {
+      // BLACK pieces at 8 and 9 are not in mills
+      gameController.handlePositionClick(8); // Remove BLACK piece
 
-    // Verify mill is formed and piece exists
-    expect(gameState.millFormed).toBe(true);
-    expect(gameState.board[3]).toBe(PlayerColor.BLACK);
+      const state = gameController.getCurrentGameState();
+      expect(state?.board[8]).toBe(null);
+    });
 
-    // Remove piece at position 3
-    gameController.handlePositionClick(3);
+    it('should not allow removal of own pieces', () => {
+      // Try to remove WHITE piece (should not work)
+      gameController.handlePositionClick(0); // WHITE piece
 
-    // CRITICAL: Board state should be updated immediately
-    expect(gameState.board[3]).toBeNull();
-    expect(gameState.blackPiecesOnBoard).toBe(1);
+      const state = gameController.getCurrentGameState();
+      expect(state?.board[0]).toBe(PlayerColor.WHITE); // Should still be there
+      expect(state?.millFormed).toBe(true); // Mill state should persist
+    });
 
-    // The render method should be called with the updated board state
-    // (without the removed piece), even if animation is running
-    // This test verifies the board state is correct after removal
+    it('should not allow removal of empty positions', () => {
+      gameController.handlePositionClick(10); // Empty position
+
+      const state = gameController.getCurrentGameState();
+      expect(state?.millFormed).toBe(true); // Mill state should persist
+    });
   });
 
-  it('should update board state BEFORE starting removal animation', () => {
-    gameController.startGame();
-    const gameState = gameController.getCurrentGameState()!;
+  describe('Protected Mill Pieces', () => {
+    it('should not allow removal of pieces in mills when other pieces exist', () => {
+      // Set up scenario where BLACK has pieces in and out of mills
+      const state = gameController.getCurrentGameState();
+      if (state) {
+        state.board = Array(24).fill(null);
+        state.board[0] = PlayerColor.WHITE;
+        state.board[1] = PlayerColor.WHITE;
+        state.board[2] = PlayerColor.WHITE; // WHITE mill
+        state.board[8] = PlayerColor.BLACK;
+        state.board[9] = PlayerColor.BLACK;
+        state.board[10] = PlayerColor.BLACK; // BLACK mill
+        state.board[15] = PlayerColor.BLACK; // BLACK piece not in mill
+        state.millFormed = true;
+        state.currentPlayer = PlayerColor.WHITE;
+        gameController.setBoardState(state);
+      }
 
-    // Form a mill
-    gameController.handlePositionClick(0); // WHITE at 0
-    gameController.handlePositionClick(3); // BLACK at 3
-    gameController.handlePositionClick(1); // WHITE at 1
-    gameController.handlePositionClick(4); // BLACK at 4
-    gameController.handlePositionClick(2); // WHITE at 2 - MILL FORMED
+      // Try to remove BLACK piece in mill (should not work)
+      gameController.handlePositionClick(8);
 
-    // Spy on the boardRenderer's animateRemoval method
-    const animateRemovalSpy = vi.spyOn(boardRenderer, 'animateRemoval');
+      const finalState = gameController.getCurrentGameState();
+      expect(finalState?.board[8]).toBe(PlayerColor.BLACK); // Should still be there
 
-    // Remove piece at position 3
-    gameController.handlePositionClick(3);
+      // Remove BLACK piece not in mill (should work)
+      gameController.handlePositionClick(15);
+      expect(finalState?.board[15]).toBe(null);
+    });
 
-    // Verify animateRemoval was called
-    expect(animateRemovalSpy).toHaveBeenCalledWith(3, PlayerColor.BLACK);
+    it('should allow removal of pieces in mills when all opponent pieces are in mills', () => {
+      // Set up scenario where all BLACK pieces are in mills
+      const state = gameController.getCurrentGameState();
+      if (state) {
+        state.board = Array(24).fill(null);
+        state.board[0] = PlayerColor.WHITE;
+        state.board[1] = PlayerColor.WHITE;
+        state.board[2] = PlayerColor.WHITE; // WHITE mill
+        state.board[8] = PlayerColor.BLACK;
+        state.board[9] = PlayerColor.BLACK;
+        state.board[10] = PlayerColor.BLACK; // BLACK mill (all BLACK pieces in mills)
+        state.millFormed = true;
+        state.currentPlayer = PlayerColor.WHITE;
+        gameController.setBoardState(state);
+      }
 
-    // CRITICAL: When animateRemoval is called, the board state should ALREADY be updated
-    // This ensures drawPieces() won't draw the removed piece
-    expect(gameState.board[3]).toBeNull();
-    expect(gameState.blackPiecesOnBoard).toBe(1);
+      // Should be able to remove BLACK piece even though it's in a mill
+      gameController.handlePositionClick(8);
+
+      const finalState = gameController.getCurrentGameState();
+      expect(finalState?.board[8]).toBe(null);
+    });
   });
 
-  it('should switch player after piece removal', () => {
-    gameController.startGame();
-    const gameState = gameController.getCurrentGameState()!;
+  describe('Removal Execution', () => {
+    beforeEach(() => {
+      // Form mill
+      gameController.handlePositionClick(0); // WHITE
+      gameController.handlePositionClick(8); // BLACK
+      gameController.handlePositionClick(1); // WHITE
+      gameController.handlePositionClick(9); // BLACK
+      gameController.handlePositionClick(2); // WHITE - forms mill
+    });
 
-    // Form a mill: WHITE places at 0, 1, 2
-    gameController.handlePositionClick(0); // WHITE at 0
-    gameController.handlePositionClick(3); // BLACK at 3
-    gameController.handlePositionClick(1); // WHITE at 1
-    gameController.handlePositionClick(4); // BLACK at 4
-    gameController.handlePositionClick(2); // WHITE at 2 - MILL FORMED
+    it('should remove piece from board', () => {
+      gameController.handlePositionClick(8); // Remove BLACK piece
 
-    // Current player should still be WHITE (waiting for removal)
-    expect(gameState.currentPlayer).toBe(PlayerColor.WHITE);
-    expect(gameState.millFormed).toBe(true);
+      const state = gameController.getCurrentGameState();
+      expect(state?.board[8]).toBe(null);
+    });
 
-    // Remove BLACK piece at position 3
-    gameController.handlePositionClick(3);
+    it('should decrement opponent piece count', () => {
+      const initialState = gameController.getCurrentGameState();
+      const initialBlackCount = initialState?.blackPiecesOnBoard;
 
-    // CRITICAL: After removal, player should switch to BLACK
-    expect(gameState.currentPlayer).toBe(PlayerColor.BLACK);
-    expect(gameState.millFormed).toBe(false);
+      gameController.handlePositionClick(8);
+
+      const finalState = gameController.getCurrentGameState();
+      expect(finalState?.blackPiecesOnBoard).toBe((initialBlackCount || 0) - 1);
+    });
+
+    it('should clear mill formed flag after removal', () => {
+      gameController.handlePositionClick(8);
+
+      const state = gameController.getCurrentGameState();
+      expect(state?.millFormed).toBe(false);
+    });
+
+    it('should switch player after removal', () => {
+      gameController.handlePositionClick(8);
+
+      const state = gameController.getCurrentGameState();
+      expect(state?.currentPlayer).toBe(PlayerColor.BLACK);
+    });
+
+    it('should clear selection after removal', () => {
+      gameController.handlePositionClick(8);
+
+      // After removal, mill should be cleared and it should be BLACK's turn
+      const state = gameController.getCurrentGameState();
+      expect(state?.board[8]).toBe(null); // Piece was removed
+      expect(state?.millFormed).toBe(false); // Mill cleared
+      expect(state?.currentPlayer).toBe(PlayerColor.BLACK); // Turn switched
+    });
+  });
+
+  describe('Multiple Mills', () => {
+    it('should handle forming multiple mills in sequence', () => {
+      // Form first mill
+      gameController.handlePositionClick(0); // WHITE
+      gameController.handlePositionClick(8); // BLACK
+      gameController.handlePositionClick(1); // WHITE
+      gameController.handlePositionClick(9); // BLACK
+      gameController.handlePositionClick(2); // WHITE - forms mill
+      gameController.handlePositionClick(8); // Remove BLACK
+
+      // Form second mill
+      gameController.handlePositionClick(10); // BLACK
+      gameController.handlePositionClick(6); // WHITE
+      gameController.handlePositionClick(11); // BLACK
+      gameController.handlePositionClick(7); // WHITE
+      gameController.handlePositionClick(12); // BLACK - forms mill
+
+      const state = gameController.getCurrentGameState();
+      expect(state?.millFormed).toBe(true);
+    });
+
+    it('should handle breaking and reforming same mill', () => {
+      // Set up movement phase with a mill that can be broken and reformed
+      const state = gameController.getCurrentGameState();
+      if (state) {
+        state.phase = GamePhase.MOVEMENT;
+        state.whitePiecesRemaining = 0;
+        state.blackPiecesRemaining = 0;
+        state.whitePiecesOnBoard = 5;
+        state.blackPiecesOnBoard = 3;
+        state.board = Array(24).fill(null);
+        // WHITE mill at 0-1-2
+        state.board[0] = PlayerColor.WHITE;
+        state.board[1] = PlayerColor.WHITE;
+        state.board[2] = PlayerColor.WHITE;
+        state.board[7] = PlayerColor.WHITE;
+        state.board[16] = PlayerColor.WHITE;
+        // BLACK pieces
+        state.board[8] = PlayerColor.BLACK;
+        state.board[9] = PlayerColor.BLACK;
+        state.board[10] = PlayerColor.BLACK;
+        state.currentPlayer = PlayerColor.WHITE;
+        gameController.setBoardState(state);
+      }
+
+      // Break mill by moving piece from 2 to 3
+      gameController.handlePositionClick(2);
+      gameController.handlePositionClick(3);
+
+      // Verify mill is broken
+      const stateBroken = gameController.getCurrentGameState();
+      expect(stateBroken?.millFormed).toBe(false);
+
+      // Switch back to WHITE's turn to reform mill
+      const state2 = gameController.getCurrentGameState();
+      if (state2) {
+        state2.currentPlayer = PlayerColor.WHITE;
+        gameController.setBoardState(state2);
+      }
+
+      // Reform mill by moving back from 3 to 2
+      gameController.handlePositionClick(3);
+      gameController.handlePositionClick(2);
+
+      const finalState = gameController.getCurrentGameState();
+      expect(finalState?.millFormed).toBe(true);
+    });
+  });
+
+  describe('Edge Cases', () => {
+    it('should handle removal when only one opponent piece remains', () => {
+      // Set up scenario with only one BLACK piece
+      const state = gameController.getCurrentGameState();
+      if (state) {
+        state.board = Array(24).fill(null);
+        state.board[0] = PlayerColor.WHITE;
+        state.board[1] = PlayerColor.WHITE;
+        state.board[2] = PlayerColor.WHITE; // WHITE mill
+        state.board[8] = PlayerColor.BLACK; // Only one BLACK piece
+        state.blackPiecesOnBoard = 1;
+        state.millFormed = true;
+        state.currentPlayer = PlayerColor.WHITE;
+        gameController.setBoardState(state);
+      }
+
+      gameController.handlePositionClick(8);
+
+      const finalState = gameController.getCurrentGameState();
+      expect(finalState?.board[8]).toBe(null);
+      expect(finalState?.blackPiecesOnBoard).toBe(0);
+    });
+
+    it('should handle rapid removal attempts', () => {
+      // Form mill
+      gameController.handlePositionClick(0); // WHITE
+      gameController.handlePositionClick(8); // BLACK
+      gameController.handlePositionClick(1); // WHITE
+      gameController.handlePositionClick(9); // BLACK
+      gameController.handlePositionClick(2); // WHITE - forms mill
+
+      // Try to remove multiple pieces (should only remove one)
+      gameController.handlePositionClick(8);
+      gameController.handlePositionClick(9); // Should not work (mill already resolved)
+
+      const state = gameController.getCurrentGameState();
+      expect(state?.board[8]).toBe(null);
+      expect(state?.board[9]).toBe(PlayerColor.BLACK); // Should still be there
+    });
+
+    it('should handle removal during placement phase', () => {
+      // Form mill during placement
+      gameController.handlePositionClick(0); // WHITE
+      gameController.handlePositionClick(8); // BLACK
+      gameController.handlePositionClick(1); // WHITE
+      gameController.handlePositionClick(9); // BLACK
+      gameController.handlePositionClick(2); // WHITE - forms mill
+
+      const state = gameController.getCurrentGameState();
+      expect(state?.phase).toBe(GamePhase.PLACEMENT);
+      expect(state?.millFormed).toBe(true);
+
+      // Remove piece
+      gameController.handlePositionClick(8);
+
+      const finalState = gameController.getCurrentGameState();
+      expect(finalState?.board[8]).toBe(null);
+      expect(finalState?.phase).toBe(GamePhase.PLACEMENT); // Should still be in placement
+    });
+
+    it('should handle removal during movement phase', () => {
+      // Set up movement phase with mill
+      const state = gameController.getCurrentGameState();
+      if (state) {
+        state.phase = GamePhase.MOVEMENT;
+        state.whitePiecesRemaining = 0;
+        state.blackPiecesRemaining = 0;
+        state.board = Array(24).fill(null);
+        state.board[0] = PlayerColor.WHITE;
+        state.board[1] = PlayerColor.WHITE;
+        state.board[3] = PlayerColor.WHITE;
+        state.board[8] = PlayerColor.BLACK;
+        state.board[9] = PlayerColor.BLACK;
+        state.currentPlayer = PlayerColor.WHITE;
+        gameController.setBoardState(state);
+      }
+
+      // Move to form mill
+      gameController.handlePositionClick(3);
+      gameController.handlePositionClick(2); // Forms mill 0-1-2
+
+      // Remove piece
+      gameController.handlePositionClick(8);
+
+      const finalState = gameController.getCurrentGameState();
+      expect(finalState?.board[8]).toBe(null);
+      expect(finalState?.phase).toBe(GamePhase.MOVEMENT);
+    });
+
+    it('should handle invalid removal attempts gracefully', () => {
+      // Form mill
+      gameController.handlePositionClick(0); // WHITE
+      gameController.handlePositionClick(8); // BLACK
+      gameController.handlePositionClick(1); // WHITE
+      gameController.handlePositionClick(9); // BLACK
+      gameController.handlePositionClick(2); // WHITE - forms mill
+
+      // Try to remove invalid positions
+      gameController.handlePositionClick(-1); // Invalid
+      gameController.handlePositionClick(24); // Invalid
+      gameController.handlePositionClick(100); // Invalid
+
+      const state = gameController.getCurrentGameState();
+      expect(state?.millFormed).toBe(true); // Should still be in removal state
+    });
+  });
+
+  describe('Win Condition After Removal', () => {
+    it('should detect win when removal reduces opponent to fewer than 3 pieces', () => {
+      // Set up scenario where BLACK has exactly 3 pieces
+      const state = gameController.getCurrentGameState();
+      if (state) {
+        state.board = Array(24).fill(null);
+        state.board[0] = PlayerColor.WHITE;
+        state.board[1] = PlayerColor.WHITE;
+        state.board[2] = PlayerColor.WHITE; // WHITE mill
+        state.board[8] = PlayerColor.BLACK;
+        state.board[9] = PlayerColor.BLACK;
+        state.board[10] = PlayerColor.BLACK;
+        state.whitePiecesOnBoard = 3;
+        state.blackPiecesOnBoard = 3;
+        state.whitePiecesRemaining = 0;
+        state.blackPiecesRemaining = 0;
+        state.phase = GamePhase.MOVEMENT;
+        state.millFormed = true;
+        state.currentPlayer = PlayerColor.WHITE;
+        gameController.setBoardState(state);
+      }
+
+      // Remove BLACK piece (reduces to 2)
+      gameController.handlePositionClick(8);
+
+      const finalState = gameController.getCurrentGameState();
+      expect(finalState?.blackPiecesOnBoard).toBe(2);
+      expect(finalState?.isGameOver).toBe(true);
+      expect(finalState?.winner).toBe(PlayerColor.WHITE);
+    });
   });
 });

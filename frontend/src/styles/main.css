@@ -2,6 +2,7 @@
 
 /* Import UI component styles */
 @import './ui.css';
+@import './tutorial.css';
 
 * {
     margin: 0;

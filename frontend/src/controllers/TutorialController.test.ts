@@ -1,8 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TutorialController, TutorialAction } from './TutorialController.js';
-import { GameController } from './GameController.js';
-import { BoardRenderer } from '../rendering/BoardRenderer.js';
-import { GameMode, PlayerColor } from '../models/index.js';
+import { PlayerColor, GamePhase } from '../models/index.js';
 
 /**
  * Unit Tests for TutorialController
@@ -10,75 +8,58 @@ import { GameMode, PlayerColor } from '../models/index.js';
  * These tests validate specific tutorial navigation scenarios and edge cases.
  */
 
-// Mock canvas and context
-const mockContext = {
-  clearRect: vi.fn(),
-  strokeStyle: '',
-  fillStyle: '',
-  lineWidth: 0,
-  lineCap: '',
-  lineJoin: '',
-  font: '',
-  textAlign: '',
-  textBaseline: '',
-  globalAlpha: 1,
-  beginPath: vi.fn(),
-  rect: vi.fn(),
-  stroke: vi.fn(),
-  moveTo: vi.fn(),
-  lineTo: vi.fn(),
-  arc: vi.fn(),
-  fill: vi.fn(),
-  fillText: vi.fn(),
-  scale: vi.fn(),
-  save: vi.fn(),
-  restore: vi.fn(),
-};
-
-const createMockCanvas = () => ({
-  getContext: vi.fn(() => mockContext),
-  width: 800,
-  height: 800,
-  style: { width: '', height: '' },
-  parentElement: {
-    clientWidth: 800,
-    clientHeight: 800,
-  },
-  getBoundingClientRect: vi.fn(() => ({
-    width: 800,
-    height: 800,
-    top: 0,
-    left: 0,
-    right: 800,
-    bottom: 800,
-    x: 0,
-    y: 0,
-  })),
-  addEventListener: vi.fn(),
-  removeEventListener: vi.fn(),
-} as unknown as HTMLCanvasElement);
-
-// Mock window.devicePixelRatio
-Object.defineProperty(window, 'devicePixelRatio', {
-  writable: true,
-  value: 1,
-});
-
 describe('TutorialController Unit Tests', () => {
   let tutorialController: TutorialController;
-  let mockGameController: GameController;
-  let mockBoardRenderer: BoardRenderer;
+  let mockGameController: any;
+  let mockBoardRenderer: any;
   let mockOnComplete: vi.Mock;
 
   beforeEach(() => {
-    // Create mock canvas element
-    const canvas = createMockCanvas();
+    // Mock DOM methods that TutorialController uses
+    const mockElement = {
+      className: '',
+      innerHTML: '',
+      textContent: '',
+      disabled: false,
+      // eslint-disable-next-line no-unused-vars
+      querySelector: vi.fn((_selector: string) => mockElement),
+      addEventListener: vi.fn(),
+      remove: vi.fn(),
+    };
 
-    // Create mock board renderer
-    mockBoardRenderer = new BoardRenderer(canvas);
+    global.document = {
+      createElement: vi.fn(() => mockElement),
+      body: {
+        appendChild: vi.fn(),
+      },
+      querySelector: vi.fn(() => mockElement),
+    } as any;
 
-    // Create mock game controller
-    mockGameController = new GameController(GameMode.TUTORIAL, mockBoardRenderer, PlayerColor.WHITE);
+    // Create mock board renderer with only the methods TutorialController uses
+    mockBoardRenderer = {
+      highlightValidMoves: vi.fn(),
+      clearHighlights: vi.fn(),
+      setClickablePositions: vi.fn(),
+      render: vi.fn(), // Prevent real rendering during tests
+    };
+
+    // Create mock game controller with only the methods TutorialController uses
+    mockGameController = {
+      startGame: vi.fn(),
+      getBoardState: vi.fn(() => ({
+        board: Array(24).fill(null),
+        currentPlayer: PlayerColor.WHITE,
+        phase: GamePhase.PLACEMENT,
+        whitePiecesRemaining: 9,
+        blackPiecesRemaining: 9,
+        whitePiecesOnBoard: 0,
+        blackPiecesOnBoard: 0,
+        selectedPosition: null,
+        millFormed: false,
+        gameStatus: 'IN_PROGRESS',
+      })),
+      setBoardState: vi.fn(),
+    };
 
     // Create mock completion callback
     mockOnComplete = vi.fn();
@@ -98,7 +79,7 @@ describe('TutorialController Unit Tests', () => {
     it('should have 10 total steps', () => {
       tutorialController.start(mockGameController, mockBoardRenderer, mockOnComplete);
 
-      expect(tutorialController.getTotalSteps()).toBe(10);
+      expect(tutorialController.getTotalSteps()).toBe(15);
     });
 
     it('should not be active before start', () => {
@@ -122,21 +103,21 @@ describe('TutorialController Unit Tests', () => {
     });
 
     it('should advance through all steps', () => {
-      for (let i = 1; i < 10; i++) {
+      for (let i = 1; i < 15; i++) {
         expect(tutorialController.getCurrentStep()).toBe(i);
         tutorialController.nextStep();
       }
 
-      expect(tutorialController.getCurrentStep()).toBe(10);
+      expect(tutorialController.getCurrentStep()).toBe(15);
     });
 
     it('should complete tutorial when advancing from last step', () => {
       // Navigate to last step
-      for (let i = 1; i < 10; i++) {
+      for (let i = 1; i < 15; i++) {
         tutorialController.nextStep();
       }
 
-      expect(tutorialController.getCurrentStep()).toBe(10);
+      expect(tutorialController.getCurrentStep()).toBe(15);
       expect(tutorialController.isActiveTutorial()).toBe(true);
 
       // Advance from last step
@@ -289,8 +270,8 @@ describe('TutorialController Unit Tests', () => {
         tutorialController.nextStep();
       }
 
-      // Correct action (any remove action)
-      const correctAction: TutorialAction = { type: 'remove', position: 10 };
+      // Correct action (remove at position 8 or 9)
+      const correctAction: TutorialAction = { type: 'remove', position: 8 };
       expect(tutorialController.validateAction(correctAction)).toBe(true);
 
       // Restart to test incorrect action
@@ -305,9 +286,9 @@ describe('TutorialController Unit Tests', () => {
       expect(tutorialController.validateAction(incorrectAction)).toBe(false);
     });
 
-    it('should validate move action on step 7', () => {
-      // Navigate to step 7 (expects move action)
-      for (let i = 1; i < 7; i++) {
+    it('should validate move action on step 10', () => {
+      // Navigate to step 10 (expects move action)
+      for (let i = 1; i < 10; i++) {
         tutorialController.nextStep();
       }
 
@@ -318,7 +299,7 @@ describe('TutorialController Unit Tests', () => {
       // Restart to test incorrect action
       tutorialController.skip();
       tutorialController.start(mockGameController, mockBoardRenderer, mockOnComplete);
-      for (let i = 1; i < 7; i++) {
+      for (let i = 1; i < 10; i++) {
         tutorialController.nextStep();
       }
 
@@ -376,7 +357,7 @@ describe('TutorialController Unit Tests', () => {
       tutorialController.start(mockGameController, mockBoardRenderer, mockOnComplete);
 
       const totalSteps = tutorialController.getTotalSteps();
-      expect(totalSteps).toBe(10);
+      expect(totalSteps).toBe(15);
 
       // Total steps should not change during navigation
       tutorialController.nextStep();
@@ -404,7 +385,7 @@ describe('TutorialController Unit Tests', () => {
       tutorialController.start(mockGameController, mockBoardRenderer, mockOnComplete);
 
       // Complete tutorial
-      for (let i = 1; i < 10; i++) {
+      for (let i = 1; i < 15; i++) {
         tutorialController.nextStep();
       }
       tutorialController.nextStep(); // Complete
@@ -446,7 +427,7 @@ describe('TutorialController Unit Tests', () => {
       expect(mockOnComplete).not.toHaveBeenCalled();
 
       // Navigate to end
-      for (let i = 1; i < 10; i++) {
+      for (let i = 1; i < 15; i++) {
         tutorialController.nextStep();
       }
       tutorialController.nextStep(); // Complete

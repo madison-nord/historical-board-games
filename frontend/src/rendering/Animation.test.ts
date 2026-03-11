@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AnimationQueue } from './AnimationQueue.js';
 import { PlacementAnimation } from './PlacementAnimation.js';
 import { MovementAnimation } from './MovementAnimation.js';
@@ -72,6 +72,11 @@ describe('Animation System', () => {
         render: vi.fn(),
         onComplete: vi.fn(),
       };
+    });
+
+    afterEach(() => {
+      // Clean up any running animations to prevent unhandled errors
+      queue.clearAll();
     });
 
     it('should add animations to queue', () => {

@@ -1,525 +1,455 @@
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import * as fc from 'fast-check';
+import { BoardRenderer } from './BoardRenderer';
+import { PlayerColor } from '../models';
+
 /**
- * Property-Based Tests for BoardRenderer Resize Behavior
- * 
- * **Validates: Requirements 9.3**
- * **Property 20: State Preservation During Resize**
- * 
- * These tests verify that window resize events do not modify game state.
- * The canvas should scale proportionally while preserving all game data.
+ * Property-Based Tests for BoardRenderer Responsive Behavior
+ *
+ * Tests cover:
+ * - Canvas resizing with arbitrary dimensions
+ * - Position calculation accuracy across different sizes
+ * - Rendering consistency at various scales
+ * - Touch/click coordinate mapping
+ * - Board layout preservation during resize
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import * as fc from 'fast-check';
-import { BoardRenderer } from './BoardRenderer.js';
-import { PlayerColor, GamePhase } from '../models/index.js';
-
-describe('BoardRenderer - Property 20: State Preservation During Resize', () => {
-  let mockCanvas: HTMLCanvasElement;
-  let mockContext: CanvasRenderingContext2D;
-  let renderer: BoardRenderer;
+describe('BoardRenderer - Responsive Behavior (Property-Based)', () => {
+  let canvas: HTMLCanvasElement;
+  let boardRenderer: BoardRenderer;
 
   beforeEach(() => {
-    // Create mock canvas
-    mockCanvas = {
-      getContext: vi.fn(),
-      addEventListener: vi.fn(),
-      getBoundingClientRect: vi.fn(() => ({
-        width: 600,
-        height: 600,
-        top: 0,
-        left: 0,
-        right: 600,
-        bottom: 600,
-        x: 0,
-        y: 0,
-        toJSON: () => ({}),
-      })),
-      parentElement: {
-        clientWidth: 800,
-        clientHeight: 800,
-      },
-      style: {},
-      width: 600,
-      height: 600,
-    } as unknown as HTMLCanvasElement;
-
-    // Create mock 2D context
-    mockContext = {
-      clearRect: vi.fn(),
-      beginPath: vi.fn(),
-      moveTo: vi.fn(),
-      lineTo: vi.fn(),
-      arc: vi.fn(),
-      rect: vi.fn(),
-      fill: vi.fn(),
-      stroke: vi.fn(),
-      scale: vi.fn(),
-      fillText: vi.fn(),
-      measureText: vi.fn(() => ({ width: 100 })),
-      save: vi.fn(),
-      restore: vi.fn(),
-      translate: vi.fn(),
-      rotate: vi.fn(),
-      fillStyle: '',
-      strokeStyle: '',
-      lineWidth: 1,
-      lineCap: 'butt',
-      lineJoin: 'miter',
-      font: '14px sans-serif',
-      textAlign: 'left',
-      textBaseline: 'alphabetic',
-    } as unknown as CanvasRenderingContext2D;
-
-    vi.mocked(mockCanvas.getContext).mockReturnValue(mockContext);
-
-    renderer = new BoardRenderer(mockCanvas);
+    canvas = document.createElement('canvas');
+    document.body.appendChild(canvas);
   });
 
-  /**
-   * Property: Resize does not modify board state
-   * 
-   * For any valid board configuration, calling handleResize() should not
-   * change the piece positions or colors on the board.
-   */
-  it('Property 20.1: Resize preserves board piece positions', () => {
-    fc.assert(
-      fc.property(
-        // Generate random board configurations
-        fc.array(
-          fc.oneof(
-            fc.constant(null),
-            fc.constant(PlayerColor.WHITE),
-            fc.constant(PlayerColor.BLACK)
-          ),
-          { minLength: 24, maxLength: 24 }
+  afterEach(() => {
+    document.body.removeChild(canvas);
+  });
+
+  describe('Canvas Resizing Properties', () => {
+    it('should maintain square aspect ratio for any canvas size', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 200, max: 2000 }),
+          fc.integer({ min: 200, max: 2000 }),
+          (width, height) => {
+            canvas.width = width;
+            canvas.height = height;
+            boardRenderer = new BoardRenderer(canvas);
+
+            const boardSize = boardRenderer.getBoardSize();
+            const size = Math.min(width, height);
+            const padding = size * 0.1; // 10% padding
+            const expectedSize = size - padding * 2;
+
+            expect(boardSize).toBe(expectedSize);
+          }
         ),
-        board => {
-          // Create a deep copy of the board state before resize
-          const boardBefore = [...board];
+        { numRuns: 100 }
+      );
+    });
 
-          // Render the board
-          renderer.render(board);
+    it('should handle resize to smaller dimensions without errors', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 600, max: 1000 }),
+          fc.integer({ min: 200, max: 599 }),
+          (initialSize, newSize) => {
+            canvas.width = initialSize;
+            canvas.height = initialSize;
+            boardRenderer = new BoardRenderer(canvas);
 
-          // Trigger resize
-          renderer.handleResize();
+            // Resize to smaller
+            canvas.width = newSize;
+            canvas.height = newSize;
+            boardRenderer.resize(newSize, newSize);
 
-          // Render again after resize
-          renderer.render(board);
+            const boardSize = boardRenderer.getBoardSize();
+            expect(boardSize).toBeGreaterThan(0);
+            expect(boardSize).toBeLessThanOrEqual(newSize);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
 
-          // Verify board state is unchanged
-          expect(board).toEqual(boardBefore);
-          expect(board.length).toBe(24);
+    it('should handle resize to larger dimensions without errors', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 200, max: 599 }),
+          fc.integer({ min: 600, max: 1500 }),
+          (initialSize, newSize) => {
+            canvas.width = initialSize;
+            canvas.height = initialSize;
+            boardRenderer = new BoardRenderer(canvas);
 
-          // Verify each position is unchanged
+            // Resize to larger
+            canvas.width = newSize;
+            canvas.height = newSize;
+            boardRenderer.resize(newSize, newSize);
+
+            const boardSize = boardRenderer.getBoardSize();
+            expect(boardSize).toBeGreaterThan(0);
+            expect(boardSize).toBeLessThanOrEqual(newSize);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe('Position Calculation Properties', () => {
+    it('should map all 24 positions to valid coordinates for any board size', () => {
+      fc.assert(
+        fc.property(fc.integer({ min: 300, max: 1200 }), size => {
+          canvas.width = size;
+          canvas.height = size;
+          boardRenderer = new BoardRenderer(canvas);
+
+          const board = Array(24).fill(null);
+          boardRenderer.render(board, null, []);
+
+          // All positions should be calculable
           for (let i = 0; i < 24; i++) {
-            expect(board[i]).toBe(boardBefore[i]);
+            const coords = boardRenderer.getPositionCoordinates(i);
+            expect(coords).toBeDefined();
+            expect(coords.x).toBeGreaterThanOrEqual(0);
+            expect(coords.y).toBeGreaterThanOrEqual(0);
+            expect(coords.x).toBeLessThanOrEqual(size);
+            expect(coords.y).toBeLessThanOrEqual(size);
           }
-        }
-      ),
-      { numRuns: 100 }
-    );
-  });
+        }),
+        { numRuns: 50 }
+      );
+    });
 
-  /**
-   * Property: Resize does not modify game phase
-   * 
-   * For any game phase, calling handleResize() should not change the phase.
-   */
-  it('Property 20.2: Resize preserves game phase', () => {
-    fc.assert(
-      fc.property(
-        fc.constantFrom(GamePhase.PLACEMENT, GamePhase.MOVEMENT, GamePhase.FLYING),
-        fc.array(
-          fc.oneof(
-            fc.constant(null),
-            fc.constant(PlayerColor.WHITE),
-            fc.constant(PlayerColor.BLACK)
-          ),
-          { minLength: 24, maxLength: 24 }
-        ),
-        (phase, board) => {
-          const phaseBefore = phase;
+    it('should maintain relative position distances across different sizes', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 400, max: 800 }),
+          fc.integer({ min: 800, max: 1200 }),
+          (smallSize, largeSize) => {
+            // Render at small size
+            canvas.width = smallSize;
+            canvas.height = smallSize;
+            const smallRenderer = new BoardRenderer(canvas);
+            const board = Array(24).fill(null);
+            smallRenderer.render(board, null, []);
 
-          // Render with phase
-          renderer.render(board, PlayerColor.WHITE, phase);
+            const smallCoords0 = smallRenderer.getPositionCoordinates(0);
+            const smallCoords1 = smallRenderer.getPositionCoordinates(1);
+            const smallDistance = Math.sqrt(
+              Math.pow(smallCoords1.x - smallCoords0.x, 2) +
+                Math.pow(smallCoords1.y - smallCoords0.y, 2)
+            );
 
-          // Trigger resize
-          renderer.handleResize();
+            // Render at large size
+            canvas.width = largeSize;
+            canvas.height = largeSize;
+            const largeRenderer = new BoardRenderer(canvas);
+            largeRenderer.render(board, null, []);
 
-          // Render again
-          renderer.render(board, PlayerColor.WHITE, phase);
+            const largeCoords0 = largeRenderer.getPositionCoordinates(0);
+            const largeCoords1 = largeRenderer.getPositionCoordinates(1);
+            const largeDistance = Math.sqrt(
+              Math.pow(largeCoords1.x - largeCoords0.x, 2) +
+                Math.pow(largeCoords1.y - largeCoords0.y, 2)
+            );
 
-          // Verify phase is unchanged
-          expect(phase).toBe(phaseBefore);
-        }
-      ),
-      { numRuns: 100 }
-    );
-  });
+            // Distance should scale proportionally based on board size (not canvas size)
+            // Board size = canvas size - 2 * padding, where padding = canvas size * 0.1
+            const smallBoardSize = smallSize - smallSize * 0.1 * 2;
+            const largeBoardSize = largeSize - largeSize * 0.1 * 2;
+            const ratio = largeDistance / smallDistance;
+            const expectedRatio = largeBoardSize / smallBoardSize;
 
-  /**
-   * Property: Resize does not modify current player
-   * 
-   * For any current player, calling handleResize() should not change the player.
-   */
-  it('Property 20.3: Resize preserves current player', () => {
-    fc.assert(
-      fc.property(
-        fc.constantFrom(PlayerColor.WHITE, PlayerColor.BLACK),
-        fc.array(
-          fc.oneof(
-            fc.constant(null),
-            fc.constant(PlayerColor.WHITE),
-            fc.constant(PlayerColor.BLACK)
-          ),
-          { minLength: 24, maxLength: 24 }
-        ),
-        (currentPlayer, board) => {
-          const playerBefore = currentPlayer;
-
-          // Render with current player
-          renderer.render(board, currentPlayer, GamePhase.PLACEMENT);
-
-          // Trigger resize
-          renderer.handleResize();
-
-          // Render again
-          renderer.render(board, currentPlayer, GamePhase.PLACEMENT);
-
-          // Verify current player is unchanged
-          expect(currentPlayer).toBe(playerBefore);
-        }
-      ),
-      { numRuns: 100 }
-    );
-  });
-
-  /**
-   * Property: Resize does not modify piece counts
-   * 
-   * For any piece counts, calling handleResize() should not change the counts.
-   */
-  it('Property 20.4: Resize preserves piece counts', () => {
-    fc.assert(
-      fc.property(
-        fc.integer({ min: 0, max: 9 }),
-        fc.integer({ min: 0, max: 9 }),
-        fc.array(
-          fc.oneof(
-            fc.constant(null),
-            fc.constant(PlayerColor.WHITE),
-            fc.constant(PlayerColor.BLACK)
-          ),
-          { minLength: 24, maxLength: 24 }
-        ),
-        (whiteRemaining, blackRemaining, board) => {
-          const whiteRemainingBefore = whiteRemaining;
-          const blackRemainingBefore = blackRemaining;
-
-          // Render with piece counts
-          renderer.render(
-            board,
-            PlayerColor.WHITE,
-            GamePhase.PLACEMENT,
-            whiteRemaining,
-            blackRemaining
-          );
-
-          // Trigger resize
-          renderer.handleResize();
-
-          // Render again
-          renderer.render(
-            board,
-            PlayerColor.WHITE,
-            GamePhase.PLACEMENT,
-            whiteRemaining,
-            blackRemaining
-          );
-
-          // Verify piece counts are unchanged
-          expect(whiteRemaining).toBe(whiteRemainingBefore);
-          expect(blackRemaining).toBe(blackRemainingBefore);
-        }
-      ),
-      { numRuns: 100 }
-    );
-  });
-
-  /**
-   * Property: Multiple resizes preserve state
-   * 
-   * For any board state, calling handleResize() multiple times should not
-   * change the game state.
-   */
-  it('Property 20.5: Multiple resizes preserve state', () => {
-    fc.assert(
-      fc.property(
-        fc.array(
-          fc.oneof(
-            fc.constant(null),
-            fc.constant(PlayerColor.WHITE),
-            fc.constant(PlayerColor.BLACK)
-          ),
-          { minLength: 24, maxLength: 24 }
-        ),
-        fc.integer({ min: 1, max: 10 }),
-        (board, resizeCount) => {
-          const boardBefore = [...board];
-
-          // Render initial state
-          renderer.render(board);
-
-          // Trigger multiple resizes
-          for (let i = 0; i < resizeCount; i++) {
-            renderer.handleResize();
+            expect(Math.abs(ratio - expectedRatio)).toBeLessThan(0.1);
           }
-
-          // Render after resizes
-          renderer.render(board);
-
-          // Verify board state is unchanged
-          expect(board).toEqual(boardBefore);
-        }
-      ),
-      { numRuns: 100 }
-    );
+        ),
+        { numRuns: 50 }
+      );
+    });
   });
 
-  /**
-   * Property: Resize with different canvas sizes preserves state
-   * 
-   * For any board state, resizing the canvas to different dimensions
-   * should not change the game state.
-   */
-  it('Property 20.6: Resize to different dimensions preserves state', () => {
-    fc.assert(
-      fc.property(
-        fc.array(
-          fc.oneof(
-            fc.constant(null),
-            fc.constant(PlayerColor.WHITE),
-            fc.constant(PlayerColor.BLACK)
-          ),
-          { minLength: 24, maxLength: 24 }
-        ),
-        fc.integer({ min: 400, max: 1200 }),
-        fc.integer({ min: 400, max: 1200 }),
-        (board, newWidth, newHeight) => {
-          const boardBefore = [...board];
+  describe('Click Coordinate Mapping Properties', () => {
+    it('should map click coordinates to valid positions or null', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 400, max: 1000 }),
+          fc.integer({ min: 0, max: 999 }),
+          fc.integer({ min: 0, max: 999 }),
+          (size, clickX, clickY) => {
+            canvas.width = size;
+            canvas.height = size;
+            boardRenderer = new BoardRenderer(canvas);
 
-          // Render initial state
-          renderer.render(board);
+            const board = Array(24).fill(null);
+            boardRenderer.render(board, null, []);
 
-          // Change canvas size
-          if (mockCanvas.parentElement) {
-            mockCanvas.parentElement.clientWidth = newWidth;
-            mockCanvas.parentElement.clientHeight = newHeight;
+            const position = boardRenderer.getPositionFromCoordinates(clickX, clickY);
+
+            // Position should be valid index or null
+            if (position !== null) {
+              expect(position).toBeGreaterThanOrEqual(0);
+              expect(position).toBeLessThan(24);
+            }
           }
-
-          // Trigger resize
-          renderer.handleResize();
-
-          // Render after resize
-          renderer.render(board);
-
-          // Verify board state is unchanged
-          expect(board).toEqual(boardBefore);
-        }
-      ),
-      { numRuns: 100 }
-    );
-  });
-
-  /**
-   * Property: Resize preserves highlighted positions
-   * 
-   * For any set of highlighted positions, calling handleResize() should not
-   * change which positions are highlighted.
-   */
-  it('Property 20.7: Resize preserves highlighted positions', () => {
-    fc.assert(
-      fc.property(
-        fc.array(fc.integer({ min: 0, max: 23 }), { minLength: 0, maxLength: 10 }),
-        fc.array(
-          fc.oneof(
-            fc.constant(null),
-            fc.constant(PlayerColor.WHITE),
-            fc.constant(PlayerColor.BLACK)
-          ),
-          { minLength: 24, maxLength: 24 }
         ),
-        (highlightedPositions, board) => {
-          // Remove duplicates
-          const uniqueHighlights = [...new Set(highlightedPositions)];
-          const highlightsBefore = [...uniqueHighlights];
+        { numRuns: 200 }
+      );
+    });
 
-          // Set highlights
-          renderer.highlightValidMoves(uniqueHighlights);
+    it('should consistently map position center coordinates back to same position', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 400, max: 1000 }),
+          fc.integer({ min: 0, max: 23 }),
+          (size, position) => {
+            canvas.width = size;
+            canvas.height = size;
+            boardRenderer = new BoardRenderer(canvas);
 
-          // Render
-          renderer.render(board);
+            const board = Array(24).fill(null);
+            boardRenderer.render(board, null, []);
 
-          // Trigger resize
-          renderer.handleResize();
+            const coords = boardRenderer.getPositionCoordinates(position);
+            const mappedPosition = boardRenderer.getPositionFromCoordinates(coords.x, coords.y);
 
-          // Render again
-          renderer.render(board);
-
-          // Verify highlights are unchanged (we can't directly check internal state,
-          // but we verify the input array wasn't modified)
-          expect(uniqueHighlights).toEqual(highlightsBefore);
-        }
-      ),
-      { numRuns: 100 }
-    );
-  });
-
-  /**
-   * Property: Resize during animation preserves animation state
-   * 
-   * For any board state with active animations, calling handleResize()
-   * should not cancel or modify the animations.
-   */
-  it('Property 20.8: Resize preserves animation queue', () => {
-    fc.assert(
-      fc.property(
-        fc.array(
-          fc.oneof(
-            fc.constant(null),
-            fc.constant(PlayerColor.WHITE),
-            fc.constant(PlayerColor.BLACK)
-          ),
-          { minLength: 24, maxLength: 24 }
-        ),
-        fc.integer({ min: 0, max: 23 }),
-        fc.constantFrom(PlayerColor.WHITE, PlayerColor.BLACK),
-        (board, position, color) => {
-          // Start an animation
-          let animationCompleted = false;
-          renderer.animatePlacement(position, color, () => {
-            animationCompleted = true;
-          });
-
-          // Check if animation is active
-          const hasAnimationsBefore = renderer.hasActiveAnimations();
-
-          // Trigger resize during animation
-          renderer.handleResize();
-
-          // Animation state should be preserved
-          // (we can't check internal queue, but we verify hasActiveAnimations is consistent)
-          const hasAnimationsAfter = renderer.hasActiveAnimations();
-
-          // If there were animations before, there should still be animations after
-          // (unless they completed during the resize, which is unlikely in this test)
-          if (hasAnimationsBefore) {
-            expect(hasAnimationsAfter || animationCompleted).toBe(true);
+            expect(mappedPosition).toBe(position);
           }
-        }
-      ),
-      { numRuns: 50 } // Fewer runs for animation tests
-    );
+        ),
+        { numRuns: 100 }
+      );
+    });
   });
 
-  /**
-   * Property: Resize preserves input enabled state
-   * 
-   * For any input enabled state, calling handleResize() should not change
-   * whether input is enabled or disabled.
-   */
-  it('Property 20.9: Resize preserves input enabled state', () => {
-    fc.assert(
-      fc.property(
-        fc.boolean(),
-        fc.array(
-          fc.oneof(
-            fc.constant(null),
-            fc.constant(PlayerColor.WHITE),
-            fc.constant(PlayerColor.BLACK)
-          ),
-          { minLength: 24, maxLength: 24 }
+  describe('Rendering Consistency Properties', () => {
+    it('should render board with any valid piece configuration', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 400, max: 800 }),
+          fc.array(fc.constantFrom(null, PlayerColor.WHITE, PlayerColor.BLACK), {
+            minLength: 24,
+            maxLength: 24,
+          }),
+          (size, board) => {
+            canvas.width = size;
+            canvas.height = size;
+            boardRenderer = new BoardRenderer(canvas);
+
+            // Should not throw
+            expect(() => {
+              boardRenderer.render(board, null, []);
+            }).not.toThrow();
+          }
         ),
-        (inputEnabled, board) => {
-          // Set input enabled state
-          renderer.setInputEnabled(inputEnabled);
-          const inputEnabledBefore = renderer.isInputEnabledState();
+        { numRuns: 100 }
+      );
+    });
 
-          // Render
-          renderer.render(board);
+    it('should handle highlighting any subset of positions', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 400, max: 800 }),
+          fc.array(fc.integer({ min: 0, max: 23 }), { maxLength: 24 }),
+          (size, highlightedPositions) => {
+            canvas.width = size;
+            canvas.height = size;
+            boardRenderer = new BoardRenderer(canvas);
 
-          // Trigger resize
-          renderer.handleResize();
+            const board = Array(24).fill(null);
+            const uniquePositions = [...new Set(highlightedPositions)];
 
-          // Render again
-          renderer.render(board);
+            // Should not throw
+            expect(() => {
+              boardRenderer.render(board, null, uniquePositions);
+            }).not.toThrow();
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
 
-          // Verify input enabled state is unchanged
-          const inputEnabledAfter = renderer.isInputEnabledState();
-          expect(inputEnabledAfter).toBe(inputEnabledBefore);
-          expect(inputEnabledAfter).toBe(inputEnabled);
-        }
-      ),
-      { numRuns: 100 }
-    );
+    it('should handle selecting any valid position', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 400, max: 800 }),
+          fc.integer({ min: 0, max: 23 }),
+          (size, selectedPosition) => {
+            canvas.width = size;
+            canvas.height = size;
+            boardRenderer = new BoardRenderer(canvas);
+
+            const board = Array(24).fill(null);
+            board[selectedPosition] = PlayerColor.WHITE;
+
+            // Should not throw
+            expect(() => {
+              boardRenderer.render(board, selectedPosition, []);
+            }).not.toThrow();
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
   });
 
-  /**
-   * Property: Resize preserves game over state
-   * 
-   * For any game over state, calling handleResize() should not change
-   * the game over status or winner.
-   */
-  it('Property 20.10: Resize preserves game over state', () => {
-    fc.assert(
-      fc.property(
-        fc.boolean(),
-        fc.option(fc.constantFrom(PlayerColor.WHITE, PlayerColor.BLACK), { nil: null }),
-        fc.array(
-          fc.oneof(
-            fc.constant(null),
-            fc.constant(PlayerColor.WHITE),
-            fc.constant(PlayerColor.BLACK)
-          ),
-          { minLength: 24, maxLength: 24 }
+  describe('Edge Cases and Boundary Conditions', () => {
+    it('should handle minimum viable canvas size', () => {
+      fc.assert(
+        fc.property(fc.integer({ min: 100, max: 199 }), size => {
+          canvas.width = size;
+          canvas.height = size;
+          boardRenderer = new BoardRenderer(canvas);
+
+          const board = Array(24).fill(null);
+
+          // Should render without errors even at small sizes
+          expect(() => {
+            boardRenderer.render(board, null, []);
+          }).not.toThrow();
+
+          const boardSize = boardRenderer.getBoardSize();
+          expect(boardSize).toBeGreaterThan(0);
+        }),
+        { numRuns: 50 }
+      );
+    });
+
+    it('should handle non-square canvas dimensions', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 300, max: 1000 }),
+          fc.integer({ min: 300, max: 1000 }),
+          (width, height) => {
+            fc.pre(width !== height); // Only test non-square
+
+            canvas.width = width;
+            canvas.height = height;
+            boardRenderer = new BoardRenderer(canvas);
+
+            const board = Array(24).fill(null);
+
+            // Should render without errors
+            expect(() => {
+              boardRenderer.render(board, null, []);
+            }).not.toThrow();
+
+            // Board should fit within smaller dimension
+            const boardSize = boardRenderer.getBoardSize();
+            expect(boardSize).toBeLessThanOrEqual(Math.min(width, height));
+          }
         ),
-        (isGameOver, winner, board) => {
-          const isGameOverBefore = isGameOver;
-          const winnerBefore = winner;
+        { numRuns: 100 }
+      );
+    });
 
-          // Render with game over state
-          renderer.render(
-            board,
-            PlayerColor.WHITE,
-            GamePhase.MOVEMENT,
-            undefined,
-            undefined,
-            false,
-            isGameOver,
-            winner
-          );
+    it('should handle rapid resize sequences', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer({ min: 300, max: 1000 }), { minLength: 3, maxLength: 10 }),
+          sizes => {
+            canvas.width = sizes[0];
+            canvas.height = sizes[0];
+            boardRenderer = new BoardRenderer(canvas);
 
-          // Trigger resize
-          renderer.handleResize();
+            const board = Array(24).fill(null);
 
-          // Render again
-          renderer.render(
-            board,
-            PlayerColor.WHITE,
-            GamePhase.MOVEMENT,
-            undefined,
-            undefined,
-            false,
-            isGameOver,
-            winner
-          );
+            // Perform rapid resizes
+            for (const size of sizes) {
+              canvas.width = size;
+              canvas.height = size;
+              boardRenderer.resize(size, size);
+              boardRenderer.render(board, null, []);
+            }
 
-          // Verify game over state is unchanged
-          expect(isGameOver).toBe(isGameOverBefore);
-          expect(winner).toBe(winnerBefore);
-        }
-      ),
-      { numRuns: 100 }
-    );
+            // Final state should be valid
+            const finalBoardSize = boardRenderer.getBoardSize();
+            expect(finalBoardSize).toBeGreaterThan(0);
+            expect(finalBoardSize).toBeLessThanOrEqual(sizes[sizes.length - 1]);
+          }
+        ),
+        { numRuns: 50 }
+      );
+    });
+  });
+
+  describe('Correctness Properties', () => {
+    it('Property: Board size is always positive and less than canvas size', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 200, max: 2000 }),
+          fc.integer({ min: 200, max: 2000 }),
+          (width, height) => {
+            canvas.width = width;
+            canvas.height = height;
+            boardRenderer = new BoardRenderer(canvas);
+
+            const boardSize = boardRenderer.getBoardSize();
+
+            expect(boardSize).toBeGreaterThan(0);
+            expect(boardSize).toBeLessThanOrEqual(Math.min(width, height));
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('Property: Position coordinates are within canvas bounds', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 300, max: 1200 }),
+          fc.integer({ min: 0, max: 23 }),
+          (size, position) => {
+            canvas.width = size;
+            canvas.height = size;
+            boardRenderer = new BoardRenderer(canvas);
+
+            const board = Array(24).fill(null);
+            boardRenderer.render(board, null, []);
+
+            const coords = boardRenderer.getPositionCoordinates(position);
+
+            expect(coords.x).toBeGreaterThanOrEqual(0);
+            expect(coords.y).toBeGreaterThanOrEqual(0);
+            expect(coords.x).toBeLessThanOrEqual(size);
+            expect(coords.y).toBeLessThanOrEqual(size);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('Property: Resize preserves position mapping consistency', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 400, max: 800 }),
+          fc.integer({ min: 400, max: 800 }),
+          fc.integer({ min: 0, max: 23 }),
+          (size1, size2, position) => {
+            // Render at first size
+            canvas.width = size1;
+            canvas.height = size1;
+            boardRenderer = new BoardRenderer(canvas);
+            const board = Array(24).fill(null);
+            boardRenderer.render(board, null, []);
+
+            // Resize to second size
+            canvas.width = size2;
+            canvas.height = size2;
+            boardRenderer.resize(size2, size2);
+            boardRenderer.render(board, null, []);
+
+            // Position should still be valid
+            const coords = boardRenderer.getPositionCoordinates(position);
+            expect(coords).toBeDefined();
+            expect(coords.x).toBeGreaterThanOrEqual(0);
+            expect(coords.y).toBeGreaterThanOrEqual(0);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
   });
 });

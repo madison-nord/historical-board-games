@@ -7,10 +7,13 @@ import { PlayerColor } from '../models/PlayerColor';
  */
 export class UIManager {
   private currentDialog: HTMLDialogElement | null = null;
+  // eslint-disable-next-line no-unused-vars
   private onGameModeSelected: ((mode: string) => void) | null = null;
+  // eslint-disable-next-line no-unused-vars
   private onColorSelected: ((color: PlayerColor) => void) | null = null;
   private onResumeGame: (() => void) | null = null;
   private onNewGame: (() => void) | null = null;
+  private isProcessingClick: boolean = false;
 
   /**
    * Show the main menu with game mode selection buttons
@@ -36,33 +39,45 @@ export class UIManager {
     buttonContainer.className = 'menu-buttons';
 
     const singlePlayerBtn = this.createButton('Single Player', 'primary');
-    singlePlayerBtn.addEventListener('click', () => {
-      this.showGameModeSelection();
-    });
+    singlePlayerBtn.addEventListener(
+      'click',
+      this.withDebounce(() => {
+        this.showGameModeSelection();
+      })
+    );
 
     const localTwoPlayerBtn = this.createButton('Local Two Player', 'primary');
-    localTwoPlayerBtn.addEventListener('click', () => {
-      if (this.onGameModeSelected) {
-        this.onGameModeSelected('local-two-player');
-      }
-      this.closeCurrentDialog();
-    });
+    localTwoPlayerBtn.addEventListener(
+      'click',
+      this.withDebounce(() => {
+        if (this.onGameModeSelected) {
+          this.onGameModeSelected('local-two-player');
+        }
+        this.closeCurrentDialog();
+      })
+    );
 
     const onlineMultiplayerBtn = this.createButton('Online Multiplayer', 'primary');
-    onlineMultiplayerBtn.addEventListener('click', () => {
-      if (this.onGameModeSelected) {
-        this.onGameModeSelected('online-multiplayer');
-      }
-      this.closeCurrentDialog();
-    });
+    onlineMultiplayerBtn.addEventListener(
+      'click',
+      this.withDebounce(() => {
+        if (this.onGameModeSelected) {
+          this.onGameModeSelected('online-multiplayer');
+        }
+        this.closeCurrentDialog();
+      })
+    );
 
     const tutorialBtn = this.createButton('Tutorial', 'secondary');
-    tutorialBtn.addEventListener('click', () => {
-      if (this.onGameModeSelected) {
-        this.onGameModeSelected('tutorial');
-      }
-      this.closeCurrentDialog();
-    });
+    tutorialBtn.addEventListener(
+      'click',
+      this.withDebounce(() => {
+        if (this.onGameModeSelected) {
+          this.onGameModeSelected('tutorial');
+        }
+        this.closeCurrentDialog();
+      })
+    );
 
     buttonContainer.appendChild(singlePlayerBtn);
     buttonContainer.appendChild(localTwoPlayerBtn);
@@ -306,6 +321,7 @@ export class UIManager {
   /**
    * Set callback for when a game mode is selected
    */
+  // eslint-disable-next-line no-unused-vars
   public setOnGameModeSelected(callback: (mode: string) => void): void {
     this.onGameModeSelected = callback;
   }
@@ -313,6 +329,7 @@ export class UIManager {
   /**
    * Set callback for when a color is selected in single-player mode
    */
+  // eslint-disable-next-line no-unused-vars
   public setOnColorSelected(callback: (color: PlayerColor) => void): void {
     this.onColorSelected = callback;
   }
@@ -374,5 +391,22 @@ export class UIManager {
     button.textContent = text;
     button.className = `game-button ${variant}-button`;
     return button;
+  }
+
+  /**
+   * Wrap a click handler with debounce protection
+   */
+  private withDebounce(handler: () => void): () => void {
+    return () => {
+      if (this.isProcessingClick) {
+        return;
+      }
+      this.isProcessingClick = true;
+      handler();
+      // Reset after a short delay
+      setTimeout(() => {
+        this.isProcessingClick = false;
+      }, 300);
+    };
   }
 }

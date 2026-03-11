@@ -23,6 +23,14 @@
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jqwik.version>1.9.2</jqwik.version>
+        <jacoco.version>0.8.14</jacoco.version>
+        <pitest.version>1.17.3</pitest.version>
+        <pitest-junit5.version>1.2.1</pitest-junit5.version>
+        
+        <!-- Coverage thresholds -->
+        <coverage.line.minimum>0.80</coverage.line.minimum>
+        <coverage.branch.minimum>0.75</coverage.branch.minimum>
+        <mutation.threshold>70</mutation.threshold>
     </properties>
 
     <dependencies>
@@ -89,7 +97,124 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <argLine>--enable-preview</argLine>
+                    <argLine>@{argLine} --enable-preview</argLine>
+                </configuration>
+            </plugin>
+
+            <!-- JaCoCo Code Coverage -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <!-- Prepare agent for unit tests -->
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    
+                    <!-- Generate coverage report after tests -->
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    
+                    <!-- Enforce coverage thresholds -->
+                    <execution>
+                        <id>check</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${coverage.line.minimum}</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>BRANCH</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${coverage.branch.minimum}</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <excludes>
+                        <!-- Exclude Spring Boot application class -->
+                        <exclude>**/NineMensMorrisApplication.class</exclude>
+                        <!-- Exclude model classes (simple POJOs) -->
+                        <exclude>**/model/*.class</exclude>
+                        <!-- Exclude configuration classes -->
+                        <exclude>**/config/*.class</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <!-- PIT Mutation Testing -->
+            <plugin>
+                <groupId>org.pitest</groupId>
+                <artifactId>pitest-maven</artifactId>
+                <version>${pitest.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-junit5-plugin</artifactId>
+                        <version>${pitest-junit5.version}</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <!-- Target only critical game engine classes -->
+                    <targetClasses>
+                        <param>com.ninemensmorris.engine.*</param>
+                        <param>com.ninemensmorris.service.AIService</param>
+                    </targetClasses>
+                    <targetTests>
+                        <param>com.ninemensmorris.engine.*</param>
+                        <param>com.ninemensmorris.service.AIServiceTest</param>
+                    </targetTests>
+                    
+                    <!-- Mutation thresholds -->
+                    <mutationThreshold>${mutation.threshold}</mutationThreshold>
+                    <coverageThreshold>80</coverageThreshold>
+                    
+                    <!-- Output formats -->
+                    <outputFormats>
+                        <outputFormat>HTML</outputFormat>
+                        <outputFormat>XML</outputFormat>
+                    </outputFormats>
+                    
+                    <!-- Mutators to use -->
+                    <mutators>
+                        <mutator>DEFAULTS</mutator>
+                    </mutators>
+                    
+                    <!-- Exclude classes from mutation -->
+                    <excludedClasses>
+                        <param>com.ninemensmorris.NineMensMorrisApplication</param>
+                        <param>com.ninemensmorris.model.*</param>
+                        <param>com.ninemensmorris.config.*</param>
+                    </excludedClasses>
+                    
+                    <!-- Performance settings -->
+                    <threads>4</threads>
+                    <timeoutConstant>4000</timeoutConstant>
+                    <timeoutFactor>1.25</timeoutFactor>
+                    
+                    <!-- Enable verbose output -->
+                    <verbose>false</verbose>
                 </configuration>
             </plugin>
         </plugins>

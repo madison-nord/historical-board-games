@@ -145,6 +145,7 @@
   transition: all var(--transition-fast);
   text-align: center;
   min-width: 120px;
+  min-height: 48px; /* Ensure touch-friendly size (44px minimum + padding) */
   outline: none;
 }
 

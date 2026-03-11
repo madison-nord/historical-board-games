@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { LocalStorage } from './LocalStorage.js';
 import { GamePhase, PlayerColor, GameMode } from '../models/index.js';
 import type { GameState } from '../controllers/GameController.js';

@@ -41,6 +41,9 @@ export class GameController {
   private validMoves: number[] = [];
   private playerColor: PlayerColor = PlayerColor.WHITE; // Player's color in single-player mode
   private isAiThinking: boolean = false;
+  private tutorialController: any | null = null; // TutorialController reference for tutorial mode
+  private animationFrameId: number | null = null;
+  private lastFrameTime: number = 0;
 
   constructor(
     gameMode: GameMode,
@@ -53,6 +56,96 @@ export class GameController {
 
     // Set up input handling
     this.boardRenderer.setOnPositionClick(this.handlePositionClick.bind(this));
+
+    // Start the game loop
+    this.startGameLoop();
+  }
+
+  /**
+   * Start the continuous render loop
+   */
+  private startGameLoop(): void {
+    this.lastFrameTime = performance.now();
+    this.gameLoop();
+  }
+
+  /**
+   * Main game loop - renders the board continuously
+   */
+  private gameLoop = (): void => {
+    const currentTime = performance.now();
+    const deltaTime = currentTime - this.lastFrameTime;
+    this.lastFrameTime = currentTime;
+
+    // Render the current game state
+    if (this.currentGameState) {
+      this.boardRenderer.render(
+        this.currentGameState.board,
+        this.currentGameState.currentPlayer,
+        this.currentGameState.phase,
+        this.currentGameState.whitePiecesRemaining,
+        this.currentGameState.blackPiecesRemaining,
+        deltaTime
+      );
+    }
+
+    // Continue the loop
+    this.animationFrameId = requestAnimationFrame(this.gameLoop);
+  };
+
+  /**
+   * Stop the game loop (cleanup)
+   */
+  public stopGameLoop(): void {
+    if (this.animationFrameId !== null) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+  }
+
+  /**
+   * Set tutorial controller for tutorial mode
+   */
+  public setTutorialController(tutorialController: any): void {
+    this.tutorialController = tutorialController;
+  }
+
+  /**
+   * Check if currently in tutorial mode
+   */
+  public isTutorialMode(): boolean {
+    return this.tutorialController !== null && this.tutorialController.isActiveTutorial();
+  }
+
+  /**
+   * Set board state (for tutorial mode to reset board between phases)
+   */
+  public setBoardState(state: GameState): void {
+    this.currentGameState = state;
+    this.updateDisplay();
+  }
+
+  /**
+   * Get current board state (for tutorial to save/restore)
+   */
+  public getBoardState(): GameState {
+    if (!this.currentGameState) {
+      throw new Error('Game not started - cannot get board state');
+    }
+
+    return {
+      gameId: this.currentGameState.gameId,
+      phase: this.currentGameState.phase,
+      currentPlayer: this.currentGameState.currentPlayer,
+      whitePiecesRemaining: this.currentGameState.whitePiecesRemaining,
+      blackPiecesRemaining: this.currentGameState.blackPiecesRemaining,
+      whitePiecesOnBoard: this.currentGameState.whitePiecesOnBoard,
+      blackPiecesOnBoard: this.currentGameState.blackPiecesOnBoard,
+      board: [...this.currentGameState.board],
+      isGameOver: this.currentGameState.isGameOver,
+      winner: this.currentGameState.winner,
+      millFormed: this.currentGameState.millFormed,
+    };
   }
 
   /**
@@ -174,6 +267,15 @@ export class GameController {
       return;
     }
 
+    // Validate with tutorial controller if in tutorial mode
+    if (this.tutorialController && this.tutorialController.isActiveTutorial()) {
+      const isValid = this.tutorialController.handleGameAction('place', position);
+      if (!isValid) {
+        logger.debug('Tutorial validation failed for placement');
+        return; // Don't apply the move if tutorial validation fails
+      }
+    }
+
     // Create and apply the move
     const move: Move = {
       type: MoveType.PLACE,
@@ -204,10 +306,30 @@ export class GameController {
     if (this.selectedPosition === null) {
       // First click - select a piece to move
       if (pieceAtPosition === currentPlayer) {
+        // Notify tutorial controller about piece selection (for movement steps)
+        if (this.tutorialController && this.tutorialController.isActiveTutorial()) {
+          const isValid = this.tutorialController.handleGameAction(
+            'move',
+            undefined,
+            position,
+            undefined
+          );
+          if (!isValid) {
+            logger.debug('Tutorial validation failed for piece selection');
+            return; // Don't select the piece if tutorial validation fails
+          }
+        }
+
         this.selectedPosition = position;
         this.validMoves = this.getValidMovesFrom(position);
         console.log(`[handleMovementClick] Selected piece, validMoves=${this.validMoves.length}`);
         this.boardRenderer.highlightValidMoves(this.validMoves);
+
+        // Notify tutorial controller about valid moves (so it can update clickable positions)
+        if (this.tutorialController && this.tutorialController.isActiveTutorial()) {
+          this.tutorialController.onPieceSelected(position, this.validMoves);
+        }
+
         this.updateDisplay(); // IMMEDIATE visual feedback
         logger.debug(`Selected piece at position ${position}`);
       } else {
@@ -224,6 +346,21 @@ export class GameController {
       } else if (this.validMoves.includes(position)) {
         // Valid move
         console.log('[handleMovementClick] Valid move, applying');
+
+        // Validate with tutorial controller if in tutorial mode
+        if (this.tutorialController && this.tutorialController.isActiveTutorial()) {
+          const isValid = this.tutorialController.handleGameAction(
+            'move',
+            undefined,
+            this.selectedPosition,
+            position
+          );
+          if (!isValid) {
+            logger.debug('Tutorial validation failed for movement');
+            return; // Don't apply the move if tutorial validation fails
+          }
+        }
+
         const move: Move = {
           type: MoveType.MOVE,
           from: this.selectedPosition,
@@ -441,6 +578,15 @@ export class GameController {
     const removablePieces = this.getRemovablePieces(opponent);
 
     if (removablePieces.includes(position)) {
+      // Validate with tutorial controller if in tutorial mode
+      if (this.tutorialController && this.tutorialController.isActiveTutorial()) {
+        const isValid = this.tutorialController.handleGameAction('remove', position);
+        if (!isValid) {
+          logger.debug('Tutorial validation failed for removal');
+          return; // Don't remove the piece if tutorial validation fails
+        }
+      }
+
       this.removePiece(position);
       this.boardRenderer.clearHighlights();
     } else {
@@ -687,10 +833,18 @@ export class GameController {
       return;
     }
 
+    console.log(
+      `[switchPlayer] BEFORE switch: currentPlayer=${this.currentGameState.currentPlayer}`
+    );
+
     this.currentGameState.currentPlayer =
       this.currentGameState.currentPlayer === PlayerColor.WHITE
         ? PlayerColor.BLACK
         : PlayerColor.WHITE;
+
+    console.log(
+      `[switchPlayer] AFTER switch: currentPlayer=${this.currentGameState.currentPlayer}`
+    );
 
     // Clear selection and highlights when switching players
     this.clearSelection();
@@ -878,7 +1032,7 @@ export class GameController {
   /**
    * Update the visual display
    */
-  private updateDisplay(): void {
+  public updateDisplay(): void {
     if (!this.currentGameState) {
       return;
     }
@@ -890,9 +1044,7 @@ export class GameController {
       this.currentGameState.phase,
       this.currentGameState.whitePiecesRemaining,
       this.currentGameState.blackPiecesRemaining,
-      this.isAiThinking,
-      this.currentGameState.isGameOver,
-      this.currentGameState.winner
+      16 // deltaTime in ms (60 FPS = ~16ms per frame)
     );
   }
 
