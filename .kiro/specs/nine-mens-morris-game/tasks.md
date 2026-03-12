@@ -520,8 +520,8 @@ The implementation uses:
     - Create `OpponentDisconnectedMessage` class
     - _Requirements: 5.1, 6.1_
 
-- [ ] 27. Implement MatchmakingService
-  - [ ] 27.1 Create MatchmakingService class
+- [x] 27. Implement MatchmakingService
+  - [x] 27.1 Create MatchmakingService class
     - Implement `joinQueue(playerId, sessionId)` method
     - Implement `leaveQueue(playerId)` method
     - Implement `tryMatchPlayers()` private method
@@ -531,13 +531,13 @@ The implementation uses:
     - Use SimpMessagingTemplate for WebSocket messaging
     - _Requirements: 5.1, 5.2_
   
-  - [ ] 27.2 Write property test for matchmaking pairing
+  - [x] 27.2 Write property test for matchmaking pairing
     - **Property 13: Matchmaking Pairing**
     - **Validates: Requirements 5.1, 5.2**
     - Test that two queued players get paired and assigned a game
     - Test that colors are randomly assigned
   
-  - [ ] 27.3 Write unit tests for matchmaking
+  - [x] 27.3 Write unit tests for matchmaking
     - Test queue join and leave
     - Test player pairing logic
     - Test disconnect handling
