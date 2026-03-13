@@ -679,8 +679,8 @@ The implementation uses:
     - Show "Return to Menu" button
     - _Requirements: 5.5, 5.6_
 
-- [ ] 33. Integrate online multiplayer with GameController
-  - [ ] 33.1 Add online mode to GameController
+- [-] 33. Integrate online multiplayer with GameController
+  - [x] 33.1 Add online mode to GameController
     - Modify GameController to support online mode
     - Send moves via WebSocket instead of local application
     - Receive and apply opponent moves from WebSocket
@@ -688,7 +688,7 @@ The implementation uses:
     - Handle latency and waiting for opponent
     - _Requirements: 5.2, 5.3_
   
-  - [ ] 33.2 Write integration tests for online multiplayer
+  - [x] 33.2 Write integration tests for online multiplayer
     - Test complete online game flow
     - Test chat during game
     - Test disconnect and reconnect

@@ -2,6 +2,7 @@ import { BoardRenderer } from '../rendering/BoardRenderer.js';
 import { GameMode, GamePhase, PlayerColor, Move, MoveType } from '../models/index.js';
 import { logger } from '../utils/logger.js';
 import { LocalStorage } from '../utils/LocalStorage.js';
+import { WebSocketClient } from '../network/WebSocketClient.js';
 
 /**
  * Interface representing the current game state
@@ -44,6 +45,9 @@ export class GameController {
   private tutorialController: any | null = null; // TutorialController reference for tutorial mode
   private animationFrameId: number | null = null;
   private lastFrameTime: number = 0;
+  private webSocketClient: WebSocketClient | null = null; // WebSocket client for online multiplayer
+  private onlineGameId: string | null = null; // Game ID for online multiplayer
+  private isWaitingForOpponent: boolean = false; // Waiting for opponent move
 
   constructor(
     gameMode: GameMode,
@@ -108,6 +112,25 @@ export class GameController {
    */
   public setTutorialController(tutorialController: any): void {
     this.tutorialController = tutorialController;
+  }
+
+  /**
+   * Set WebSocket client for online multiplayer mode
+   */
+  public setWebSocketClient(client: WebSocketClient): void {
+    this.webSocketClient = client;
+
+    // Set up message handlers
+    this.webSocketClient.setOnGameStateUpdate(this.handleGameStateUpdate.bind(this));
+    this.webSocketClient.setOnGameStart(this.handleGameStart.bind(this));
+    this.webSocketClient.setOnGameEnd(this.handleGameEnd.bind(this));
+  }
+
+  /**
+   * Check if currently in online multiplayer mode
+   */
+  private isOnlineMode(): boolean {
+    return this.gameMode === GameMode.ONLINE_MULTIPLAYER && this.webSocketClient !== null;
   }
 
   /**
@@ -380,6 +403,7 @@ export class GameController {
 
   /**
    * Apply a move to the game state
+   * In online mode, sends move to server instead of applying locally
    */
   private applyMove(move: Move): void {
     if (!this.currentGameState) {
@@ -388,6 +412,23 @@ export class GameController {
 
     logger.debug('Applying move:', move);
 
+    // In online mode, send move to server and wait for state update
+    if (this.isOnlineMode() && this.webSocketClient) {
+      try {
+        this.webSocketClient.sendMove(move);
+        this.isWaitingForOpponent = true;
+        this.boardRenderer.setInputEnabled(false); // Disable input while waiting
+        logger.debug('Move sent to server, waiting for response');
+        return; // Exit early - server will send state update
+      } catch (error) {
+        logger.error('Failed to send move to server:', error);
+        // Re-enable input on error
+        this.boardRenderer.setInputEnabled(true);
+        return;
+      }
+    }
+
+    // Local mode - apply move directly (single-player, local two-player, tutorial)
     // Update board state
     if (move.type === MoveType.PLACE) {
       this.currentGameState.board[move.to] = move.player;
@@ -1086,9 +1127,15 @@ export class GameController {
   /**
    * Save current game state to localStorage
    * Only saves local games (single-player and local two-player)
+   * Does NOT save online multiplayer games
    */
   private saveGameState(): void {
     if (!this.currentGameState) {
+      return;
+    }
+
+    // Don't save online multiplayer games
+    if (this.isOnlineMode()) {
       return;
     }
 
@@ -1172,5 +1219,110 @@ export class GameController {
   public abandonGame(): void {
     this.clearSavedGame();
     logger.info('Game abandoned, saved state cleared');
+  }
+
+  /**
+   * Handle game state update from WebSocket (online multiplayer)
+   */
+  private handleGameStateUpdate(update: any): void {
+    if (!this.isOnlineMode() || !this.currentGameState) {
+      return;
+    }
+
+    logger.debug('Received game state update:', update);
+
+    // Update local game state from server (server is source of truth)
+    this.currentGameState = {
+      gameId: update.gameId,
+      phase: update.phase as GamePhase,
+      currentPlayer: update.currentPlayer as PlayerColor,
+      whitePiecesRemaining: update.whitePiecesRemaining,
+      blackPiecesRemaining: update.blackPiecesRemaining,
+      whitePiecesOnBoard: update.whitePiecesOnBoard,
+      blackPiecesOnBoard: update.blackPiecesOnBoard,
+      board: update.board,
+      isGameOver: update.isGameOver,
+      winner: update.winner as PlayerColor | null,
+      millFormed: update.millFormed,
+    };
+
+    // Clear waiting state
+    this.isWaitingForOpponent = false;
+
+    // Update display
+    this.updateDisplay();
+
+    // Enable input if it's our turn
+    const isOurTurn = this.currentGameState.currentPlayer === this.playerColor;
+    this.boardRenderer.setInputEnabled(
+      isOurTurn && !this.currentGameState.isGameOver && !this.currentGameState.millFormed
+    );
+  }
+
+  /**
+   * Handle game start from WebSocket (online multiplayer)
+   */
+  private handleGameStart(message: any): void {
+    if (!this.isOnlineMode()) {
+      return;
+    }
+
+    logger.info('Game started:', message);
+
+    // Store online game ID and player color
+    this.onlineGameId = message.gameId;
+    this.playerColor = message.playerColor as PlayerColor;
+
+    // Initialize game state
+    this.currentGameState = {
+      gameId: message.gameId,
+      phase: GamePhase.PLACEMENT,
+      currentPlayer: PlayerColor.WHITE,
+      whitePiecesRemaining: 9,
+      blackPiecesRemaining: 9,
+      whitePiecesOnBoard: 0,
+      blackPiecesOnBoard: 0,
+      board: new Array(24).fill(null),
+      isGameOver: false,
+      winner: null,
+      millFormed: false,
+    };
+
+    this.selectedPosition = null;
+    this.validMoves = [];
+    this.isWaitingForOpponent = false;
+
+    // Update display
+    this.updateDisplay();
+
+    // Enable input if we're white (white goes first)
+    const isOurTurn = this.playerColor === PlayerColor.WHITE;
+    this.boardRenderer.setInputEnabled(isOurTurn);
+
+    logger.info(`Online game started. You are ${this.playerColor}`);
+  }
+
+  /**
+   * Handle game end from WebSocket (online multiplayer)
+   */
+  private handleGameEnd(message: any): void {
+    if (!this.isOnlineMode() || !this.currentGameState) {
+      return;
+    }
+
+    logger.info('Game ended:', message);
+
+    // Update game state
+    this.currentGameState.isGameOver = true;
+    this.currentGameState.winner = message.winner as PlayerColor | null;
+
+    // Disable input
+    this.boardRenderer.setInputEnabled(false);
+    this.clearSelection();
+
+    // Update display
+    this.updateDisplay();
+
+    logger.info(`Game Over! Winner: ${message.winner}. Reason: ${message.reason}`);
   }
 }
