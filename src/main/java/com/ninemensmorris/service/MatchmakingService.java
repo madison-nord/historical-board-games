@@ -35,9 +35,9 @@ public class MatchmakingService {
     /**
      * Represents a player in the matchmaking queue.
      */
+    @SuppressWarnings("unused") // sessionId will be used in future tasks for session management
     private static class QueuedPlayer {
         final String playerId;
-        @SuppressWarnings("unused") // Will be used for session management in future tasks
         final String sessionId;
         
         QueuedPlayer(String playerId, String sessionId) {
@@ -134,7 +134,6 @@ public class MatchmakingService {
      * @param player2 the second player
      * @param gameId the unique game identifier
      */
-    @SuppressWarnings("null") // Player IDs are non-null in this context
     private void notifyPlayersOfMatch(QueuedPlayer player1, QueuedPlayer player2, String gameId) {
         // Randomly assign colors
         boolean player1IsWhite = random.nextBoolean();

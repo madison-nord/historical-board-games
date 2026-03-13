@@ -591,7 +591,7 @@ The implementation uses:
     - _Requirements: 5.3, 6.2_
 
 - [ ] 29. Implement disconnect and reconnect handling
-  - [ ] 29.1 Add session management
+  - [x] 29.1 Add session management
     - Track WebSocket sessions for each player
     - Implement disconnect detection
     - Implement `handleDisconnect(sessionId)` method
@@ -601,7 +601,7 @@ The implementation uses:
     - Declare winner if opponent doesn't reconnect
     - _Requirements: 5.4_
   
-  - [ ] 29.2 Write unit tests for disconnect handling
+  - [x] 29.2 Write unit tests for disconnect handling
     - Test disconnect notification
     - Test game state preservation
     - Test reconnection within timeout
