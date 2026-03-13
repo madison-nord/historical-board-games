@@ -544,8 +544,8 @@ The implementation uses:
     - _Requirements: 5.1_
 
 
-- [ ] 28. Implement GameWebSocketController
-  - [ ] 28.1 Create WebSocket controller for game moves
+- [-] 28. Implement GameWebSocketController
+  - [x] 28.1 Create WebSocket controller for game moves
     - Create `GameWebSocketController` class with `@Controller` annotation
     - Implement `handlePlacePiece(@MessageMapping("/game/place"))` method
     - Implement `handleMovePiece(@MessageMapping("/game/move"))` method

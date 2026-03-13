@@ -449,4 +449,138 @@ public class GameServiceTest {
         
         assertNull(mapping, "Should return null for non-existent game");
     }
+    
+    // WebSocket Convenience Method Tests
+    
+    @Test
+    @DisplayName("Place piece using convenience method")
+    void testPlacePieceConvenienceMethod() {
+        // Create a two-player game
+        String player1Id = "player-1";
+        String player2Id = "player-2";
+        GameState initialState = gameService.createGame(GameMode.LOCAL_TWO_PLAYER, player1Id, player2Id);
+        String gameId = initialState.getGameId();
+        
+        // Place a piece for player 1 (WHITE)
+        GameState updatedState = gameService.placePiece(gameId, player1Id, 0);
+        
+        assertNotNull(updatedState, "Updated state should not be null");
+        assertEquals(PlayerColor.BLACK, updatedState.getCurrentPlayer(), "Should switch to BLACK player");
+        assertEquals(8, updatedState.getWhitePiecesRemaining(), "WHITE should have 8 pieces remaining");
+    }
+    
+    @Test
+    @DisplayName("Place piece throws exception for invalid player")
+    void testPlacePieceInvalidPlayer() {
+        String player1Id = "player-1";
+        String player2Id = "player-2";
+        GameState initialState = gameService.createGame(GameMode.LOCAL_TWO_PLAYER, player1Id, player2Id);
+        String gameId = initialState.getGameId();
+        
+        assertThrows(IllegalArgumentException.class, () -> {
+            gameService.placePiece(gameId, "invalid-player", 0);
+        }, "Should throw exception for invalid player");
+    }
+    
+    @Test
+    @DisplayName("Move piece using convenience method")
+    void testMovePieceConvenienceMethod() {
+        // Create a game
+        String player1Id = "player-1";
+        String player2Id = "player-2";
+        GameState initialState = gameService.createGame(GameMode.LOCAL_TWO_PLAYER, player1Id, player2Id);
+        String gameId = initialState.getGameId();
+        
+        // Place all pieces to get to movement phase, avoiding mills
+        // WHITE at even positions: 0, 2, 4, 6, 8, 10, 12, 14, 16
+        // BLACK at odd positions: 1, 3, 5, 7, 9, 11, 13, 15, 17
+        for (int i = 0; i < 18; i++) {
+            PlayerColor player = (i % 2 == 0) ? PlayerColor.WHITE : PlayerColor.BLACK;
+            Move move = new Move(MoveType.PLACE, i, player);
+            gameService.makeMove(gameId, move);
+        }
+        
+        // Verify we're in movement phase
+        GameState stateBeforeMove = gameService.getGame(gameId);
+        assertEquals(GamePhase.MOVEMENT, stateBeforeMove.getPhase(), "Should be in movement phase");
+        
+        // It's BLACK's turn, move BLACK piece from 17 to 9 (adjacent, 9 is occupied by BLACK so this won't work)
+        // Let's move from 17 to 18 (adjacent and empty)
+        GameState updatedState = gameService.movePiece(gameId, player2Id, 17, 18);
+        
+        assertNotNull(updatedState, "Updated state should not be null");
+        assertEquals(GamePhase.MOVEMENT, updatedState.getPhase(), "Should still be in movement phase");
+    }
+    
+    @Test
+    @DisplayName("Move piece throws exception for invalid player")
+    void testMovePieceInvalidPlayer() {
+        String player1Id = "player-1";
+        String player2Id = "player-2";
+        GameState initialState = gameService.createGame(GameMode.LOCAL_TWO_PLAYER, player1Id, player2Id);
+        
+        assertThrows(IllegalArgumentException.class, () -> {
+            gameService.movePiece(initialState.getGameId(), "invalid-player", 0, 1);
+        }, "Should throw exception for invalid player");
+    }
+    
+    @Test
+    @DisplayName("Remove piece using convenience method")
+    void testRemovePieceConvenienceMethod() {
+        // Create a game
+        String player1Id = "player-1";
+        String player2Id = "player-2";
+        GameState initialState = gameService.createGame(GameMode.LOCAL_TWO_PLAYER, player1Id, player2Id);
+        String gameId = initialState.getGameId();
+        
+        // Set up a mill scenario: WHITE forms a mill at 0-1-2
+        gameService.placePiece(gameId, player1Id, 0);  // WHITE at 0
+        gameService.placePiece(gameId, player2Id, 8);  // BLACK at 8
+        gameService.placePiece(gameId, player1Id, 1);  // WHITE at 1
+        gameService.placePiece(gameId, player2Id, 9);  // BLACK at 9
+        gameService.placePiece(gameId, player1Id, 2);  // WHITE at 2 - forms mill!
+        
+        // After mill formation, WHITE must remove a BLACK piece before BLACK's turn
+        // The game state should have millFormed=true and still be WHITE's turn
+        GameState stateAfterMill = gameService.getGame(gameId);
+        assertTrue(stateAfterMill.isMillFormed(), "Mill should be formed");
+        assertEquals(PlayerColor.WHITE, stateAfterMill.getCurrentPlayer(), "Should still be WHITE's turn for removal");
+        
+        // Now WHITE removes a BLACK piece
+        GameState updatedState = gameService.removePiece(gameId, player1Id, 8);
+        
+        assertNotNull(updatedState, "Updated state should not be null");
+        // After removal, BLACK should have 8 pieces remaining (started with 9, placed 2, removed 1 = 8 remaining to place)
+        // But pieces on board should be 1 (placed 2, removed 1)
+        assertEquals(1, updatedState.getPiecesOnBoard(PlayerColor.BLACK), "BLACK should have 1 piece on board");
+        assertEquals(7, updatedState.getBlackPiecesRemaining(), "BLACK should have 7 pieces remaining to place");
+    }
+    
+    @Test
+    @DisplayName("Remove piece throws exception for invalid player")
+    void testRemovePieceInvalidPlayer() {
+        String player1Id = "player-1";
+        String player2Id = "player-2";
+        GameState initialState = gameService.createGame(GameMode.LOCAL_TWO_PLAYER, player1Id, player2Id);
+        
+        assertThrows(IllegalArgumentException.class, () -> {
+            gameService.removePiece(initialState.getGameId(), "invalid-player", 0);
+        }, "Should throw exception for invalid player");
+    }
+    
+    @Test
+    @DisplayName("Convenience methods throw exception for non-existent game")
+    void testConvenienceMethodsNonExistentGame() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            gameService.placePiece("non-existent", "player-1", 0);
+        }, "placePiece should throw for non-existent game");
+        
+        assertThrows(IllegalArgumentException.class, () -> {
+            gameService.movePiece("non-existent", "player-1", 0, 1);
+        }, "movePiece should throw for non-existent game");
+        
+        assertThrows(IllegalArgumentException.class, () -> {
+            gameService.removePiece("non-existent", "player-1", 0);
+        }, "removePiece should throw for non-existent game");
+    }
 }

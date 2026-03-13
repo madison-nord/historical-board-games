@@ -13,6 +13,7 @@ import com.ninemensmorris.engine.GameState;
 import com.ninemensmorris.engine.RuleEngine;
 import com.ninemensmorris.model.GameMode;
 import com.ninemensmorris.model.Move;
+import com.ninemensmorris.model.MoveType;
 import com.ninemensmorris.model.PlayerColor;
 
 /**
@@ -308,6 +309,85 @@ public class GameService {
      */
     public int getActiveGameCount() {
         return activeGames.size();
+    }
+    
+    /**
+     * Places a piece at the specified position for the given player.
+     * Convenience method for online multiplayer that wraps makeMove.
+     * 
+     * @param gameId the game ID
+     * @param playerId the player ID
+     * @param position the position to place the piece
+     * @return the updated game state
+     * @throws IllegalArgumentException if the move is invalid
+     */
+    public GameState placePiece(String gameId, String playerId, int position) {
+        PlayerColor playerColor = getPlayerColor(gameId, playerId);
+        Move move = new Move(MoveType.PLACE, position, playerColor);
+        return makeMove(gameId, move);
+    }
+    
+    /**
+     * Moves a piece from one position to another for the given player.
+     * Convenience method for online multiplayer that wraps makeMove.
+     * 
+     * @param gameId the game ID
+     * @param playerId the player ID
+     * @param fromPosition the position to move from
+     * @param toPosition the position to move to
+     * @return the updated game state
+     * @throws IllegalArgumentException if the move is invalid
+     */
+    public GameState movePiece(String gameId, String playerId, int fromPosition, int toPosition) {
+        PlayerColor playerColor = getPlayerColor(gameId, playerId);
+        Move move = new Move(MoveType.MOVE, fromPosition, toPosition, playerColor);
+        return makeMove(gameId, move);
+    }
+    
+    /**
+     * Removes an opponent's piece at the specified position.
+     * Convenience method for online multiplayer that wraps makeMove.
+     * 
+     * @param gameId the game ID
+     * @param playerId the player ID
+     * @param position the position of the piece to remove
+     * @return the updated game state
+     * @throws IllegalArgumentException if the removal is invalid
+     */
+    public GameState removePiece(String gameId, String playerId, int position) {
+        PlayerColor playerColor = getPlayerColor(gameId, playerId);
+        Move move = new Move(MoveType.REMOVE, -1, position, playerColor);
+        return makeMove(gameId, move);
+    }
+    
+    /**
+     * Gets the player color for the given player ID in the specified game.
+     * 
+     * @param gameId the game ID
+     * @param playerId the player ID
+     * @return the player's color
+     * @throws IllegalArgumentException if the player is not in the game
+     */
+    private PlayerColor getPlayerColor(String gameId, String playerId) {
+        String mapping = getPlayerMapping(gameId);
+        if (mapping == null) {
+            throw new IllegalArgumentException("Game not found: " + gameId);
+        }
+        
+        // Parse mapping format: "player1Id:player2Id"
+        // Player 1 is always WHITE, Player 2 is always BLACK
+        String[] parts = mapping.split(":");
+        if (parts.length != 2) {
+            throw new IllegalArgumentException("Invalid player mapping format: " + mapping);
+        }
+        
+        if (parts[0].equals(playerId)) {
+            return PlayerColor.WHITE;
+        } else if (parts[1].equals(playerId)) {
+            return PlayerColor.BLACK;
+        }
+        
+        throw new IllegalArgumentException("Player not in game: " + playerId);
     }
     
     /**
