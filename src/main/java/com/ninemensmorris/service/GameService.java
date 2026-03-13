@@ -368,7 +368,7 @@ public class GameService {
      * @return the player's color
      * @throws IllegalArgumentException if the player is not in the game
      */
-    private PlayerColor getPlayerColor(String gameId, String playerId) {
+    public PlayerColor getPlayerColor(String gameId, String playerId) {
         String mapping = getPlayerMapping(gameId);
         if (mapping == null) {
             throw new IllegalArgumentException("Game not found: " + gameId);

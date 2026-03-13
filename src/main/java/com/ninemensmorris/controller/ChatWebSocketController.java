@@ -8,6 +8,7 @@ import org.springframework.stereotype.Controller;
 import com.ninemensmorris.dto.ChatMessage;
 import com.ninemensmorris.dto.ChatMessageBroadcast;
 import com.ninemensmorris.model.PlayerColor;
+import com.ninemensmorris.service.GameService;
 
 /**
  * WebSocket controller for handling chat messages in online multiplayer.
@@ -25,14 +26,18 @@ public class ChatWebSocketController {
     private static final int MAX_MESSAGE_LENGTH = 200;
     
     private final SimpMessagingTemplate messagingTemplate;
+    private final GameService gameService;
     
     /**
      * Creates a new ChatWebSocketController.
      * 
      * @param messagingTemplate the messaging template for broadcasting messages
+     * @param gameService the game service for retrieving player information
      */
-    public ChatWebSocketController(@NonNull SimpMessagingTemplate messagingTemplate) {
+    public ChatWebSocketController(@NonNull SimpMessagingTemplate messagingTemplate,
+                                   @NonNull GameService gameService) {
         this.messagingTemplate = messagingTemplate;
+        this.gameService = gameService;
     }
     
     /**
@@ -61,7 +66,11 @@ public class ChatWebSocketController {
         // Create broadcast message
         ChatMessageBroadcast broadcast = new ChatMessageBroadcast();
         broadcast.setGameId(message.getGameId());
-        broadcast.setSenderColor(PlayerColor.WHITE); // TODO: Get actual player color from game service
+        
+        // Get actual player color from game service
+        PlayerColor senderColor = gameService.getPlayerColor(message.getGameId(), message.getPlayerId());
+        broadcast.setSenderColor(senderColor);
+        
         broadcast.setContent(content);
         broadcast.setTimestamp(System.currentTimeMillis());
         

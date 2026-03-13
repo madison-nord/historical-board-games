@@ -1,5 +1,6 @@
 package com.ninemensmorris.service;
 
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -215,8 +216,11 @@ public class SessionManagementService {
         String player1 = players[0];
         String player2 = players[1];
         
-        // Find opponent
-        String opponentId = player1.equals(disconnectedPlayerId) ? player2 : player1;
+        // Find opponent and ensure non-null
+        String opponentId = Objects.requireNonNull(
+            player1.equals(disconnectedPlayerId) ? player2 : player1,
+            "Opponent ID must not be null"
+        );
         
         // Determine disconnected player's color
         PlayerColor disconnectedColor = player1.equals(disconnectedPlayerId) 
@@ -260,8 +264,11 @@ public class SessionManagementService {
         String player1 = players[0];
         String player2 = players[1];
         
-        // Find opponent
-        String opponentId = player1.equals(reconnectedPlayerId) ? player2 : player1;
+        // Find opponent and ensure non-null
+        String opponentId = Objects.requireNonNull(
+            player1.equals(reconnectedPlayerId) ? player2 : player1,
+            "Opponent ID must not be null"
+        );
         
         // Send reconnection notification (could be a custom DTO, for now using a simple message)
         // In a full implementation, you might want to create an OpponentReconnectedMessage DTO
@@ -320,8 +327,11 @@ public class SessionManagementService {
         String player1 = players[0];
         String player2 = players[1];
         
-        // Find opponent (winner)
-        String winnerId = player1.equals(disconnectedPlayerId) ? player2 : player1;
+        // Find opponent (winner) and ensure non-null
+        String winnerId = Objects.requireNonNull(
+            player1.equals(disconnectedPlayerId) ? player2 : player1,
+            "Winner ID must not be null"
+        );
         PlayerColor winnerColor = player1.equals(disconnectedPlayerId) 
                 ? PlayerColor.BLACK 
                 : PlayerColor.WHITE;

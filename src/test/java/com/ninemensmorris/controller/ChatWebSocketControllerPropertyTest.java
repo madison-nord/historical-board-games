@@ -4,16 +4,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import org.mockito.ArgumentCaptor;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.MockitoAnnotations;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import com.ninemensmorris.dto.ChatMessage;
 import com.ninemensmorris.dto.ChatMessageBroadcast;
+import com.ninemensmorris.model.PlayerColor;
+import com.ninemensmorris.service.GameService;
 
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
@@ -30,6 +34,9 @@ public class ChatWebSocketControllerPropertyTest {
     
     @Mock
     private SimpMessagingTemplate messagingTemplate;
+    
+    @Mock
+    private GameService gameService;
     
     @Captor
     private ArgumentCaptor<ChatMessageBroadcast> broadcastCaptor;
@@ -51,7 +58,11 @@ public class ChatWebSocketControllerPropertyTest {
         
         // Arrange
         MockitoAnnotations.openMocks(this);
-        controller = new ChatWebSocketController(messagingTemplate);
+        
+        // Mock getPlayerColor to return WHITE for player-1
+        when(gameService.getPlayerColor(anyString(), eq("player-1"))).thenReturn(PlayerColor.WHITE);
+        
+        controller = new ChatWebSocketController(messagingTemplate, gameService);
         
         String gameId = "game-test-123";
         String playerId = "player-1";

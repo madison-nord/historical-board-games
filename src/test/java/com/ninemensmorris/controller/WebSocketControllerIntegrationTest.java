@@ -57,7 +57,7 @@ public class WebSocketControllerIntegrationTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         gameController = new GameWebSocketController(gameService, messagingTemplate);
-        chatController = new ChatWebSocketController(messagingTemplate);
+        chatController = new ChatWebSocketController(messagingTemplate, gameService);
         matchmakingController = new MatchmakingWebSocketController(matchmakingService);
     }
     

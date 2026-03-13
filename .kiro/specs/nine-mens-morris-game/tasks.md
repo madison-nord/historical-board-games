@@ -544,7 +544,7 @@ The implementation uses:
     - _Requirements: 5.1_
 
 
-- [-] 28. Implement GameWebSocketController
+- [x] 28. Implement GameWebSocketController
   - [x] 28.1 Create WebSocket controller for game moves
     - Create `GameWebSocketController` class with `@Controller` annotation
     - Implement `handlePlacePiece(@MessageMapping("/game/place"))` method
@@ -583,7 +583,7 @@ The implementation uses:
     - Note: Content filtering not implemented in current version
     - Consider integrating external profanity filtering library for production
   
-  - [ ] 28.7 Write integration tests for WebSocket controller
+  - [x] 28.7 Write integration tests for WebSocket controller
     - Test complete game flow over WebSocket
     - Test chat message routing
     - Test matchmaking flow
@@ -608,7 +608,7 @@ The implementation uses:
     - Test timeout and winner declaration
     - _Requirements: 5.4_
 
-- [ ] 30. Checkpoint - Backend multiplayer complete
+- [x] 30. Checkpoint - Backend multiplayer complete
   - Test WebSocket connections and message routing
   - Test matchmaking with multiple concurrent users
   - Test disconnect and reconnect scenarios

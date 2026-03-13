@@ -1,5 +1,6 @@
 package com.ninemensmorris.service;
 
+import java.util.Objects;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -156,14 +157,18 @@ public class MatchmakingService {
         message2.setPlayer2Color(player2Color);
         
         // Send notifications to both players
+        // Ensure player IDs are non-null before passing to messaging template
+        String player1Id = Objects.requireNonNull(player1.playerId, "Player 1 ID must not be null");
+        String player2Id = Objects.requireNonNull(player2.playerId, "Player 2 ID must not be null");
+        
         messagingTemplate.convertAndSendToUser(
-                player1.playerId,
+                player1Id,
                 "/queue/game-start",
                 message1
         );
         
         messagingTemplate.convertAndSendToUser(
-                player2.playerId,
+                player2Id,
                 "/queue/game-start",
                 message2
         );

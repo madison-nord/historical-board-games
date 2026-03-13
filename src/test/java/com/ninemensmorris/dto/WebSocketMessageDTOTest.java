@@ -54,6 +54,19 @@ public class WebSocketMessageDTOTest {
     }
     
     @Test
+    @DisplayName("PlacePieceMessage constructor with parameters")
+    void testPlacePieceMessageConstructor() {
+        // Act
+        PlacePieceMessage message = new PlacePieceMessage("game-123", "player-1", 5, PlayerColor.WHITE);
+        
+        // Assert
+        assertEquals("game-123", message.getGameId());
+        assertEquals("player-1", message.getPlayerId());
+        assertEquals(5, message.getPosition());
+        assertEquals(PlayerColor.WHITE, message.getPlayerColor());
+    }
+    
+    @Test
     @DisplayName("MovePieceMessage serialization and deserialization")
     void testMovePieceMessage() throws Exception {
         // Arrange
@@ -76,6 +89,20 @@ public class WebSocketMessageDTOTest {
         assertEquals(3, deserialized.getFromPosition());
         assertEquals(7, deserialized.getToPosition());
         assertEquals(PlayerColor.BLACK, deserialized.getPlayerColor());
+    }
+    
+    @Test
+    @DisplayName("MovePieceMessage constructor with parameters")
+    void testMovePieceMessageConstructor() {
+        // Act
+        MovePieceMessage message = new MovePieceMessage("game-456", "player-2", 3, 7, PlayerColor.BLACK);
+        
+        // Assert
+        assertEquals("game-456", message.getGameId());
+        assertEquals("player-2", message.getPlayerId());
+        assertEquals(3, message.getFromPosition());
+        assertEquals(7, message.getToPosition());
+        assertEquals(PlayerColor.BLACK, message.getPlayerColor());
     }
     
     @Test
@@ -102,6 +129,19 @@ public class WebSocketMessageDTOTest {
     }
     
     @Test
+    @DisplayName("RemovePieceMessage constructor with parameters")
+    void testRemovePieceMessageConstructor() {
+        // Act
+        RemovePieceMessage message = new RemovePieceMessage("game-789", "player-3", 12, PlayerColor.WHITE);
+        
+        // Assert
+        assertEquals("game-789", message.getGameId());
+        assertEquals("player-3", message.getPlayerId());
+        assertEquals(12, message.getPosition());
+        assertEquals(PlayerColor.WHITE, message.getPlayerColor());
+    }
+    
+    @Test
     @DisplayName("ChatMessage serialization and deserialization")
     void testChatMessage() throws Exception {
         // Arrange
@@ -125,6 +165,22 @@ public class WebSocketMessageDTOTest {
     }
     
     @Test
+    @DisplayName("ChatMessage constructor with parameters")
+    void testChatMessageConstructor() {
+        // Arrange
+        Long timestamp = System.currentTimeMillis();
+        
+        // Act
+        ChatMessage message = new ChatMessage("game-abc", "player-4", "Hello, opponent!", timestamp);
+        
+        // Assert
+        assertEquals("game-abc", message.getGameId());
+        assertEquals("player-4", message.getPlayerId());
+        assertEquals("Hello, opponent!", message.getContent());
+        assertEquals(timestamp, message.getTimestamp());
+    }
+    
+    @Test
     @DisplayName("JoinMatchmakingMessage serialization and deserialization")
     void testJoinMatchmakingMessage() throws Exception {
         // Arrange
@@ -141,6 +197,17 @@ public class WebSocketMessageDTOTest {
         // Assert
         assertEquals("player-5", deserialized.getPlayerId());
         assertEquals("session-xyz", deserialized.getSessionId());
+    }
+    
+    @Test
+    @DisplayName("JoinMatchmakingMessage constructor with parameters")
+    void testJoinMatchmakingMessageConstructor() {
+        // Act
+        JoinMatchmakingMessage message = new JoinMatchmakingMessage("player-5", "session-xyz");
+        
+        // Assert
+        assertEquals("player-5", message.getPlayerId());
+        assertEquals("session-xyz", message.getSessionId());
     }
     
     @Test
@@ -198,6 +265,21 @@ public class WebSocketMessageDTOTest {
     }
     
     @Test
+    @DisplayName("GameStartMessage constructor with parameters")
+    void testGameStartMessageConstructor() {
+        // Act
+        GameStartMessage message = new GameStartMessage("game-ghi", "player-6", "player-7", 
+                                                        PlayerColor.WHITE, PlayerColor.BLACK);
+        
+        // Assert
+        assertEquals("game-ghi", message.getGameId());
+        assertEquals("player-6", message.getPlayer1Id());
+        assertEquals("player-7", message.getPlayer2Id());
+        assertEquals(PlayerColor.WHITE, message.getPlayer1Color());
+        assertEquals(PlayerColor.BLACK, message.getPlayer2Color());
+    }
+    
+    @Test
     @DisplayName("GameEndMessage serialization and deserialization")
     void testGameEndMessage() throws Exception {
         // Arrange
@@ -216,6 +298,18 @@ public class WebSocketMessageDTOTest {
         assertEquals("game-jkl", deserialized.getGameId());
         assertEquals(PlayerColor.WHITE, deserialized.getWinner());
         assertEquals("Opponent has fewer than 3 pieces", deserialized.getReason());
+    }
+    
+    @Test
+    @DisplayName("GameEndMessage constructor with parameters")
+    void testGameEndMessageConstructor() {
+        // Act
+        GameEndMessage message = new GameEndMessage("game-jkl", PlayerColor.WHITE, "Opponent has fewer than 3 pieces");
+        
+        // Assert
+        assertEquals("game-jkl", message.getGameId());
+        assertEquals(PlayerColor.WHITE, message.getWinner());
+        assertEquals("Opponent has fewer than 3 pieces", message.getReason());
     }
     
     @Test
@@ -242,6 +336,22 @@ public class WebSocketMessageDTOTest {
     }
     
     @Test
+    @DisplayName("ChatMessageBroadcast constructor with parameters")
+    void testChatMessageBroadcastConstructor() {
+        // Arrange
+        Long timestamp = System.currentTimeMillis();
+        
+        // Act
+        ChatMessageBroadcast message = new ChatMessageBroadcast("game-mno", PlayerColor.BLACK, "Good game!", timestamp);
+        
+        // Assert
+        assertEquals("game-mno", message.getGameId());
+        assertEquals(PlayerColor.BLACK, message.getSenderColor());
+        assertEquals("Good game!", message.getContent());
+        assertEquals(timestamp, message.getTimestamp());
+    }
+    
+    @Test
     @DisplayName("OpponentDisconnectedMessage serialization and deserialization")
     void testOpponentDisconnectedMessage() throws Exception {
         // Arrange
@@ -260,5 +370,17 @@ public class WebSocketMessageDTOTest {
         assertEquals("game-pqr", deserialized.getGameId());
         assertEquals(PlayerColor.WHITE, deserialized.getDisconnectedPlayerColor());
         assertEquals(60, deserialized.getReconnectTimeoutSeconds());
+    }
+    
+    @Test
+    @DisplayName("OpponentDisconnectedMessage constructor with parameters")
+    void testOpponentDisconnectedMessageConstructor() {
+        // Act
+        OpponentDisconnectedMessage message = new OpponentDisconnectedMessage("game-pqr", PlayerColor.WHITE, 60);
+        
+        // Assert
+        assertEquals("game-pqr", message.getGameId());
+        assertEquals(PlayerColor.WHITE, message.getDisconnectedPlayerColor());
+        assertEquals(60, message.getReconnectTimeoutSeconds());
     }
 }

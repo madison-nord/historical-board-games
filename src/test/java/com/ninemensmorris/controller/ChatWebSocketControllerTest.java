@@ -7,16 +7,20 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.MockitoAnnotations;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import com.ninemensmorris.dto.ChatMessage;
 import com.ninemensmorris.dto.ChatMessageBroadcast;
+import com.ninemensmorris.model.PlayerColor;
+import com.ninemensmorris.service.GameService;
 
 /**
  * Unit tests for ChatWebSocketController.
@@ -33,6 +37,9 @@ public class ChatWebSocketControllerTest {
     @Mock
     private SimpMessagingTemplate messagingTemplate;
     
+    @Mock
+    private GameService gameService;
+    
     @Captor
     private ArgumentCaptor<ChatMessageBroadcast> broadcastCaptor;
     
@@ -42,7 +49,12 @@ public class ChatWebSocketControllerTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        controller = new ChatWebSocketController(messagingTemplate);
+        
+        // Mock getPlayerColor to return WHITE for player-1, BLACK for player-2
+        when(gameService.getPlayerColor(anyString(), eq("player-1"))).thenReturn(PlayerColor.WHITE);
+        when(gameService.getPlayerColor(anyString(), eq("player-2"))).thenReturn(PlayerColor.BLACK);
+        
+        controller = new ChatWebSocketController(messagingTemplate, gameService);
     }
     
     @SuppressWarnings("null") // Mock objects are non-null in test context
@@ -72,7 +84,7 @@ public class ChatWebSocketControllerTest {
         ChatMessageBroadcast broadcast = broadcastCaptor.getValue();
         assertNotNull(broadcast);
         assertEquals("game-123", broadcast.getGameId());
-        assertNotNull(broadcast.getSenderColor());
+        assertEquals(PlayerColor.WHITE, broadcast.getSenderColor()); // player-1 should be WHITE
         assertEquals("Hello, good game!", broadcast.getContent());
         assertNotNull(broadcast.getTimestamp());
     }
@@ -145,5 +157,31 @@ public class ChatWebSocketControllerTest {
         assertNotNull(broadcast);
         // Message should be truncated to 200 characters
         assertEquals(200, broadcast.getContent().length());
+    }
+    
+    @SuppressWarnings("null") // Mock objects are non-null in test context
+    @Test
+    @DisplayName("Use correct player color from game service")
+    void testCorrectPlayerColor() {
+        // Arrange - player-2 should be BLACK
+        ChatMessage message = new ChatMessage();
+        message.setGameId("game-456");
+        message.setPlayerId("player-2");
+        message.setContent("Nice move!");
+        
+        // Act
+        controller.handleChatMessage(message);
+        
+        // Assert
+        verify(gameService, times(1)).getPlayerColor("game-456", "player-2");
+        
+        verify(messagingTemplate).convertAndSend(
+            eq("/topic/game/game-456/chat"),
+            broadcastCaptor.capture()
+        );
+        
+        ChatMessageBroadcast broadcast = broadcastCaptor.getValue();
+        assertNotNull(broadcast);
+        assertEquals(PlayerColor.BLACK, broadcast.getSenderColor()); // player-2 should be BLACK
     }
 }
