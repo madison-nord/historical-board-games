@@ -13,7 +13,12 @@ export class UIManager {
   private onColorSelected: ((color: PlayerColor) => void) | null = null;
   private onResumeGame: (() => void) | null = null;
   private onNewGame: (() => void) | null = null;
+  private onCancelMatchmaking: (() => void) | null = null;
+  private onWaitForReconnect: (() => void) | null = null;
+  private onClaimVictory: (() => void) | null = null;
+  private onRematch: (() => void) | null = null;
   private isProcessingClick: boolean = false;
+  private disconnectCountdownInterval: number | null = null;
 
   /**
    * Show the main menu with game mode selection buttons
@@ -167,8 +172,9 @@ export class UIManager {
   /**
    * Show game result dialog displaying the winner
    * @param winner - The color of the winning player, or null for a draw
+   * @param isOnlineGame - Whether this is an online multiplayer game (shows rematch button)
    */
-  public showGameResult(winner: PlayerColor | null): void {
+  public showGameResult(winner: PlayerColor | null, isOnlineGame: boolean = false): void {
     this.closeCurrentDialog();
 
     const dialog = this.createDialog();
@@ -200,6 +206,18 @@ export class UIManager {
 
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'result-buttons';
+
+    // Add rematch button for online games
+    if (isOnlineGame) {
+      const rematchBtn = this.createButton('Rematch', 'primary');
+      rematchBtn.addEventListener('click', () => {
+        if (this.onRematch) {
+          this.onRematch();
+        }
+        this.closeCurrentDialog();
+      });
+      buttonContainer.appendChild(rematchBtn);
+    }
 
     const newGameBtn = this.createButton('New Game', 'primary');
     newGameBtn.addEventListener('click', () => {
@@ -316,6 +334,246 @@ export class UIManager {
     dialog.showModal();
 
     this.currentDialog = dialog;
+  }
+
+  /**
+   * Show matchmaking dialog with "Finding match..." indicator
+   */
+  public showMatchmakingDialog(): void {
+    this.closeCurrentDialog();
+
+    const dialog = this.createDialog();
+    dialog.classList.add('matchmaking-dialog');
+
+    const content = document.createElement('div');
+    content.className = 'dialog-content matchmaking-content';
+
+    const title = document.createElement('h2');
+    title.textContent = 'Finding Match...';
+    title.className = 'dialog-title matchmaking-title';
+
+    const spinner = document.createElement('div');
+    spinner.className = 'matchmaking-spinner';
+    spinner.innerHTML = '⟳';
+
+    const message = document.createElement('p');
+    message.textContent = 'Searching for an opponent';
+    message.className = 'matchmaking-message';
+    message.id = 'matchmaking-message';
+
+    const cancelBtn = this.createButton('Cancel', 'secondary');
+    cancelBtn.addEventListener('click', () => {
+      if (this.onCancelMatchmaking) {
+        this.onCancelMatchmaking();
+      }
+      this.closeCurrentDialog();
+    });
+
+    content.appendChild(title);
+    content.appendChild(spinner);
+    content.appendChild(message);
+    content.appendChild(cancelBtn);
+
+    dialog.appendChild(content);
+    document.body.appendChild(dialog);
+    dialog.showModal();
+
+    this.currentDialog = dialog;
+  }
+
+  /**
+   * Show match found notification with opponent information
+   * @param opponentId - The ID of the matched opponent
+   */
+  public showMatchFoundDialog(opponentId: string): void {
+    this.closeCurrentDialog();
+
+    const dialog = this.createDialog();
+    dialog.classList.add('match-found-dialog');
+
+    const content = document.createElement('div');
+    content.className = 'dialog-content match-found-content';
+
+    const title = document.createElement('h2');
+    title.textContent = 'Match Found!';
+    title.className = 'dialog-title match-found-title';
+
+    const message = document.createElement('p');
+    message.textContent = `Opponent: ${opponentId}`;
+    message.className = 'match-found-message';
+
+    const startingMessage = document.createElement('p');
+    startingMessage.textContent = 'Starting game...';
+    startingMessage.className = 'match-found-starting';
+
+    content.appendChild(title);
+    content.appendChild(message);
+    content.appendChild(startingMessage);
+
+    dialog.appendChild(content);
+    document.body.appendChild(dialog);
+    dialog.showModal();
+
+    this.currentDialog = dialog;
+
+    // Auto-close after 2 seconds
+    setTimeout(() => {
+      this.closeCurrentDialog();
+    }, 2000);
+  }
+
+  /**
+   * Set callback for when user cancels matchmaking
+   */
+  public setOnCancelMatchmaking(callback: () => void): void {
+    this.onCancelMatchmaking = callback;
+  }
+
+  /**
+   * Show opponent disconnected dialog with countdown and options
+   * @param timeoutSeconds - Number of seconds until timeout (default 60)
+   */
+  public showOpponentDisconnectedDialog(timeoutSeconds: number = 60): void {
+    this.closeCurrentDialog();
+
+    const dialog = this.createDialog();
+    dialog.classList.add('opponent-disconnected-dialog');
+
+    const content = document.createElement('div');
+    content.className = 'dialog-content opponent-disconnected-content';
+
+    const title = document.createElement('h2');
+    title.textContent = 'Opponent Disconnected';
+    title.className = 'dialog-title disconnect-title';
+
+    const message = document.createElement('p');
+    message.textContent = 'Your opponent has lost connection.';
+    message.className = 'disconnect-message';
+
+    const countdown = document.createElement('p');
+    countdown.className = 'disconnect-countdown';
+    countdown.id = 'disconnect-countdown';
+    countdown.textContent = `Waiting for reconnection: ${timeoutSeconds}s`;
+
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'disconnect-buttons';
+
+    const waitBtn = this.createButton('Wait', 'secondary');
+    waitBtn.addEventListener('click', () => {
+      if (this.onWaitForReconnect) {
+        this.onWaitForReconnect();
+      }
+      // Keep dialog open while waiting
+    });
+
+    const claimVictoryBtn = this.createButton('Claim Victory', 'primary');
+    claimVictoryBtn.addEventListener('click', () => {
+      if (this.onClaimVictory) {
+        this.onClaimVictory();
+      }
+      this.closeCurrentDialog();
+    });
+
+    buttonContainer.appendChild(waitBtn);
+    buttonContainer.appendChild(claimVictoryBtn);
+
+    content.appendChild(title);
+    content.appendChild(message);
+    content.appendChild(countdown);
+    content.appendChild(buttonContainer);
+
+    dialog.appendChild(content);
+    document.body.appendChild(dialog);
+    dialog.showModal();
+
+    this.currentDialog = dialog;
+
+    // Start countdown
+    let remainingSeconds = timeoutSeconds;
+    this.disconnectCountdownInterval = window.setInterval(() => {
+      remainingSeconds--;
+      const countdownElement = document.getElementById('disconnect-countdown');
+      if (countdownElement) {
+        countdownElement.textContent = `Waiting for reconnection: ${remainingSeconds}s`;
+      }
+
+      if (remainingSeconds <= 0) {
+        this.stopDisconnectCountdown();
+        // Auto-claim victory when timeout reaches 0
+        if (this.onClaimVictory) {
+          this.onClaimVictory();
+        }
+        this.closeCurrentDialog();
+      }
+    }, 1000);
+  }
+
+  /**
+   * Show opponent reconnected notification
+   */
+  public showOpponentReconnectedDialog(): void {
+    // Stop countdown if running
+    this.stopDisconnectCountdown();
+    this.closeCurrentDialog();
+
+    const dialog = this.createDialog();
+    dialog.classList.add('opponent-reconnected-dialog');
+
+    const content = document.createElement('div');
+    content.className = 'dialog-content opponent-reconnected-content';
+
+    const title = document.createElement('h2');
+    title.textContent = 'Opponent Reconnected!';
+    title.className = 'dialog-title reconnect-title';
+
+    const message = document.createElement('p');
+    message.textContent = 'Your opponent has reconnected. Resuming game...';
+    message.className = 'reconnect-message';
+
+    content.appendChild(title);
+    content.appendChild(message);
+
+    dialog.appendChild(content);
+    document.body.appendChild(dialog);
+    dialog.showModal();
+
+    this.currentDialog = dialog;
+
+    // Auto-close after 2 seconds
+    setTimeout(() => {
+      this.closeCurrentDialog();
+    }, 2000);
+  }
+
+  /**
+   * Stop the disconnect countdown timer
+   */
+  private stopDisconnectCountdown(): void {
+    if (this.disconnectCountdownInterval !== null) {
+      clearInterval(this.disconnectCountdownInterval);
+      this.disconnectCountdownInterval = null;
+    }
+  }
+
+  /**
+   * Set callback for when user chooses to wait for reconnection
+   */
+  public setOnWaitForReconnect(callback: () => void): void {
+    this.onWaitForReconnect = callback;
+  }
+
+  /**
+   * Set callback for when user chooses to claim victory
+   */
+  public setOnClaimVictory(callback: () => void): void {
+    this.onClaimVictory = callback;
+  }
+
+  /**
+   * Set callback for when user chooses to rematch
+   */
+  public setOnRematch(callback: () => void): void {
+    this.onRematch = callback;
   }
 
   /**

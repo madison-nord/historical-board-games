@@ -368,6 +368,348 @@
 }
 
 /* ============================================
+   Matchmaking Dialog Styles
+   ============================================ */
+.matchmaking-dialog {
+  min-width: 350px;
+}
+
+.matchmaking-content {
+  text-align: center;
+}
+
+.matchmaking-title {
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-lg);
+}
+
+.matchmaking-spinner {
+  font-size: 48px;
+  color: var(--color-primary);
+  animation: spin 2s linear infinite;
+  margin: var(--spacing-lg) 0;
+  display: inline-block;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.matchmaking-message {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-xl);
+}
+
+.matchmaking-content .game-button {
+  width: 100%;
+}
+
+/* ============================================
+   Match Found Dialog Styles
+   ============================================ */
+.match-found-dialog {
+  min-width: 350px;
+}
+
+.match-found-content {
+  text-align: center;
+}
+
+.match-found-title {
+  color: var(--color-success);
+  font-size: 28px;
+  margin-bottom: var(--spacing-md);
+  animation: pulse 1s ease-in-out;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.match-found-message {
+  font-size: var(--font-size-large);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-sm);
+  font-weight: 500;
+}
+
+.match-found-starting {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+/* ============================================
+   Opponent Disconnected Dialog Styles
+   ============================================ */
+.opponent-disconnected-dialog {
+  min-width: 350px;
+}
+
+.opponent-disconnected-content {
+  text-align: center;
+}
+
+.disconnect-title {
+  color: var(--color-warning);
+  font-size: 24px;
+  margin-bottom: var(--spacing-md);
+}
+
+.disconnect-message {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-md);
+}
+
+.disconnect-countdown {
+  font-size: var(--font-size-large);
+  color: var(--color-text-primary);
+  font-weight: 600;
+  margin-bottom: var(--spacing-xl);
+  padding: var(--spacing-md);
+  background-color: var(--color-background);
+  border-radius: var(--radius-md);
+  border: 2px solid var(--color-warning);
+}
+
+.disconnect-buttons {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.disconnect-buttons .game-button {
+  flex: 1;
+}
+
+/* ============================================
+   Opponent Reconnected Dialog Styles
+   ============================================ */
+.opponent-reconnected-dialog {
+  min-width: 350px;
+}
+
+.opponent-reconnected-content {
+  text-align: center;
+}
+
+.reconnect-title {
+  color: var(--color-success);
+  font-size: 24px;
+  margin-bottom: var(--spacing-md);
+  animation: pulse 1s ease-in-out;
+}
+
+.reconnect-message {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+/* ============================================
+   Chat Panel Styles
+   ============================================ */
+.chat-panel {
+  position: fixed;
+  right: var(--spacing-md);
+  bottom: var(--spacing-md);
+  width: 320px;
+  max-height: 500px;
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  animation: slideInRight var(--transition-normal);
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.chat-title {
+  font-size: var(--font-size-large);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.chat-mute-button {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: var(--font-size-small);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.chat-mute-button:hover {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.chat-mute-button.muted {
+  color: var(--color-error);
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  min-height: 200px;
+  max-height: 350px;
+}
+
+.chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: var(--color-background);
+  border-radius: var(--radius-sm);
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+  background: var(--color-secondary);
+}
+
+.chat-message {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  background-color: var(--color-background);
+  border-radius: var(--radius-sm);
+  animation: fadeIn var(--transition-fast);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chat-sender {
+  font-weight: 600;
+  font-size: var(--font-size-small);
+  margin-right: var(--spacing-xs);
+}
+
+.chat-sender.white {
+  color: var(--color-white-piece);
+}
+
+.chat-sender.black {
+  color: var(--color-text-primary);
+}
+
+.chat-content {
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  word-wrap: break-word;
+  line-height: 1.4;
+}
+
+.chat-time {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  align-self: flex-end;
+  margin-top: var(--spacing-xs);
+}
+
+.chat-input-container {
+  display: flex;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.chat-input {
+  flex: 1;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  font-family: var(--font-family);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.chat-input:focus {
+  border-color: var(--color-primary);
+}
+
+.chat-input::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.chat-send-button {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-width: 60px;
+}
+
+.chat-send-button:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.chat-send-button:active {
+  background-color: var(--color-primary-active);
+}
+
+/* ============================================
    Responsive Design
    ============================================ */
 
@@ -405,6 +747,18 @@
   .result-buttons,
   .resume-buttons {
     flex-direction: column;
+  }
+
+  /* Chat panel responsive */
+  .chat-panel {
+    width: 280px;
+    max-height: 400px;
+    right: var(--spacing-sm);
+    bottom: var(--spacing-sm);
+  }
+
+  .chat-messages {
+    max-height: 250px;
   }
 }
 

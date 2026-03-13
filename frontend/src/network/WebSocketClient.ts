@@ -1,6 +1,7 @@
 import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { GameState, Move, MoveType, PlayerColor } from '../models';
+import { GameState, Move, PlayerColor } from '../models';
+import { logger } from '../utils/logger';
 
 // Message types for WebSocket communication
 export interface GameStateUpdate {
@@ -38,12 +39,19 @@ export interface OpponentReconnectedMessage {
 }
 
 // Callback types for message handlers
+// eslint-disable-next-line no-unused-vars
 export type GameStateUpdateHandler = (update: GameStateUpdate) => void;
+// eslint-disable-next-line no-unused-vars
 export type GameStartHandler = (message: GameStartMessage) => void;
+// eslint-disable-next-line no-unused-vars
 export type GameEndHandler = (message: GameEndMessage) => void;
+// eslint-disable-next-line no-unused-vars
 export type ChatMessageHandler = (message: ChatMessageBroadcast) => void;
+// eslint-disable-next-line no-unused-vars
 export type OpponentDisconnectedHandler = (message: OpponentDisconnectedMessage) => void;
+// eslint-disable-next-line no-unused-vars
 export type OpponentReconnectedHandler = (message: OpponentReconnectedMessage) => void;
+// eslint-disable-next-line no-unused-vars
 export type ConnectionStatusHandler = (connected: boolean) => void;
 
 /**
@@ -55,7 +63,7 @@ export class WebSocketClient {
   private subscriptions: Map<string, StompSubscription> = new Map();
   private playerId: string | null = null;
   private gameId: string | null = null;
-  
+
   // Message handlers
   private onGameStateUpdateHandler: GameStateUpdateHandler | null = null;
   private onGameStartHandler: GameStartHandler | null = null;
@@ -76,33 +84,33 @@ export class WebSocketClient {
 
       // Create STOMP client with SockJS
       this.client = new Client({
-        webSocketFactory: () => new SockJS(serverUrl) as any,
+        webSocketFactory: (): WebSocket => new SockJS(serverUrl) as WebSocket,
         reconnectDelay: 5000,
         heartbeatIncoming: 4000,
         heartbeatOutgoing: 4000,
-        
-        onConnect: () => {
-          console.log('WebSocket connected');
+
+        onConnect: (): void => {
+          logger.debug('WebSocket connected');
           this.notifyConnectionStatus(true);
           this.subscribeToUserQueues();
           resolve();
         },
-        
-        onStompError: (frame) => {
-          console.error('STOMP error:', frame);
+
+        onStompError: (frame): void => {
+          logger.error('STOMP error:', frame);
           this.notifyConnectionStatus(false);
           reject(new Error(`STOMP error: ${frame.headers['message']}`));
         },
-        
-        onWebSocketClose: () => {
-          console.log('WebSocket closed');
+
+        onWebSocketClose: (): void => {
+          logger.debug('WebSocket closed');
           this.notifyConnectionStatus(false);
         },
-        
-        onWebSocketError: (error) => {
-          console.error('WebSocket error:', error);
+
+        onWebSocketError: (error): void => {
+          logger.error('WebSocket error:', error);
           this.notifyConnectionStatus(false);
-        }
+        },
       });
 
       this.client.activate();
@@ -113,7 +121,7 @@ export class WebSocketClient {
    * Disconnect from the WebSocket server
    */
   disconnect(): Promise<void> {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       if (!this.client) {
         resolve();
         return;
@@ -138,33 +146,31 @@ export class WebSocketClient {
    * Subscribe to user-specific message queues
    */
   private subscribeToUserQueues(): void {
-    if (!this.client || !this.playerId) return;
+    if (!this.client || !this.playerId) {
+      return;
+    }
 
     // Subscribe to game state updates
-    const gameStateSub = this.client.subscribe(
-      `/user/queue/game-state`,
-      (message: IMessage) => this.handleGameStateUpdate(message)
+    const gameStateSub = this.client.subscribe(`/user/queue/game-state`, (message: IMessage) =>
+      this.handleGameStateUpdate(message)
     );
     this.subscriptions.set('game-state', gameStateSub);
 
     // Subscribe to game start notifications
-    const gameStartSub = this.client.subscribe(
-      `/user/queue/game-start`,
-      (message: IMessage) => this.handleGameStart(message)
+    const gameStartSub = this.client.subscribe(`/user/queue/game-start`, (message: IMessage) =>
+      this.handleGameStart(message)
     );
     this.subscriptions.set('game-start', gameStartSub);
 
     // Subscribe to game end notifications
-    const gameEndSub = this.client.subscribe(
-      `/user/queue/game-end`,
-      (message: IMessage) => this.handleGameEnd(message)
+    const gameEndSub = this.client.subscribe(`/user/queue/game-end`, (message: IMessage) =>
+      this.handleGameEnd(message)
     );
     this.subscriptions.set('game-end', gameEndSub);
 
     // Subscribe to chat messages
-    const chatSub = this.client.subscribe(
-      `/user/queue/chat`,
-      (message: IMessage) => this.handleChatMessage(message)
+    const chatSub = this.client.subscribe(`/user/queue/chat`, (message: IMessage) =>
+      this.handleChatMessage(message)
     );
     this.subscriptions.set('chat', chatSub);
 
@@ -193,7 +199,7 @@ export class WebSocketClient {
 
     this.client.publish({
       destination: '/app/matchmaking/join',
-      body: JSON.stringify({ playerId: this.playerId })
+      body: JSON.stringify({ playerId: this.playerId }),
     });
   }
 
@@ -207,7 +213,7 @@ export class WebSocketClient {
 
     this.client.publish({
       destination: '/app/matchmaking/leave',
-      body: JSON.stringify({ playerId: this.playerId })
+      body: JSON.stringify({ playerId: this.playerId }),
     });
   }
 
@@ -224,12 +230,12 @@ export class WebSocketClient {
     const payload = {
       gameId: this.gameId,
       playerId: this.playerId,
-      ...this.getMovePayload(move)
+      ...this.getMovePayload(move),
     };
 
     this.client.publish({
       destination,
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
   }
 
@@ -247,8 +253,8 @@ export class WebSocketClient {
       body: JSON.stringify({
         gameId: this.gameId,
         playerId: this.playerId,
-        content
-      })
+        content,
+      }),
     });
   }
 

@@ -649,15 +649,15 @@ The implementation uses:
     - _Requirements: 5.3, 6.2_
 
 
-- [ ] 32. Implement online multiplayer UI
-  - [ ] 32.1 Add matchmaking UI
+- [x] 32. Implement online multiplayer UI
+  - [x] 32.1 Add matchmaking UI
     - Create matchmaking dialog with "Finding match..." indicator
     - Add cancel button to leave queue
     - Display match found notification
     - Show opponent information when matched
     - _Requirements: 5.1_
   
-  - [ ] 32.2 Add chat UI
+  - [x] 32.2 Add chat UI
     - Create chat panel with message history
     - Add chat input field
     - Add send button
@@ -666,14 +666,14 @@ The implementation uses:
     - Implement chat filtering on frontend
     - _Requirements: 6.1, 6.2, 6.3, 6.5_
   
-  - [ ] 32.3 Add disconnect handling UI
+  - [x] 32.3 Add disconnect handling UI
     - Display "Opponent disconnected" notification
     - Show "Wait" and "Claim Victory" buttons
     - Display reconnection countdown
     - Handle opponent reconnection
     - _Requirements: 5.4_
   
-  - [ ] 32.4 Add post-game UI
+  - [x] 32.4 Add post-game UI
     - Display game result to both players
     - Show "Rematch" button
     - Show "Return to Menu" button
