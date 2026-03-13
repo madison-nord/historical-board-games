@@ -1,13 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { GameController } from './GameController';
-import { BoardRenderer } from '../rendering/BoardRenderer';
-import { WebSocketClient } from '../network/WebSocketClient';
 import { GameMode, PlayerColor, MoveType, GamePhase } from '../models';
 
 // Mock BoardRenderer
 vi.mock('../rendering/BoardRenderer');
 
 // Mock WebSocketClient
+vi.mock('../network/WebSocketClient');
 vi.mock('../network/WebSocketClient');
 
 describe('GameController - Online Multiplayer Integration', () => {

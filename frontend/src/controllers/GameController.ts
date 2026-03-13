@@ -2,7 +2,13 @@ import { BoardRenderer } from '../rendering/BoardRenderer.js';
 import { GameMode, GamePhase, PlayerColor, Move, MoveType } from '../models/index.js';
 import { logger } from '../utils/logger.js';
 import { LocalStorage } from '../utils/LocalStorage.js';
-import { WebSocketClient } from '../network/WebSocketClient.js';
+import {
+  WebSocketClient,
+  GameStateUpdate,
+  GameStartMessage,
+  GameEndMessage,
+} from '../network/WebSocketClient.js';
+import type { TutorialController } from './TutorialController.js';
 
 /**
  * Interface representing the current game state
@@ -42,7 +48,7 @@ export class GameController {
   private validMoves: number[] = [];
   private playerColor: PlayerColor = PlayerColor.WHITE; // Player's color in single-player mode
   private isAiThinking: boolean = false;
-  private tutorialController: any | null = null; // TutorialController reference for tutorial mode
+  private tutorialController: TutorialController | null = null; // TutorialController reference for tutorial mode
   private animationFrameId: number | null = null;
   private lastFrameTime: number = 0;
   private webSocketClient: WebSocketClient | null = null; // WebSocket client for online multiplayer
@@ -110,7 +116,7 @@ export class GameController {
   /**
    * Set tutorial controller for tutorial mode
    */
-  public setTutorialController(tutorialController: any): void {
+  public setTutorialController(tutorialController: TutorialController): void {
     this.tutorialController = tutorialController;
   }
 
@@ -226,12 +232,12 @@ export class GameController {
    * Handle position clicks from the board renderer
    */
   public handlePositionClick(position: number): void {
-    console.log(
-      `[handlePositionClick] position=${position}, phase=${this.currentGameState?.phase}, isGameOver=${this.currentGameState?.isGameOver}, isAiThinking=${this.isAiThinking}, millFormed=${this.currentGameState?.millFormed}`
+    logger.debug(
+      `handlePositionClick: position=${position}, phase=${this.currentGameState?.phase}, isGameOver=${this.currentGameState?.isGameOver}, isAiThinking=${this.isAiThinking}, millFormed=${this.currentGameState?.millFormed}`
     );
 
     if (!this.currentGameState || this.currentGameState.isGameOver || this.isAiThinking) {
-      console.log('[handlePositionClick] Returning early - game over or AI thinking');
+      logger.debug('handlePositionClick: Returning early - game over or AI thinking');
       return;
     }
 
@@ -240,7 +246,7 @@ export class GameController {
       this.gameMode === GameMode.SINGLE_PLAYER &&
       this.currentGameState.currentPlayer !== this.playerColor
     ) {
-      console.log('[handlePositionClick] Returning early - not player turn in single-player');
+      logger.debug('handlePositionClick: Returning early - not player turn in single-player');
       return;
     }
 
@@ -248,12 +254,12 @@ export class GameController {
 
     // Handle piece removal after mill formation
     if (this.currentGameState.millFormed) {
-      console.log('[handlePositionClick] Handling removal click');
+      logger.debug('handlePositionClick: Handling removal click');
       this.handleRemovalClick(position);
       return;
     }
 
-    console.log(`[handlePositionClick] Routing to phase handler: ${this.currentGameState.phase}`);
+    logger.debug(`handlePositionClick: Routing to phase handler: ${this.currentGameState.phase}`);
     switch (this.currentGameState.phase) {
       case GamePhase.PLACEMENT:
         this.handlePlacementClick(position);
@@ -315,8 +321,8 @@ export class GameController {
    * Handle clicks during movement/flying phase
    */
   private handleMovementClick(position: number): void {
-    console.log(
-      `[handleMovementClick] position=${position}, selectedPosition=${this.selectedPosition}, currentPlayer=${this.currentGameState?.currentPlayer}, pieceAtPosition=${this.currentGameState?.board[position]}`
+    logger.debug(
+      `handleMovementClick: position=${position}, selectedPosition=${this.selectedPosition}, currentPlayer=${this.currentGameState?.currentPlayer}, pieceAtPosition=${this.currentGameState?.board[position]}`
     );
 
     if (!this.currentGameState) {
@@ -345,7 +351,7 @@ export class GameController {
 
         this.selectedPosition = position;
         this.validMoves = this.getValidMovesFrom(position);
-        console.log(`[handleMovementClick] Selected piece, validMoves=${this.validMoves.length}`);
+        logger.debug(`handleMovementClick: Selected piece, validMoves=${this.validMoves.length}`);
         this.boardRenderer.highlightValidMoves(this.validMoves);
 
         // Notify tutorial controller about valid moves (so it can update clickable positions)
@@ -356,19 +362,19 @@ export class GameController {
         this.updateDisplay(); // IMMEDIATE visual feedback
         logger.debug(`Selected piece at position ${position}`);
       } else {
-        console.log('[handleMovementClick] Must select your own piece');
+        logger.debug('handleMovementClick: Must select your own piece');
         logger.debug('Must select your own piece');
       }
     } else {
       // Second click - move the selected piece
       if (position === this.selectedPosition) {
         // Clicked same position - deselect
-        console.log('[handleMovementClick] Deselecting piece');
+        logger.debug('handleMovementClick: Deselecting piece');
         this.clearSelection();
         this.updateDisplay(); // IMMEDIATE visual feedback
       } else if (this.validMoves.includes(position)) {
         // Valid move
-        console.log('[handleMovementClick] Valid move, applying');
+        logger.debug('handleMovementClick: Valid move, applying');
 
         // Validate with tutorial controller if in tutorial mode
         if (this.tutorialController && this.tutorialController.isActiveTutorial()) {
@@ -395,7 +401,7 @@ export class GameController {
         this.applyMove(move);
         this.clearSelection();
       } else {
-        console.log('[handleMovementClick] Invalid move');
+        logger.debug('handleMovementClick: Invalid move');
         logger.debug('Invalid move');
       }
     }
@@ -874,8 +880,8 @@ export class GameController {
       return;
     }
 
-    console.log(
-      `[switchPlayer] BEFORE switch: currentPlayer=${this.currentGameState.currentPlayer}`
+    logger.debug(
+      `switchPlayer: BEFORE switch: currentPlayer=${this.currentGameState.currentPlayer}`
     );
 
     this.currentGameState.currentPlayer =
@@ -883,8 +889,8 @@ export class GameController {
         ? PlayerColor.BLACK
         : PlayerColor.WHITE;
 
-    console.log(
-      `[switchPlayer] AFTER switch: currentPlayer=${this.currentGameState.currentPlayer}`
+    logger.debug(
+      `switchPlayer: AFTER switch: currentPlayer=${this.currentGameState.currentPlayer}`
     );
 
     // Clear selection and highlights when switching players
@@ -897,26 +903,26 @@ export class GameController {
     this.checkGameEnd();
 
     // Enable input for the appropriate player
-    console.log(
-      `[switchPlayer] isGameOver=${this.currentGameState.isGameOver}, millFormed=${this.currentGameState.millFormed}, gameMode=${this.gameMode}, phase=${this.currentGameState.phase}`
+    logger.debug(
+      `switchPlayer: isGameOver=${this.currentGameState.isGameOver}, millFormed=${this.currentGameState.millFormed}, gameMode=${this.gameMode}, phase=${this.currentGameState.phase}`
     );
 
     if (!this.currentGameState.isGameOver && !this.currentGameState.millFormed) {
       // In local two-player mode, always enable input
       if (this.gameMode === GameMode.LOCAL_TWO_PLAYER) {
-        console.log('[switchPlayer] Enabling input for local two-player mode');
+        logger.debug('switchPlayer: Enabling input for local two-player mode');
         this.boardRenderer.setInputEnabled(true);
       }
       // In single-player mode, enable input only if it's the player's turn
       else if (this.gameMode === GameMode.SINGLE_PLAYER) {
         const isPlayerTurn = this.currentGameState.currentPlayer === this.playerColor;
-        console.log(
-          `[switchPlayer] Single-player mode: isPlayerTurn=${isPlayerTurn}, isAiThinking=${this.isAiThinking}`
+        logger.debug(
+          `switchPlayer: Single-player mode - isPlayerTurn=${isPlayerTurn}, isAiThinking=${this.isAiThinking}`
         );
         this.boardRenderer.setInputEnabled(isPlayerTurn && !this.isAiThinking);
       }
     } else {
-      console.log('[switchPlayer] Input NOT enabled - game over or mill formed');
+      logger.debug('switchPlayer: Input NOT enabled - game over or mill formed');
     }
   }
 
@@ -974,16 +980,16 @@ export class GameController {
 
     // Game ends if a player has fewer than 3 pieces (after placement phase)
     if (this.currentGameState.phase !== GamePhase.PLACEMENT) {
-      console.log(
-        `[checkGameEnd] Checking piece counts: WHITE=${this.currentGameState.whitePiecesOnBoard}, BLACK=${this.currentGameState.blackPiecesOnBoard}`
+      logger.debug(
+        `checkGameEnd: Checking piece counts - WHITE=${this.currentGameState.whitePiecesOnBoard}, BLACK=${this.currentGameState.blackPiecesOnBoard}`
       );
       if (this.currentGameState.whitePiecesOnBoard < 3) {
-        console.log('[checkGameEnd] WHITE has < 3 pieces, BLACK wins');
+        logger.debug('checkGameEnd: WHITE has < 3 pieces, BLACK wins');
         this.endGame(PlayerColor.BLACK);
         return;
       }
       if (this.currentGameState.blackPiecesOnBoard < 3) {
-        console.log('[checkGameEnd] BLACK has < 3 pieces, WHITE wins');
+        logger.debug('checkGameEnd: BLACK has < 3 pieces, WHITE wins');
         this.endGame(PlayerColor.WHITE);
         return;
       }
@@ -991,8 +997,8 @@ export class GameController {
 
     // Game ends if current player has no legal moves
     const hasLegalMoves = this.hasLegalMoves(this.currentGameState.currentPlayer);
-    console.log(
-      `[checkGameEnd] Current player ${this.currentGameState.currentPlayer} hasLegalMoves=${hasLegalMoves}`
+    logger.debug(
+      `checkGameEnd: Current player ${this.currentGameState.currentPlayer} hasLegalMoves=${hasLegalMoves}`
     );
 
     if (!hasLegalMoves) {
@@ -1000,7 +1006,7 @@ export class GameController {
         this.currentGameState.currentPlayer === PlayerColor.WHITE
           ? PlayerColor.BLACK
           : PlayerColor.WHITE;
-      console.log(`[checkGameEnd] No legal moves, ${winner} wins`);
+      logger.debug(`checkGameEnd: No legal moves, ${winner} wins`);
       this.endGame(winner);
     }
   }
@@ -1224,7 +1230,7 @@ export class GameController {
   /**
    * Handle game state update from WebSocket (online multiplayer)
    */
-  private handleGameStateUpdate(update: any): void {
+  private handleGameStateUpdate(update: GameStateUpdate): void {
     if (!this.isOnlineMode() || !this.currentGameState) {
       return;
     }
@@ -1235,14 +1241,14 @@ export class GameController {
     this.currentGameState = {
       gameId: update.gameId,
       phase: update.phase as GamePhase,
-      currentPlayer: update.currentPlayer as PlayerColor,
+      currentPlayer: update.currentPlayer,
       whitePiecesRemaining: update.whitePiecesRemaining,
       blackPiecesRemaining: update.blackPiecesRemaining,
       whitePiecesOnBoard: update.whitePiecesOnBoard,
       blackPiecesOnBoard: update.blackPiecesOnBoard,
       board: update.board,
-      isGameOver: update.isGameOver,
-      winner: update.winner as PlayerColor | null,
+      isGameOver: update.gameOver,
+      winner: update.winner,
       millFormed: update.millFormed,
     };
 
@@ -1262,7 +1268,7 @@ export class GameController {
   /**
    * Handle game start from WebSocket (online multiplayer)
    */
-  private handleGameStart(message: any): void {
+  private handleGameStart(message: GameStartMessage): void {
     if (!this.isOnlineMode()) {
       return;
     }
@@ -1305,7 +1311,7 @@ export class GameController {
   /**
    * Handle game end from WebSocket (online multiplayer)
    */
-  private handleGameEnd(message: any): void {
+  private handleGameEnd(message: GameEndMessage): void {
     if (!this.isOnlineMode() || !this.currentGameState) {
       return;
     }

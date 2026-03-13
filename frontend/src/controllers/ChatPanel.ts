@@ -18,6 +18,7 @@ export class ChatPanel {
   private sendButton: HTMLButtonElement | null = null;
   private muteButton: HTMLButtonElement | null = null;
   private isMuted: boolean = false;
+  // eslint-disable-next-line no-unused-vars
   private onSendMessage: ((content: string) => void) | null = null;
 
   /**
@@ -90,6 +91,7 @@ export class ChatPanel {
   /**
    * Set callback for when user sends a message
    */
+  // eslint-disable-next-line no-unused-vars
   public setOnSendMessage(callback: (content: string) => void): void {
     this.onSendMessage = callback;
   }

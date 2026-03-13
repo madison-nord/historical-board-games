@@ -8,6 +8,18 @@ export interface PositionCoordinates {
   y: number;
 }
 
+// Animation data types
+type PlacementAnimationData = { position: number; playerColor: PlayerColor };
+type MovementAnimationData = { from: number; to: number; playerColor: PlayerColor };
+type RemovalAnimationData = { position: number; playerColor: PlayerColor };
+type MillAnimationData = { millPositions: number[] };
+
+type AnimationData =
+  | PlacementAnimationData
+  | MovementAnimationData
+  | RemovalAnimationData
+  | MillAnimationData;
+
 /**
  * BoardRenderer handles the visual rendering of the Nine Men's Morris game board
  * using HTML5 Canvas API for optimal performance
@@ -32,7 +44,7 @@ export class BoardRenderer {
     type: 'placement' | 'movement' | 'removal' | 'mill';
     progress: number;
     duration: number;
-    data: any;
+    data: AnimationData;
     onComplete?: () => void;
   }> = [];
 
@@ -629,7 +641,8 @@ export class BoardRenderer {
 
       switch (anim.type) {
         case 'placement': {
-          const { position, playerColor } = anim.data;
+          const data = anim.data as PlacementAnimationData;
+          const { position, playerColor } = data;
           const scale = t; // Grow from 0 to 1
           const pos = this.positions[position];
           const pieceRadius = this.boardSize * 0.025 * scale;
@@ -656,7 +669,8 @@ export class BoardRenderer {
         }
 
         case 'movement': {
-          const { from, to, playerColor } = anim.data;
+          const data = anim.data as MovementAnimationData;
+          const { from, to, playerColor } = data;
           const fromPos = this.positions[from];
           const toPos = this.positions[to];
           const x = fromPos.x + (toPos.x - fromPos.x) * t;
@@ -680,7 +694,8 @@ export class BoardRenderer {
         }
 
         case 'removal': {
-          const { position, playerColor } = anim.data;
+          const data = anim.data as RemovalAnimationData;
+          const { position, playerColor } = data;
           const scale = 1 - t; // Shrink from 1 to 0
           const pos = this.positions[position];
           const pieceRadius = this.boardSize * 0.025 * scale;
@@ -707,7 +722,8 @@ export class BoardRenderer {
         }
 
         case 'mill': {
-          const { millPositions } = anim.data;
+          const data = anim.data as MillAnimationData;
+          const { millPositions } = data;
           const pulse = Math.sin(t * Math.PI * 4) * 0.5 + 0.5; // Pulse 4 times
 
           this.ctx.save();

@@ -1,6 +1,7 @@
-import { GameController } from './GameController';
+import { GameController, GameState } from './GameController';
 import { BoardRenderer } from '../rendering/BoardRenderer';
 import { PlayerColor, GamePhase } from '../models';
+import { logger } from '../utils/logger.js';
 
 /**
  * Tutorial step definition
@@ -44,7 +45,7 @@ interface TutorialState {
   enabledPositions: number[];
   selectedPosition: number | null;
   awaitingAction: 'select' | 'move' | 'remove' | 'place' | null;
-  boardStateHistory: any[];
+  boardStateHistory: GameState[];
 }
 
 /**
@@ -488,7 +489,15 @@ export class TutorialController {
     this.tutorialState.selectedPosition = null;
 
     if (step.type === 'interactive' && step.expectedAction) {
-      this.tutorialState.awaitingAction = step.expectedAction.type as any;
+      // Map tutorial action types to awaiting action types
+      const actionType = step.expectedAction.type;
+      if (actionType === 'place' || actionType === 'move' || actionType === 'remove') {
+        this.tutorialState.awaitingAction = actionType;
+      } else if (actionType === 'next' || actionType === 'skip') {
+        this.tutorialState.awaitingAction = null;
+      } else {
+        this.tutorialState.awaitingAction = null;
+      }
     } else {
       this.tutorialState.awaitingAction = null;
     }
@@ -625,11 +634,11 @@ export class TutorialController {
 
       // Verify the current player is BLACK (opponent) before simulating
       if (gameState.currentPlayer !== PlayerColor.BLACK) {
-        console.warn('[Tutorial] Cannot simulate opponent move - current player is not BLACK');
-        console.log('[Tutorial] Current player:', gameState.currentPlayer, 'Expected: BLACK');
+        logger.warn('Tutorial: Cannot simulate opponent move - current player is not BLACK');
+        logger.debug(`Tutorial: Current player=${gameState.currentPlayer}, Expected=BLACK`);
         return;
       }
-      console.log('[Tutorial] Simulating opponent move at position', currentStep.opponentMove);
+      logger.debug(`Tutorial: Simulating opponent move at position ${currentStep.opponentMove}`);
 
       // Temporarily disable tutorial validation for opponent move
       const wasActive = this.isActive;
@@ -637,8 +646,8 @@ export class TutorialController {
 
       setTimeout(() => {
         if (this.gameController) {
-          // Simulate opponent placement
-          (this.gameController as any).handlePlacementClick(currentStep.opponentMove);
+          // Simulate opponent placement using public API
+          this.gameController.handlePositionClick(currentStep.opponentMove);
         }
         this.isActive = wasActive;
       }, 200);
@@ -711,7 +720,7 @@ export class TutorialController {
     if (currentStep.type === 'interactive' && currentStep.expectedAction?.type === 'move') {
       // Enable all valid move positions as clickable
       if (validMoves.length > 0 && this.boardRenderer) {
-        console.log('[Tutorial] Enabling valid move positions:', validMoves);
+        logger.debug(`Tutorial: Enabling valid move positions - ${validMoves.join(', ')}`);
         this.boardRenderer.setClickablePositions(validMoves);
         this.tutorialState.enabledPositions = validMoves;
       }

@@ -1,12 +1,21 @@
 import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { GameState, Move, PlayerColor } from '../models';
+import { Move, PlayerColor } from '../models';
 import { logger } from '../utils/logger';
 
 // Message types for WebSocket communication
 export interface GameStateUpdate {
   gameId: string;
-  gameState: GameState;
+  currentPlayer: PlayerColor;
+  phase: string;
+  whitePiecesRemaining: number;
+  blackPiecesRemaining: number;
+  whitePiecesOnBoard: number;
+  blackPiecesOnBoard: number;
+  board: (PlayerColor | null)[];
+  millFormed: boolean;
+  gameOver: boolean;
+  winner: PlayerColor | null;
 }
 
 export interface GameStartMessage {
