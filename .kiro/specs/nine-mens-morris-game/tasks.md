@@ -616,8 +616,8 @@ The implementation uses:
 
 ### Phase 11: Online Multiplayer - Frontend
 
-- [ ] 31. Implement WebSocketClient for frontend
-  - [ ] 31.1 Create WebSocketClient class
+- [x] 31. Implement WebSocketClient for frontend
+  - [x] 31.1 Create WebSocketClient class
     - Install and configure STOMP.js library
     - Implement `connect()` method with STOMP over WebSocket
     - Implement `disconnect()` method
@@ -631,7 +631,7 @@ The implementation uses:
     - Handle connection errors with retry logic
     - _Requirements: 5.1, 5.3, 6.2_
   
-  - [ ] 31.2 Add message handlers
+  - [x] 31.2 Add message handlers
     - Implement `onGameStateUpdate(update)` handler
     - Implement `onGameStart(message)` handler
     - Implement `onGameEnd(message)` handler
@@ -641,7 +641,7 @@ The implementation uses:
     - Update UI with game events
     - _Requirements: 5.3, 5.4, 5.5, 6.2_
   
-  - [ ] 31.3 Write unit tests for WebSocketClient
+  - [x] 31.3 Write unit tests for WebSocketClient
     - Test connection and disconnection
     - Test message sending
     - Test message receiving and handling
