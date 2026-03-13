@@ -561,18 +561,18 @@ The implementation uses:
     - Note: Content filtering not implemented (consider external library for production)
     - _Requirements: 6.1, 6.2_
   
-  - [-] 28.3 Add matchmaking message handling
+  - [x] 28.3 Add matchmaking message handling
     - Implement `handleJoinMatchmaking(@MessageMapping("/matchmaking/join"))` method
     - Implement `handleLeaveMatchmaking(@MessageMapping("/matchmaking/leave"))` method
     - Integrate with MatchmakingService
     - _Requirements: 5.1_
   
-  - [ ] 28.4 Write property test for game state synchronization
+  - [x] 28.4 Write property test for game state synchronization
     - **Property 14: Game State Synchronization**
     - **Validates: Requirements 5.3**
     - Test that both players receive identical state updates
   
-  - [ ] 28.5 Write property test for chat message delivery
+  - [x] 28.5 Write property test for chat message delivery
     - **Property 15: Chat Message Delivery**
     - **Validates: Requirements 6.2, 6.3**
     - Test that messages are delivered with correct content
