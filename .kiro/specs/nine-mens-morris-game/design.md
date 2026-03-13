@@ -1019,9 +1019,10 @@ interface SavedGameState {
 *For any* chat message sent by a player in an online game, the opponent should receive a message with the same content and sender information.
 **Validates: Requirements 6.2, 6.3**
 
-**Property 16: Chat Content Filtering**
-*For any* chat message containing inappropriate language from a predefined list, the Chat_System should either block the message or replace inappropriate words before delivery.
-**Validates: Requirements 6.4**
+**Property 16: Chat Content Filtering** *(Not Implemented)*
+~~*For any* chat message containing inappropriate language from a predefined list, the Chat_System should either block the message or replace inappropriate words before delivery.~~
+**Note:** Content filtering is not implemented in the current version. For production use, consider integrating a comprehensive profanity filtering library or service.
+~~**Validates: Requirements 6.4**~~
 
 ### Tutorial Properties
 

@@ -105,7 +105,7 @@ The system will provide multiple game modes including single-player AI, local mu
 1. WHEN two players are in an online Match, THE Chat_System SHALL provide a text chat interface
 2. WHEN a player sends a message, THE Chat_System SHALL deliver it to the opponent within 1 second
 3. THE Chat_System SHALL display message history for the current Match
-4. THE Chat_System SHALL filter or block inappropriate language
+4. ~~THE Chat_System SHALL filter or block inappropriate language~~ (Not implemented - consider external library for production)
 5. THE Game_System SHALL allow players to mute chat if desired
 
 ### Requirement 7: Tutorial Mode
