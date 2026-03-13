@@ -1,8 +1,15 @@
 package com.ninemensmorris.engine;
 
-import com.ninemensmorris.model.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
-import java.util.*;
+import com.ninemensmorris.model.GamePhase;
+import com.ninemensmorris.model.GameStatus;
+import com.ninemensmorris.model.Move;
+import com.ninemensmorris.model.MoveType;
+import com.ninemensmorris.model.PlayerColor;
 
 /**
  * Represents the complete state of a Nine Men's Morris game.
@@ -14,7 +21,7 @@ import java.util.*;
  * The GameState is immutable for most operations - applying a move returns a new
  * GameState instance rather than modifying the existing one.
  */
-public class GameState {
+public class GameState implements Cloneable {
     
     private final String gameId;
     private final Board board;
@@ -166,7 +173,7 @@ public class GameState {
         GameStatus newStatus = status;
         PlayerColor newWinner = winner;
         
-        if (isGameOver(newBoard, newPhase, nextPlayer, newWhitePiecesOnBoard, newBlackPiecesOnBoard)) {
+        if (isGameOver(newPhase, newWhitePiecesOnBoard, newBlackPiecesOnBoard)) {
             newStatus = GameStatus.COMPLETED;
             newWinner = determineWinner(nextPlayer, newWhitePiecesOnBoard, newBlackPiecesOnBoard);
         }
@@ -205,15 +212,12 @@ public class GameState {
     /**
      * Checks if the game is over.
      * 
-     * @param board the current board state
      * @param phase the current game phase
-     * @param currentPlayer the current player
      * @param whitePiecesOnBoard white pieces on board
      * @param blackPiecesOnBoard black pieces on board
      * @return true if the game is over
      */
-    private boolean isGameOver(Board board, GamePhase phase, PlayerColor currentPlayer,
-                              int whitePiecesOnBoard, int blackPiecesOnBoard) {
+    private boolean isGameOver(GamePhase phase, int whitePiecesOnBoard, int blackPiecesOnBoard) {
         // Game is over if a player has fewer than 3 pieces (after placement phase)
         if (phase != GamePhase.PLACEMENT) {
             if (whitePiecesOnBoard < 3 || blackPiecesOnBoard < 3) {
@@ -266,15 +270,19 @@ public class GameState {
     
     /**
      * Creates a deep copy of this game state.
+     * Follows the standard Java clone() contract.
      * 
      * @return a new GameState instance with the same state
+     * @throws CloneNotSupportedException if cloning is not supported
      */
     @Override
-    public GameState clone() {
+    public GameState clone() throws CloneNotSupportedException {
+        super.clone(); // Call super.clone() to satisfy the contract
+        // Return a new instance with deep-cloned mutable fields
         return new GameState(gameId, board.clone(), phase, currentPlayer,
                            whitePiecesRemaining, blackPiecesRemaining,
                            whitePiecesOnBoard, blackPiecesOnBoard,
-                           millFormed, status, winner, moveHistory);
+                           millFormed, status, winner, new ArrayList<>(moveHistory));
     }
     
     // Getters

@@ -242,7 +242,12 @@ public class GameService {
         // Create a forfeited game state
         // For now, we'll mark the game as completed with the opponent as winner
         // In a full implementation, we might add a forfeit status to GameState
-        GameState forfeitedState = currentState.clone();
+        GameState forfeitedState;
+        try {
+            forfeitedState = currentState.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new IllegalStateException("Failed to clone game state", e);
+        }
         
         // The forfeit logic would need to be implemented in GameState
         // For now, we'll just mark it as completed and remove from active games

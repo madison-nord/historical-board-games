@@ -1,8 +1,12 @@
 package com.ninemensmorris.engine;
 
-import com.ninemensmorris.model.*;
+import java.util.ArrayList;
+import java.util.List;
 
-import java.util.*;
+import com.ninemensmorris.model.GamePhase;
+import com.ninemensmorris.model.Move;
+import com.ninemensmorris.model.MoveType;
+import com.ninemensmorris.model.PlayerColor;
 
 /**
  * Enforces the rules of Nine Men's Morris and validates moves.
@@ -38,8 +42,6 @@ public class RuleEngine {
         if (state.isGameOver()) {
             return false;
         }
-        
-        Board board = state.getBoard();
         
         switch (move.getType()) {
             case PLACE -> {
