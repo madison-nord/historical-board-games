@@ -561,7 +561,7 @@ The implementation uses:
     - Note: Content filtering not implemented (consider external library for production)
     - _Requirements: 6.1, 6.2_
   
-  - [ ] 28.3 Add matchmaking message handling
+  - [-] 28.3 Add matchmaking message handling
     - Implement `handleJoinMatchmaking(@MessageMapping("/matchmaking/join"))` method
     - Implement `handleLeaveMatchmaking(@MessageMapping("/matchmaking/leave"))` method
     - Integrate with MatchmakingService
