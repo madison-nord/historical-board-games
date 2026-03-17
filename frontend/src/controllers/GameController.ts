@@ -54,6 +54,7 @@ export class GameController {
   private webSocketClient: WebSocketClient | null = null; // WebSocket client for online multiplayer
   private onlineGameId: string | null = null; // Game ID for online multiplayer
   private isWaitingForOpponent: boolean = false; // Waiting for opponent move
+  private onGameOverFromStateUpdate: ((winner: PlayerColor | null) => void) | null = null;
 
   constructor(
     gameMode: GameMode,
@@ -131,6 +132,15 @@ export class GameController {
     // Set up message handlers (except onGameStart, managed by onlineMultiplayer.ts)
     this.webSocketClient.setOnGameStateUpdate(this.handleGameStateUpdate.bind(this));
     this.webSocketClient.setOnGameEnd(this.handleGameEnd.bind(this));
+  }
+
+  /**
+   * Set callback for when game-over is detected via a game state update.
+   * This provides a fallback path for showing the game-end UI even if
+   * the dedicated GameEndMessage is not received.
+   */
+  public setOnGameOverFromStateUpdate(callback: (winner: PlayerColor | null) => void): void {
+    this.onGameOverFromStateUpdate = callback;
   }
 
   /**
@@ -1288,6 +1298,11 @@ export class GameController {
     // If a mill was formed and it's our turn, highlight removable pieces
     if (this.currentGameState.millFormed && isOurTurn && !this.currentGameState.isGameOver) {
       this.handleMillFormed();
+    }
+
+    // If game is over, notify via callback so the UI can show the result dialog
+    if (this.currentGameState.isGameOver && this.onGameOverFromStateUpdate) {
+      this.onGameOverFromStateUpdate(this.currentGameState.winner);
     }
   }
 

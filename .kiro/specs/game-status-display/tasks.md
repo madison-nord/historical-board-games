@@ -15,8 +15,9 @@ The implementation uses TypeScript with Vitest and fast-check for testing. All n
     - Export `deriveTurnMessage(newPlayer, gameMode, localPlayerColor): string` function
     - Export `derivePhaseMessage(phase): { message: string; subtitle: string }` function
     - Export `deriveGameEndMessage(winner, reason, gameMode, localPlayerColor): { message: string; subtitle: string }` function
+    - `deriveGameEndMessage` must return "You Won!" / "You Lost!" in online multiplayer and single-player modes based on whether the winner matches the local player color, and "[Color] Wins!" in local two-player mode
     - All functions must be pure (no side effects, no DOM access)
-    - _Requirements: 1.1, 1.2, 1.3, 2.1, 2.2, 2.3, 3.1, 3.2, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3_
+    - _Requirements: 1.1, 1.2, 1.3, 2.1, 2.2, 2.3, 3.1, 3.2, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.6, 5.7_
 
   - [ ] 1.2 Write property tests for derivation functions
     - Create `frontend/src/controllers/InfoPanel.property.test.ts`
@@ -25,12 +26,12 @@ The implementation uses TypeScript with Vitest and fast-check for testing. All n
     - **Validates: Requirements 4.1, 4.2, 4.3, 4.4, 4.5**
     - **Property 3: Turn announcement message correctness** — validate Your Turn / Opponent's Turn / [Color]'s Turn
     - **Validates: Requirements 2.1, 2.2, 2.3**
-    - **Property 4: Game end announcement message correctness** — validate winner name and reason in output
-    - **Validates: Requirements 5.1, 5.2, 5.5**
+    - **Property 4: Game end announcement message correctness** — validate "You Won!" / "You Lost!" in online and single-player modes, "[Color] Wins!" in local two-player mode, and reason in subtitle
+    - **Validates: Requirements 5.1, 5.2, 5.5, 5.6, 5.7**
     - **Property 5: Phase transition message correctness** — validate Movement and Flying messages
     - **Validates: Requirements 3.1, 3.2, 3.3**
     - Each property test must run with `{ numRuns: 100 }` minimum
-    - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.5_
+    - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.5, 5.6, 5.7_
 
 - [ ] 2. Implement InfoPanel DOM component
   - [ ] 2.1 Implement InfoPanel class in `frontend/src/controllers/InfoPanel.ts`
@@ -102,9 +103,9 @@ The implementation uses TypeScript with Vitest and fast-check for testing. All n
     - In `updateDisplay()`: call `infoPanel.update(...)` with current gameState, gameMode, playerColor, selectedPosition, isAiThinking
     - In `switchPlayer()`: call `announcementBanner.show(...)` with turn change message (skip if `phaseTransitionOccurred` is true, then reset flag)
     - In `updateGamePhase()`: when phase changes, call `announcementBanner.show(...)` with phase transition message and set `phaseTransitionOccurred = true`
-    - In `endGame()` / `handleGameEnd()`: call `announcementBanner.show(...)` with game-end message (duration=0, persistent)
+    - In `endGame()` / `handleGameEnd()`: call `announcementBanner.show(...)` with game-end message (duration=0, persistent), using `deriveGameEndMessage` which returns personalized "You Won!" / "You Lost!" in online and single-player modes
     - In `handleMovementClick()`: call `infoPanel.update(...)` when piece is selected/deselected for immediate action instruction update
-    - _Requirements: 1.6, 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 3.4, 4.6, 5.1, 5.2, 5.3, 5.4, 5.5, 7.1_
+    - _Requirements: 1.6, 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 3.4, 4.6, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 7.1_
 
   - [ ] 5.2 Write unit tests for GameController integration
     - Add tests to existing `frontend/src/controllers/GameController.test.ts` or create a new test file

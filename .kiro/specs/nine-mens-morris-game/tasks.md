@@ -695,11 +695,18 @@ The implementation uses:
     - Test rematch functionality
     - _Requirements: 5.2, 5.3, 6.2_
 
-- [x] 34. Checkpoint - Online multiplayer complete
+- [-] 34. Checkpoint - Online multiplayer complete
   - Test matchmaking with multiple browser windows
   - Test complete online game with chat
   - Test disconnect scenarios
   - Ask the user if questions arise
+
+- [ ] 34.1 Execute game-status-display spec tasks
+  - UI/UX issues discovered during Task 34 manual testing require implementation before checkpoint completion
+  - See `.kiro/specs/game-status-display/tasks.md` for full task breakdown
+  - Covers: HTML Info Panel, Announcement Banner, Chat Panel repositioning, CSS Grid layout
+  - All 10 tasks in the game-status-display spec must be completed
+  - _Requirements: Supplementary spec — game-status-display/requirements.md_
 
 ### Phase 12: Information Page
 

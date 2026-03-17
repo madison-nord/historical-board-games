@@ -19,6 +19,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
+import com.ninemensmorris.dto.GameEndMessage;
 import com.ninemensmorris.dto.GameStateUpdate;
 import com.ninemensmorris.dto.MovePieceMessage;
 import com.ninemensmorris.dto.PlacePieceMessage;
@@ -202,5 +203,64 @@ public class GameWebSocketControllerTest {
         assertEquals(9, update.getBlackPiecesRemaining());
         assertNotNull(update.getBoard(), "Board array should be set");
         assertEquals(24, update.getBoard().length, "Board should have 24 positions");
+    }
+    
+    @Test
+    @DisplayName("Broadcast GameEndMessage when game is over")
+    @SuppressWarnings("null") // Mock objects are non-null in test context
+    void testBroadcastGameEndMessageWhenGameOver() {
+        // Arrange
+        RemovePieceMessage message = new RemovePieceMessage();
+        message.setGameId("game-123");
+        message.setPlayerId("player-1");
+        message.setPosition(10);
+        message.setPlayerColor(PlayerColor.WHITE);
+        
+        GameState mockState = createMockGameState(PlayerColor.BLACK, GamePhase.MOVEMENT, true, false, 0, 0);
+        when(mockState.getWinner()).thenReturn(PlayerColor.WHITE);
+        when(mockState.getBlackPiecesOnBoard()).thenReturn(2);
+        when(mockState.getWhitePiecesOnBoard()).thenReturn(5);
+        when(gameService.removePiece("game-123", "player-1", 10)).thenReturn(mockState);
+        
+        // Act
+        controller.handleRemovePiece(message);
+        
+        // Assert - GameStateUpdate sent to both players
+        verify(messagingTemplate, times(2)).convertAndSendToUser(
+                anyString(), eq("/queue/game-state"), any(GameStateUpdate.class));
+        
+        // Assert - GameEndMessage also sent to both players
+        ArgumentCaptor<GameEndMessage> endCaptor = ArgumentCaptor.forClass(GameEndMessage.class);
+        verify(messagingTemplate, times(2)).convertAndSendToUser(
+                anyString(), eq("/queue/game-end"), endCaptor.capture());
+        
+        GameEndMessage endMessage = endCaptor.getAllValues().get(0);
+        assertEquals("game-123", endMessage.getGameId());
+        assertEquals(PlayerColor.WHITE, endMessage.getWinner());
+        assertEquals("Black has fewer than 3 pieces", endMessage.getReason());
+    }
+    
+    @Test
+    @DisplayName("No GameEndMessage when game is not over")
+    @SuppressWarnings("null") // Mock objects are non-null in test context
+    void testNoGameEndMessageWhenGameNotOver() {
+        // Arrange
+        PlacePieceMessage message = new PlacePieceMessage();
+        message.setGameId("game-123");
+        message.setPlayerId("player-1");
+        message.setPosition(5);
+        message.setPlayerColor(PlayerColor.WHITE);
+        
+        GameState mockState = createMockGameState(PlayerColor.BLACK, GamePhase.PLACEMENT, false, false, 8, 9);
+        when(gameService.placePiece("game-123", "player-1", 5)).thenReturn(mockState);
+        
+        // Act
+        controller.handlePlacePiece(message);
+        
+        // Assert - GameStateUpdate sent but NO GameEndMessage
+        verify(messagingTemplate, times(2)).convertAndSendToUser(
+                anyString(), eq("/queue/game-state"), any(GameStateUpdate.class));
+        verify(messagingTemplate, never()).convertAndSendToUser(
+                anyString(), eq("/queue/game-end"), any(GameEndMessage.class));
     }
 }

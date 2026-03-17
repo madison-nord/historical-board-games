@@ -124,9 +124,15 @@ public class RuleEngine {
             List<Integer> adjacentPositions = board.getAdjacentPositions(move.getFrom());
             return adjacentPositions.contains(move.getTo());
         } else if (state.getPhase() == GamePhase.FLYING) {
-            // In flying phase, player with 3 pieces can move anywhere
             int piecesOnBoard = state.getPiecesOnBoard(move.getPlayer());
-            return piecesOnBoard == 3;
+            if (piecesOnBoard == 3) {
+                // Player with exactly 3 pieces can fly to any empty position
+                return true;
+            } else {
+                // Player with >3 pieces must still move to adjacent positions
+                List<Integer> adjacentPositions = board.getAdjacentPositions(move.getFrom());
+                return adjacentPositions.contains(move.getTo());
+            }
         }
         
         return false;

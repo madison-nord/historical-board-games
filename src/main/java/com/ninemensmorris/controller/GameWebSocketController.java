@@ -5,11 +5,13 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+import com.ninemensmorris.dto.GameEndMessage;
 import com.ninemensmorris.dto.GameStateUpdate;
 import com.ninemensmorris.dto.MovePieceMessage;
 import com.ninemensmorris.dto.PlacePieceMessage;
 import com.ninemensmorris.dto.RemovePieceMessage;
 import com.ninemensmorris.engine.GameState;
+import com.ninemensmorris.model.PlayerColor;
 import com.ninemensmorris.service.GameService;
 
 /**
@@ -144,7 +146,32 @@ public class GameWebSocketController {
             if (parts.length == 2) {
                 messagingTemplate.convertAndSendToUser(parts[0], "/queue/game-state", update);
                 messagingTemplate.convertAndSendToUser(parts[1], "/queue/game-state", update);
+                
+                // Also send a GameEndMessage when the game is over
+                if (state.isGameOver()) {
+                    PlayerColor winner = state.getWinner();
+                    String reason = determineGameEndReason(state);
+                    GameEndMessage endMessage = new GameEndMessage(gameId, winner, reason);
+                    messagingTemplate.convertAndSendToUser(parts[0], "/queue/game-end", endMessage);
+                    messagingTemplate.convertAndSendToUser(parts[1], "/queue/game-end", endMessage);
+                }
             }
         }
+    }
+    
+    /**
+     * Determines the reason the game ended based on the game state.
+     * 
+     * @param state the final game state
+     * @return a human-readable reason for the game ending
+     */
+    private String determineGameEndReason(GameState state) {
+        if (state.getWhitePiecesOnBoard() < 3) {
+            return "White has fewer than 3 pieces";
+        }
+        if (state.getBlackPiecesOnBoard() < 3) {
+            return "Black has fewer than 3 pieces";
+        }
+        return "No legal moves available";
     }
 }

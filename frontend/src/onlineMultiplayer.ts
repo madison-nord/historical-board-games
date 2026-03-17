@@ -23,6 +23,10 @@ export async function startOnlineMultiplayer(
   const chatPanel = new ChatPanel();
   const playerId = `player-${Math.random().toString(36).substring(2, 11)}`;
 
+  // Track state for disconnect handling
+  let myPlayerColor: PlayerColor | null = null;
+  let activeGameController: GameController | null = null;
+
   // Show matchmaking dialog immediately
   ui.showMatchmakingDialog();
 
@@ -42,8 +46,29 @@ export async function startOnlineMultiplayer(
     ui.showMainMenu();
   });
 
+  // Helper to end the game due to disconnect and show result
+  const endGameWithDisconnectVictory = (): void => {
+    if (activeGameController && myPlayerColor) {
+      const gs = activeGameController.getCurrentGameState();
+      if (gs) {
+        gs.isGameOver = true;
+        gs.winner = myPlayerColor;
+        activeGameController.updateDisplay();
+      }
+    }
+    ui.showGameResult(myPlayerColor, true);
+    chatPanel.destroy();
+
+    ui.setOnRematch(() => {
+      chatPanel.clearMessages();
+      webSocketClient.joinMatchmaking();
+      ui.showMatchmakingDialog();
+    });
+  };
+
   // Game start handler
   webSocketClient.setOnGameStart(message => {
+    myPlayerColor = message.playerColor as PlayerColor;
     ui.showMatchFoundDialog(message.opponentId);
 
     const gc = new GameController(
@@ -52,6 +77,7 @@ export async function startOnlineMultiplayer(
       message.playerColor as PlayerColor
     );
     gc.setWebSocketClient(webSocketClient);
+    activeGameController = gc;
 
     // Initialize game state with server's gameId and player color
     // Do NOT call gc.startGame() — that generates a random local gameId
@@ -77,16 +103,28 @@ export async function startOnlineMultiplayer(
     // Override game end handler AFTER setWebSocketClient (which sets its own)
     // so we can also show the UI result dialog
     webSocketClient.setOnGameEnd(msg => {
-      const currentGc = gc;
-      if (currentGc) {
-        const gs = currentGc.getCurrentGameState();
+      if (activeGameController) {
+        const gs = activeGameController.getCurrentGameState();
         if (gs) {
           gs.isGameOver = true;
           gs.winner = msg.winner;
-          currentGc.updateDisplay();
+          activeGameController.updateDisplay();
         }
       }
       ui.showGameResult(msg.winner, true);
+      chatPanel.destroy();
+
+      ui.setOnRematch(() => {
+        chatPanel.clearMessages();
+        webSocketClient.joinMatchmaking();
+        ui.showMatchmakingDialog();
+      });
+    });
+
+    // Fallback: detect game-over from state updates in case GameEndMessage
+    // is not received (e.g. server sends gameOver=true in state update)
+    gc.setOnGameOverFromStateUpdate(winner => {
+      ui.showGameResult(winner, true);
       chatPanel.destroy();
 
       ui.setOnRematch(() => {
@@ -123,13 +161,16 @@ export async function startOnlineMultiplayer(
     ui.showOpponentReconnectedDialog();
   });
 
-  // Claim victory on disconnect timeout
+  // Claim victory on disconnect — end the game immediately for this player
   ui.setOnClaimVictory(() => {
     logger.info('Player claimed victory due to opponent disconnect');
+    endGameWithDisconnectVictory();
   });
 
-  // Wait for reconnect
+  // Wait for reconnect — just close the dialog, server timeout continues
   ui.setOnWaitForReconnect(() => {
     logger.info('Player chose to wait for opponent reconnection');
+    // Dialog closes, countdown continues on server side.
+    // If server timeout fires, the game-end handler will show the result.
   });
 }

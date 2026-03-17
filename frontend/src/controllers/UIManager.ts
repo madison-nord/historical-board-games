@@ -207,22 +207,22 @@ export class UIManager {
 
     // Add rematch button for online games
     if (isOnlineGame) {
-      const rematchBtn = this.createButton('Rematch', 'primary');
+      const rematchBtn = this.createButton('Play Again', 'primary');
       rematchBtn.addEventListener('click', () => {
+        this.closeCurrentDialog();
         if (this.onRematch) {
           this.onRematch();
         }
-        this.closeCurrentDialog();
       });
       buttonContainer.appendChild(rematchBtn);
     }
 
     const newGameBtn = this.createButton('New Game', 'primary');
     newGameBtn.addEventListener('click', () => {
+      this.closeCurrentDialog();
       if (this.onNewGame) {
         this.onNewGame();
       }
-      this.closeCurrentDialog();
     });
 
     const mainMenuBtn = this.createButton('Main Menu', 'secondary');
@@ -306,18 +306,18 @@ export class UIManager {
 
     const resumeBtn = this.createButton('Resume Game', 'primary');
     resumeBtn.addEventListener('click', () => {
+      this.closeCurrentDialog();
       if (this.onResumeGame) {
         this.onResumeGame();
       }
-      this.closeCurrentDialog();
     });
 
     const newGameBtn = this.createButton('Start New Game', 'secondary');
     newGameBtn.addEventListener('click', () => {
+      this.closeCurrentDialog();
       if (this.onNewGame) {
         this.onNewGame();
       }
-      this.closeCurrentDialog();
     });
 
     buttonContainer.appendChild(resumeBtn);
@@ -361,10 +361,10 @@ export class UIManager {
 
     const cancelBtn = this.createButton('Cancel', 'secondary');
     cancelBtn.addEventListener('click', () => {
+      this.closeCurrentDialog();
       if (this.onCancelMatchmaking) {
         this.onCancelMatchmaking();
       }
-      this.closeCurrentDialog();
     });
 
     content.appendChild(title);
@@ -456,23 +456,15 @@ export class UIManager {
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'disconnect-buttons';
 
-    const waitBtn = this.createButton('Wait', 'secondary');
-    waitBtn.addEventListener('click', () => {
-      if (this.onWaitForReconnect) {
-        this.onWaitForReconnect();
-      }
-      // Keep dialog open while waiting
-    });
-
     const claimVictoryBtn = this.createButton('Claim Victory', 'primary');
     claimVictoryBtn.addEventListener('click', () => {
+      this.stopDisconnectCountdown();
+      this.closeCurrentDialog();
       if (this.onClaimVictory) {
         this.onClaimVictory();
       }
-      this.closeCurrentDialog();
     });
 
-    buttonContainer.appendChild(waitBtn);
     buttonContainer.appendChild(claimVictoryBtn);
 
     content.appendChild(title);
@@ -497,11 +489,11 @@ export class UIManager {
 
       if (remainingSeconds <= 0) {
         this.stopDisconnectCountdown();
+        this.closeCurrentDialog();
         // Auto-claim victory when timeout reaches 0
         if (this.onClaimVictory) {
           this.onClaimVictory();
         }
-        this.closeCurrentDialog();
       }
     }, 1000);
   }

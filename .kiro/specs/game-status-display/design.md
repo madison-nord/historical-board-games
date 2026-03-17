@@ -297,7 +297,16 @@ function deriveGameEndMessage(
   gameMode: GameMode,
   localPlayerColor: PlayerColor
 ): { message: string; subtitle: string } {
-  // Returns appropriate message based on winner, reason, and mode
+  if (gameMode === GameMode.LOCAL_TWO_PLAYER) {
+    // Local two-player: generic "[Color] Wins!" since both players share the screen
+    const colorName = winner === PlayerColor.WHITE ? 'White' : 'Black';
+    return { message: `${colorName} Wins!`, subtitle: reason };
+  }
+  // Online multiplayer and single-player: personalized "You Won!" / "You Lost!"
+  if (winner === localPlayerColor) {
+    return { message: 'You Won!', subtitle: reason };
+  }
+  return { message: 'You Lost!', subtitle: reason };
 }
 ```
 
@@ -345,10 +354,11 @@ The core logic of this feature lives in pure derivation functions (`deriveAction
 ### Property 4: Game end announcement message correctness
 
 *For any* game mode, winner color (WHITE or BLACK), reason string, and local player color, `deriveGameEndMessage()` should return a message object where:
-- The message string contains the winner's color name (e.g., "White Wins!")
-- The subtitle string contains the reason for the win
+- In LOCAL_TWO_PLAYER mode, the message string contains the winner's color name (e.g., "White Wins!")
+- In ONLINE_MULTIPLAYER and SINGLE_PLAYER modes, the message string is "You Won!" when the winner matches the local player color, or "You Lost!" when it does not
+- The subtitle string always contains the reason for the win
 
-**Validates: Requirements 5.1, 5.2, 5.5**
+**Validates: Requirements 5.1, 5.2, 5.5, 5.6, 5.7**
 
 ### Property 5: Phase transition message correctness
 

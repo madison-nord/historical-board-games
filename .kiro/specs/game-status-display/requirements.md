@@ -70,15 +70,17 @@ The Nine Men's Morris game currently renders all game status information (player
 
 ### Requirement 5: Game End Announcement
 
-**User Story:** As a player, I want a prominent winner announcement when the game ends, so that I clearly see who won and why.
+**User Story:** As a player, I want a prominent winner announcement when the game ends, so that I clearly see who won and why — and in online or single-player modes, I want to know whether I personally won or lost.
 
 #### Acceptance Criteria
 
-1. WHEN the game ends, THE Announcement_Banner SHALL display the winner (e.g., "White Wins!").
+1. WHEN the game ends in local two-player mode, THE Announcement_Banner SHALL display the winner by color (e.g., "White Wins!").
 2. WHEN the game ends, THE Announcement_Banner SHALL display the reason for the win (e.g., "Black has fewer than 3 pieces" or "Black has no legal moves").
 3. WHEN the game ends in online multiplayer mode due to opponent disconnection, THE Announcement_Banner SHALL display a message indicating the win was by disconnection (e.g., "You Win — Opponent disconnected").
 4. THE Announcement_Banner for game end SHALL remain visible until the player dismisses it or navigates away.
 5. THE Announcement_Banner for game end SHALL appear in all three Game_Modes.
+6. WHEN the game ends in online multiplayer mode, THE Announcement_Banner SHALL display "You Won!" if the local player's color matches the winner, or "You Lost!" if it does not.
+7. WHEN the game ends in single-player mode, THE Announcement_Banner SHALL display "You Won!" if the human player won, or "You Lost!" if the AI won.
 
 ### Requirement 6: Chat Panel Repositioning
 
