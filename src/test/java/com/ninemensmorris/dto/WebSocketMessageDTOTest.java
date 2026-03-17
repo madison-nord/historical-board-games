@@ -318,6 +318,7 @@ public class WebSocketMessageDTOTest {
         // Arrange
         ChatMessageBroadcast message = new ChatMessageBroadcast();
         message.setGameId("game-mno");
+        message.setSenderId("player-2");
         message.setSenderColor(PlayerColor.BLACK);
         message.setContent("Good game!");
         message.setTimestamp(System.currentTimeMillis());
@@ -330,6 +331,7 @@ public class WebSocketMessageDTOTest {
         
         // Assert
         assertEquals("game-mno", deserialized.getGameId());
+        assertEquals("player-2", deserialized.getSenderId());
         assertEquals(PlayerColor.BLACK, deserialized.getSenderColor());
         assertEquals("Good game!", deserialized.getContent());
         assertNotNull(deserialized.getTimestamp());
@@ -342,10 +344,11 @@ public class WebSocketMessageDTOTest {
         Long timestamp = System.currentTimeMillis();
         
         // Act
-        ChatMessageBroadcast message = new ChatMessageBroadcast("game-mno", PlayerColor.BLACK, "Good game!", timestamp);
+        ChatMessageBroadcast message = new ChatMessageBroadcast("game-mno", "player-2", PlayerColor.BLACK, "Good game!", timestamp);
         
         // Assert
         assertEquals("game-mno", message.getGameId());
+        assertEquals("player-2", message.getSenderId());
         assertEquals(PlayerColor.BLACK, message.getSenderColor());
         assertEquals("Good game!", message.getContent());
         assertEquals(timestamp, message.getTimestamp());

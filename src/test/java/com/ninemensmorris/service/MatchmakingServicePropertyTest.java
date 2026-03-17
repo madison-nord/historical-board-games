@@ -13,7 +13,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+
+import com.ninemensmorris.engine.GameState;
+import com.ninemensmorris.model.GameMode;
 
 import net.jqwik.api.Assume;
 import net.jqwik.api.ForAll;
@@ -33,6 +37,16 @@ import net.jqwik.api.constraints.StringLength;
  * to ensure the matchmaking logic is robust across all scenarios.
  */
 public class MatchmakingServicePropertyTest {
+    
+    /** Creates a MatchmakingService with mocked dependencies */
+    @SuppressWarnings("null")
+    private static MatchmakingService createService(SimpMessagingTemplate messagingTemplate) {
+        GameService gameService = mock(GameService.class);
+        SessionManagementService sessionManagementService = mock(SessionManagementService.class);
+        when(gameService.createGame(any(GameMode.class), anyString(), anyString()))
+            .thenAnswer(invocation -> new GameState("test-game-id"));
+        return new MatchmakingService(messagingTemplate, gameService, sessionManagementService);
+    }
     
     /**
      * Property 13: Matchmaking Pairing
@@ -62,7 +76,7 @@ public class MatchmakingServicePropertyTest {
         
         // Arrange
         SimpMessagingTemplate messagingTemplate = mock(SimpMessagingTemplate.class);
-        MatchmakingService matchmakingService = new MatchmakingService(messagingTemplate);
+        MatchmakingService matchmakingService = createService(messagingTemplate);
         
         // Act - Add two players to the queue
         matchmakingService.joinQueue(player1Id, session1Id);
@@ -106,7 +120,7 @@ public class MatchmakingServicePropertyTest {
         
         // Arrange
         SimpMessagingTemplate messagingTemplate = mock(SimpMessagingTemplate.class);
-        MatchmakingService matchmakingService = new MatchmakingService(messagingTemplate);
+        MatchmakingService matchmakingService = createService(messagingTemplate);
         
         // Act - Add two players to the queue
         matchmakingService.joinQueue(player1Id, session1Id);
@@ -140,7 +154,7 @@ public class MatchmakingServicePropertyTest {
     ) {
         // Arrange
         SimpMessagingTemplate messagingTemplate = mock(SimpMessagingTemplate.class);
-        MatchmakingService matchmakingService = new MatchmakingService(messagingTemplate);
+        MatchmakingService matchmakingService = createService(messagingTemplate);
         
         // Act - Add single player to the queue
         matchmakingService.joinQueue(playerId, sessionId);
@@ -182,7 +196,7 @@ public class MatchmakingServicePropertyTest {
         
         // Arrange
         SimpMessagingTemplate messagingTemplate = mock(SimpMessagingTemplate.class);
-        MatchmakingService matchmakingService = new MatchmakingService(messagingTemplate);
+        MatchmakingService matchmakingService = createService(messagingTemplate);
         
         // Act - Add all players to the queue
         int addedPlayers = 0;

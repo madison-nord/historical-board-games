@@ -41,14 +41,14 @@ public class WebSocketConfigTest {
     void testConfigureStompEndpoint() {
         // Arrange
         when(stompEndpointRegistry.addEndpoint(anyString())).thenReturn(endpointRegistration);
-        when(endpointRegistration.setAllowedOrigins(anyString())).thenReturn(endpointRegistration);
+        when(endpointRegistration.setAllowedOriginPatterns(anyString())).thenReturn(endpointRegistration);
         
         // Act
         webSocketConfig.registerStompEndpoints(stompEndpointRegistry);
         
         // Assert
         verify(stompEndpointRegistry).addEndpoint("/ws");
-        verify(endpointRegistration).setAllowedOrigins("*");
+        verify(endpointRegistration).setAllowedOriginPatterns("*");
         verify(endpointRegistration).withSockJS();
     }
     
@@ -62,5 +62,20 @@ public class WebSocketConfigTest {
         // Assert
         verify(messageBrokerRegistry).enableSimpleBroker("/topic", "/queue");
         verify(messageBrokerRegistry).setApplicationDestinationPrefixes("/app");
+    }
+    
+    @Test
+    @DisplayName("Register UserPrincipalChannelInterceptor on inbound channel")
+    void testConfigureClientInboundChannel() {
+        // Verify the WebSocketConfig class declares configureClientInboundChannel
+        // The actual interceptor behavior is tested in UserPrincipalChannelInterceptorTest
+        boolean methodFound = false;
+        for (java.lang.reflect.Method method : WebSocketConfig.class.getDeclaredMethods()) {
+            if ("configureClientInboundChannel".equals(method.getName())) {
+                methodFound = true;
+                break;
+            }
+        }
+        assert methodFound : "WebSocketConfig should declare configureClientInboundChannel method";
     }
 }

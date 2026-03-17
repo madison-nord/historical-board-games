@@ -32,7 +32,6 @@ export class BoardRenderer {
   private padding: number = 20;
   private highlightedPositions: number[] = [];
   private hoverPosition: number | null = null;
-  // eslint-disable-next-line no-unused-vars
   private onPositionClick: ((position: number) => void) | null = null;
   private inputEnabled: boolean = true;
 
@@ -568,7 +567,8 @@ export class BoardRenderer {
     phaseOrHighlighted: GamePhase | number[] = [],
     whitePiecesRemaining: number = 0,
     blackPiecesRemaining: number = 0,
-    deltaTime: number = 0
+    deltaTime: number = 0,
+    playerColor?: PlayerColor
   ): void {
     // Detect which signature is being used based on parameter types
     const isSimplifiedSignature = Array.isArray(phaseOrHighlighted);
@@ -629,7 +629,7 @@ export class BoardRenderer {
     this.renderAnimations();
 
     // Draw game info
-    this.drawGameInfo(currentPlayer, phase, whitePiecesRemaining, blackPiecesRemaining);
+    this.drawGameInfo(currentPlayer, phase, whitePiecesRemaining, blackPiecesRemaining, playerColor);
   }
 
   /**
@@ -753,13 +753,21 @@ export class BoardRenderer {
     currentPlayer: PlayerColor,
     phase: GamePhase,
     whitePiecesRemaining: number,
-    blackPiecesRemaining: number
+    blackPiecesRemaining: number,
+    playerColor?: PlayerColor
   ): void {
     this.ctx.fillStyle = '#333';
     this.ctx.font = '16px Arial';
     this.ctx.textAlign = 'left';
 
     let yOffset = this.boardSize + this.padding + 20; // Position text BELOW the board
+
+    // Player color indicator for online mode
+    if (playerColor !== undefined) {
+      const colorName = playerColor === PlayerColor.WHITE ? 'White' : 'Black';
+      this.ctx.fillText(`You are: ${colorName}`, this.padding, yOffset);
+      yOffset += 25;
+    }
 
     // Current player
     const playerText = `Current Player: ${currentPlayer === PlayerColor.WHITE ? 'White' : 'Black'}`;
@@ -777,33 +785,18 @@ export class BoardRenderer {
   }
 
   /**
-   * Get position from mouse/touch coordinates
-   */
-  /**
-   * Get position from mouse/touch coordinates
-   * Handles both client coordinates (from events) and canvas coordinates (for testing)
+   * Get position from mouse/touch coordinates (client coordinates from events).
+   * Always converts from client coordinates using getBoundingClientRect().
    */
   public getPositionFromCoordinates(x: number, y: number): number | null {
-    let canvasX: number;
-    let canvasY: number;
+    const rect = this.canvas.getBoundingClientRect();
+    const scaleX = this.canvas.width / rect.width;
+    const scaleY = this.canvas.height / rect.height;
 
-    // Check if coordinates are already in canvas space (for testing)
-    // Canvas coordinates will be within canvas dimensions
-    if (x >= 0 && x <= this.canvas.width && y >= 0 && y <= this.canvas.height) {
-      // Assume these are canvas coordinates
-      canvasX = x;
-      canvasY = y;
-    } else {
-      // These are client coordinates, need to convert
-      const rect = this.canvas.getBoundingClientRect();
-      const scaleX = this.canvas.width / rect.width;
-      const scaleY = this.canvas.height / rect.height;
+    const canvasX = (x - rect.left) * scaleX;
+    const canvasY = (y - rect.top) * scaleY;
 
-      canvasX = (x - rect.left) * scaleX;
-      canvasY = (y - rect.top) * scaleY;
-    }
-
-    const clickRadius = this.boardSize * 0.04; // Click tolerance
+    const clickRadius = this.boardSize * 0.05; // Click tolerance (5% of board size)
 
     for (let i = 0; i < this.positions.length; i++) {
       const pos = this.positions[i];
@@ -950,7 +943,6 @@ export class BoardRenderer {
   /**
    * Set position click callback
    */
-  // eslint-disable-next-line no-unused-vars
   public setOnPositionClick(callback: (position: number) => void): void {
     this.onPositionClick = callback;
   }

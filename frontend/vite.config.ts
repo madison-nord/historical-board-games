@@ -1,6 +1,9 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+  define: {
+    global: 'globalThis',
+  },
   server: {
     port: 3000,
     proxy: {
@@ -9,7 +12,8 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/ws': {
-        target: 'ws://localhost:8080',
+        target: 'http://localhost:8080',
+        changeOrigin: true,
         ws: true,
       },
     },

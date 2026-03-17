@@ -6,6 +6,7 @@ import { UIManager } from './controllers/UIManager.js';
 import { TutorialController } from './controllers/TutorialController.js';
 import { GameMode, PlayerColor } from './models/index.js';
 import { LocalStorage } from './utils/LocalStorage.js';
+import { startOnlineMultiplayer } from './onlineMultiplayer.js';
 
 logger.info("Nine Men's Morris - Game Loading...");
 
@@ -41,7 +42,9 @@ uiManager.setOnGameModeSelected((mode: string) => {
       startTutorial();
       break;
     case 'online-multiplayer':
-      uiManager.showErrorDialog('Online multiplayer is not yet available. Coming soon!');
+      startOnlineMultiplayer(uiManager, boardRenderer, gc => {
+        gameController = gc;
+      });
       break;
   }
 });

@@ -7,6 +7,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -59,6 +60,7 @@ public class SessionManagementService {
      * @param messagingTemplate the messaging template for WebSocket communication
      * @param gameService the game service for managing game state
      */
+    @Autowired
     public SessionManagementService(
             @NonNull SimpMessagingTemplate messagingTemplate,
             @NonNull GameService gameService) {

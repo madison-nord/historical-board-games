@@ -6,14 +6,12 @@ import { vi } from 'vitest';
 if (typeof HTMLDialogElement !== 'undefined') {
   HTMLDialogElement.prototype.showModal =
     HTMLDialogElement.prototype.showModal ||
-    // eslint-disable-next-line no-unused-vars
     function (this: HTMLDialogElement) {
       this.open = true;
     };
 
   HTMLDialogElement.prototype.close =
     HTMLDialogElement.prototype.close ||
-    // eslint-disable-next-line no-unused-vars
     function (this: HTMLDialogElement) {
       this.open = false;
     };

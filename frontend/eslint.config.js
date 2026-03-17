@@ -35,6 +35,7 @@ export default [
         setTimeout: 'readonly',
         fetch: 'readonly',
         WebSocket: 'readonly',
+        DOMRect: 'readonly',
       },
     },
     plugins: {
@@ -43,6 +44,7 @@ export default [
     },
     rules: {
       'prettier/prettier': 'error',
+      'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': ['error', { 
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_',

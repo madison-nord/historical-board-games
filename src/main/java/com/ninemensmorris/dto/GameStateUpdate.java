@@ -14,6 +14,9 @@ public class GameStateUpdate {
     private String phase;
     private int whitePiecesRemaining;
     private int blackPiecesRemaining;
+    private int whitePiecesOnBoard;
+    private int blackPiecesOnBoard;
+    private PlayerColor[] board;
     private boolean millFormed;
     private boolean gameOver;
     private PlayerColor winner;
@@ -59,6 +62,30 @@ public class GameStateUpdate {
     
     public void setBlackPiecesRemaining(int blackPiecesRemaining) {
         this.blackPiecesRemaining = blackPiecesRemaining;
+    }
+    
+    public int getWhitePiecesOnBoard() {
+        return whitePiecesOnBoard;
+    }
+    
+    public void setWhitePiecesOnBoard(int whitePiecesOnBoard) {
+        this.whitePiecesOnBoard = whitePiecesOnBoard;
+    }
+    
+    public int getBlackPiecesOnBoard() {
+        return blackPiecesOnBoard;
+    }
+    
+    public void setBlackPiecesOnBoard(int blackPiecesOnBoard) {
+        this.blackPiecesOnBoard = blackPiecesOnBoard;
+    }
+    
+    public PlayerColor[] getBoard() {
+        return board;
+    }
+    
+    public void setBoard(PlayerColor[] board) {
+        this.board = board;
     }
     
     public boolean isMillFormed() {

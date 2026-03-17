@@ -14,9 +14,12 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import com.ninemensmorris.dto.GameStartMessage;
+import com.ninemensmorris.engine.GameState;
+import com.ninemensmorris.model.GameMode;
 import com.ninemensmorris.model.PlayerColor;
 
 /**
@@ -32,12 +35,21 @@ public class MatchmakingServiceTest {
     
     private MatchmakingService matchmakingService;
     private SimpMessagingTemplate messagingTemplate;
+    private GameService gameService;
+    private SessionManagementService sessionManagementService;
     
     @BeforeEach
     @SuppressWarnings("unused") // Used by JUnit framework
     void setUp() {
         messagingTemplate = mock(SimpMessagingTemplate.class);
-        matchmakingService = new MatchmakingService(messagingTemplate);
+        gameService = mock(GameService.class);
+        sessionManagementService = mock(SessionManagementService.class);
+        
+        // Mock createGame to return a GameState with a predictable ID
+        when(gameService.createGame(any(GameMode.class), anyString(), anyString()))
+            .thenAnswer(invocation -> new GameState("test-game-id"));
+        
+        matchmakingService = new MatchmakingService(messagingTemplate, gameService, sessionManagementService);
     }
     
     @Test
@@ -219,5 +231,75 @@ public class MatchmakingServiceTest {
         // One player should remain in queue
         assertEquals(1, matchmakingService.getQueueSize(), 
                 "One player should remain in queue");
+    }
+    
+    @Test
+    @DisplayName("Matchmaking creates a game via GameService")
+    @SuppressWarnings("null") // Mock verify calls are non-null in test context
+    void testMatchmakingCreatesGame() {
+        // Act
+        matchmakingService.joinQueue("player1", "session1");
+        matchmakingService.joinQueue("player2", "session2");
+        
+        // Assert - GameService.createGame should have been called
+        verify(gameService, times(1)).createGame(
+                eq(GameMode.ONLINE_MULTIPLAYER),
+                anyString(),
+                anyString()
+        );
+    }
+    
+    @Test
+    @DisplayName("Each player receives personalized playerColor and opponentId")
+    @SuppressWarnings("null") // Mock verify calls are non-null in test context
+    void testPersonalizedGameStartMessages() {
+        // Act
+        matchmakingService.joinQueue("player1", "session1");
+        matchmakingService.joinQueue("player2", "session2");
+        
+        // Capture messages sent to each player
+        ArgumentCaptor<String> playerIdCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<GameStartMessage> messageCaptor = ArgumentCaptor.forClass(GameStartMessage.class);
+        verify(messagingTemplate, times(2)).convertAndSendToUser(
+                playerIdCaptor.capture(),
+                eq("/queue/game-start"),
+                messageCaptor.capture()
+        );
+        
+        var playerIds = playerIdCaptor.getAllValues();
+        var messages = messageCaptor.getAllValues();
+        
+        // Find message for player1 and player2
+        GameStartMessage msgForPlayer1 = null;
+        GameStartMessage msgForPlayer2 = null;
+        for (int i = 0; i < playerIds.size(); i++) {
+            if ("player1".equals(playerIds.get(i))) {
+                msgForPlayer1 = messages.get(i);
+            } else if ("player2".equals(playerIds.get(i))) {
+                msgForPlayer2 = messages.get(i);
+            }
+        }
+        
+        assertNotNull(msgForPlayer1, "Player 1 should receive a message");
+        assertNotNull(msgForPlayer2, "Player 2 should receive a message");
+        
+        // Each player should have playerColor and opponentId set
+        assertNotNull(msgForPlayer1.getPlayerColor(), "Player 1 should have playerColor");
+        assertNotNull(msgForPlayer1.getOpponentId(), "Player 1 should have opponentId");
+        assertNotNull(msgForPlayer2.getPlayerColor(), "Player 2 should have playerColor");
+        assertNotNull(msgForPlayer2.getOpponentId(), "Player 2 should have opponentId");
+        
+        // Player colors should be opposite
+        assertTrue(
+            msgForPlayer1.getPlayerColor() != msgForPlayer2.getPlayerColor(),
+            "Players should have different colors"
+        );
+        
+        // Opponent IDs should be correct
+        assertEquals("player2", msgForPlayer1.getOpponentId(), "Player 1's opponent should be player2");
+        assertEquals("player1", msgForPlayer2.getOpponentId(), "Player 2's opponent should be player1");
+        
+        // Both should have the same game ID
+        assertEquals(msgForPlayer1.getGameId(), msgForPlayer2.getGameId(), "Same game ID");
     }
 }

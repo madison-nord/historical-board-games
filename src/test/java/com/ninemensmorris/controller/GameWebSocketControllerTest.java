@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -22,6 +23,7 @@ import com.ninemensmorris.dto.GameStateUpdate;
 import com.ninemensmorris.dto.MovePieceMessage;
 import com.ninemensmorris.dto.PlacePieceMessage;
 import com.ninemensmorris.dto.RemovePieceMessage;
+import com.ninemensmorris.engine.Board;
 import com.ninemensmorris.engine.GameState;
 import com.ninemensmorris.model.GamePhase;
 import com.ninemensmorris.model.PlayerColor;
@@ -35,7 +37,7 @@ import com.ninemensmorris.service.GameService;
  * - Handles move piece messages correctly
  * - Handles remove piece messages correctly
  * - Validates moves before applying them
- * - Broadcasts game state updates to both players
+ * - Broadcasts game state updates to both players via user queues
  * - Handles errors gracefully
  */
 public class GameWebSocketControllerTest {
@@ -50,6 +52,30 @@ public class GameWebSocketControllerTest {
         gameService = mock(GameService.class);
         messagingTemplate = mock(SimpMessagingTemplate.class);
         controller = new GameWebSocketController(gameService, messagingTemplate);
+        
+        // Default player mapping for tests
+        when(gameService.getPlayerMapping("game-123")).thenReturn("player-1:player-2");
+        when(gameService.getPlayerMapping("game-456")).thenReturn("player-2:player-3");
+        when(gameService.getPlayerMapping("game-789")).thenReturn("player-3:player-4");
+        when(gameService.getPlayerMapping("game-abc")).thenReturn("player-1:player-2");
+    }
+    
+    /** Creates a mock GameState with a real Board for broadcastGameState serialization */
+    @SuppressWarnings("null")
+    private GameState createMockGameState(PlayerColor currentPlayer, GamePhase phase,
+            boolean gameOver, boolean millFormed, int whiteRemaining, int blackRemaining) {
+        GameState mockState = mock(GameState.class);
+        when(mockState.getCurrentPlayer()).thenReturn(currentPlayer);
+        when(mockState.getPhase()).thenReturn(phase);
+        when(mockState.isGameOver()).thenReturn(gameOver);
+        when(mockState.isMillFormed()).thenReturn(millFormed);
+        when(mockState.getWhitePiecesRemaining()).thenReturn(whiteRemaining);
+        when(mockState.getBlackPiecesRemaining()).thenReturn(blackRemaining);
+        when(mockState.getWhitePiecesOnBoard()).thenReturn(0);
+        when(mockState.getBlackPiecesOnBoard()).thenReturn(0);
+        when(mockState.getWinner()).thenReturn(null);
+        when(mockState.getBoard()).thenReturn(new Board());
+        return mockState;
     }
     
     @Test
@@ -63,14 +89,7 @@ public class GameWebSocketControllerTest {
         message.setPosition(5);
         message.setPlayerColor(PlayerColor.WHITE);
         
-        GameState mockState = mock(GameState.class);
-        when(mockState.getCurrentPlayer()).thenReturn(PlayerColor.WHITE);
-        when(mockState.getPhase()).thenReturn(GamePhase.PLACEMENT);
-        when(mockState.isGameOver()).thenReturn(false);
-        when(mockState.isMillFormed()).thenReturn(false);
-        when(mockState.getWhitePiecesRemaining()).thenReturn(8);
-        when(mockState.getBlackPiecesRemaining()).thenReturn(9);
-        
+        GameState mockState = createMockGameState(PlayerColor.WHITE, GamePhase.PLACEMENT, false, false, 8, 9);
         when(gameService.placePiece("game-123", "player-1", 5)).thenReturn(mockState);
         
         // Act
@@ -78,7 +97,9 @@ public class GameWebSocketControllerTest {
         
         // Assert
         verify(gameService).placePiece("game-123", "player-1", 5);
-        verify(messagingTemplate).convertAndSend(eq("/topic/game/game-123"), any(GameStateUpdate.class));
+        // Should send to both players via user queues
+        verify(messagingTemplate).convertAndSendToUser(eq("player-1"), eq("/queue/game-state"), any(GameStateUpdate.class));
+        verify(messagingTemplate).convertAndSendToUser(eq("player-2"), eq("/queue/game-state"), any(GameStateUpdate.class));
     }
     
     @Test
@@ -97,9 +118,9 @@ public class GameWebSocketControllerTest {
         
         // Act & Assert
         Exception exception = assertThrows(IllegalArgumentException.class, () -> controller.handlePlacePiece(message));
-        assertNotNull(exception); // Verify exception was thrown
+        assertNotNull(exception);
         verify(gameService).placePiece("game-123", "player-1", 5);
-        verify(messagingTemplate, never()).convertAndSend(anyString(), any(Object.class));
+        verify(messagingTemplate, never()).convertAndSendToUser(anyString(), anyString(), any(Object.class));
     }
     
     @Test
@@ -114,14 +135,7 @@ public class GameWebSocketControllerTest {
         message.setToPosition(7);
         message.setPlayerColor(PlayerColor.BLACK);
         
-        GameState mockState = mock(GameState.class);
-        when(mockState.getCurrentPlayer()).thenReturn(PlayerColor.BLACK);
-        when(mockState.getPhase()).thenReturn(GamePhase.MOVEMENT);
-        when(mockState.isGameOver()).thenReturn(false);
-        when(mockState.isMillFormed()).thenReturn(false);
-        when(mockState.getWhitePiecesRemaining()).thenReturn(7);
-        when(mockState.getBlackPiecesRemaining()).thenReturn(8);
-        
+        GameState mockState = createMockGameState(PlayerColor.BLACK, GamePhase.MOVEMENT, false, false, 7, 8);
         when(gameService.movePiece("game-456", "player-2", 3, 7)).thenReturn(mockState);
         
         // Act
@@ -129,7 +143,8 @@ public class GameWebSocketControllerTest {
         
         // Assert
         verify(gameService).movePiece("game-456", "player-2", 3, 7);
-        verify(messagingTemplate).convertAndSend(eq("/topic/game/game-456"), any(GameStateUpdate.class));
+        verify(messagingTemplate).convertAndSendToUser(eq("player-2"), eq("/queue/game-state"), any(GameStateUpdate.class));
+        verify(messagingTemplate).convertAndSendToUser(eq("player-3"), eq("/queue/game-state"), any(GameStateUpdate.class));
     }
     
     @Test
@@ -143,14 +158,7 @@ public class GameWebSocketControllerTest {
         message.setPosition(12);
         message.setPlayerColor(PlayerColor.WHITE);
         
-        GameState mockState = mock(GameState.class);
-        when(mockState.getCurrentPlayer()).thenReturn(PlayerColor.WHITE);
-        when(mockState.getPhase()).thenReturn(GamePhase.PLACEMENT);
-        when(mockState.isGameOver()).thenReturn(false);
-        when(mockState.isMillFormed()).thenReturn(false);
-        when(mockState.getWhitePiecesRemaining()).thenReturn(9);
-        when(mockState.getBlackPiecesRemaining()).thenReturn(8);
-        
+        GameState mockState = createMockGameState(PlayerColor.WHITE, GamePhase.PLACEMENT, false, false, 9, 8);
         when(gameService.removePiece("game-789", "player-3", 12)).thenReturn(mockState);
         
         // Act
@@ -158,7 +166,8 @@ public class GameWebSocketControllerTest {
         
         // Assert
         verify(gameService).removePiece("game-789", "player-3", 12);
-        verify(messagingTemplate).convertAndSend(eq("/topic/game/game-789"), any(GameStateUpdate.class));
+        verify(messagingTemplate).convertAndSendToUser(eq("player-3"), eq("/queue/game-state"), any(GameStateUpdate.class));
+        verify(messagingTemplate).convertAndSendToUser(eq("player-4"), eq("/queue/game-state"), any(GameStateUpdate.class));
     }
     
     @Test
@@ -172,24 +181,18 @@ public class GameWebSocketControllerTest {
         message.setPosition(0);
         message.setPlayerColor(PlayerColor.WHITE);
         
-        GameState mockState = mock(GameState.class);
-        when(mockState.getCurrentPlayer()).thenReturn(PlayerColor.BLACK);
-        when(mockState.getPhase()).thenReturn(GamePhase.PLACEMENT);
-        when(mockState.isGameOver()).thenReturn(false);
-        when(mockState.isMillFormed()).thenReturn(true);
-        when(mockState.getWhitePiecesRemaining()).thenReturn(8);
-        when(mockState.getBlackPiecesRemaining()).thenReturn(9);
-        
+        GameState mockState = createMockGameState(PlayerColor.BLACK, GamePhase.PLACEMENT, false, true, 8, 9);
         when(gameService.placePiece("game-abc", "player-1", 0)).thenReturn(mockState);
         
         // Act
         controller.handlePlacePiece(message);
         
-        // Assert
+        // Assert - capture the update sent to player-1
         ArgumentCaptor<GameStateUpdate> captor = ArgumentCaptor.forClass(GameStateUpdate.class);
-        verify(messagingTemplate).convertAndSend(eq("/topic/game/game-abc"), captor.capture());
+        verify(messagingTemplate, times(2)).convertAndSendToUser(
+                anyString(), eq("/queue/game-state"), captor.capture());
         
-        GameStateUpdate update = captor.getValue();
+        GameStateUpdate update = captor.getAllValues().get(0);
         assertEquals("game-abc", update.getGameId());
         assertEquals(PlayerColor.BLACK, update.getCurrentPlayer());
         assertEquals("PLACEMENT", update.getPhase());
@@ -197,5 +200,7 @@ public class GameWebSocketControllerTest {
         assertTrue(update.isMillFormed());
         assertEquals(8, update.getWhitePiecesRemaining());
         assertEquals(9, update.getBlackPiecesRemaining());
+        assertNotNull(update.getBoard(), "Board array should be set");
+        assertEquals(24, update.getBoard().length, "Board should have 24 positions");
     }
 }

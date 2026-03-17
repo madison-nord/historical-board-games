@@ -21,7 +21,6 @@ describe('TutorialController Unit Tests', () => {
       innerHTML: '',
       textContent: '',
       disabled: false,
-      // eslint-disable-next-line no-unused-vars
       querySelector: vi.fn((_selector: string) => mockElement),
       addEventListener: vi.fn(),
       remove: vi.fn(),

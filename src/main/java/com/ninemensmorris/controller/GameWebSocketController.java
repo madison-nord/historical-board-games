@@ -111,7 +111,8 @@ public class GameWebSocketController {
     }
     
     /**
-     * Broadcasts the current game state to all players in the game.
+     * Broadcasts the current game state to both players in the game.
+     * Uses convertAndSendToUser to send to each player's user queue.
      * 
      * @param gameId the game ID
      * @param state the current game state
@@ -120,13 +121,30 @@ public class GameWebSocketController {
         GameStateUpdate update = new GameStateUpdate();
         update.setGameId(gameId);
         update.setCurrentPlayer(state.getCurrentPlayer());
-        update.setPhase(state.getPhase().name()); // Use name() to get uppercase enum name
+        update.setPhase(state.getPhase().name());
         update.setWhitePiecesRemaining(state.getWhitePiecesRemaining());
         update.setBlackPiecesRemaining(state.getBlackPiecesRemaining());
+        update.setWhitePiecesOnBoard(state.getWhitePiecesOnBoard());
+        update.setBlackPiecesOnBoard(state.getBlackPiecesOnBoard());
         update.setMillFormed(state.isMillFormed());
         update.setGameOver(state.isGameOver());
+        update.setWinner(state.getWinner());
         
-        // Broadcast to the game-specific topic
-        messagingTemplate.convertAndSend("/topic/game/" + gameId, update);
+        // Serialize board state as array of PlayerColor (null for empty)
+        com.ninemensmorris.model.PlayerColor[] boardArray = new com.ninemensmorris.model.PlayerColor[24];
+        for (int i = 0; i < 24; i++) {
+            boardArray[i] = state.getBoard().getPosition(i).getOccupant();
+        }
+        update.setBoard(boardArray);
+        
+        // Send to each player via their user queue
+        String playerMapping = gameService.getPlayerMapping(gameId);
+        if (playerMapping != null) {
+            String[] parts = playerMapping.split(":");
+            if (parts.length == 2) {
+                messagingTemplate.convertAndSendToUser(parts[0], "/queue/game-state", update);
+                messagingTemplate.convertAndSendToUser(parts[1], "/queue/game-state", update);
+            }
+        }
     }
 }

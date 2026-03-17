@@ -208,7 +208,22 @@ describe('BoardRenderer - Responsive Behavior (Property-Based)', () => {
           (size, position) => {
             canvas.width = size;
             canvas.height = size;
+
             boardRenderer = new BoardRenderer(canvas);
+
+            // Mock getBoundingClientRect so client coords equal canvas coords
+            canvas.getBoundingClientRect = () =>
+              ({
+                left: 0,
+                top: 0,
+                width: size,
+                height: size,
+                right: size,
+                bottom: size,
+                x: 0,
+                y: 0,
+                toJSON: () => ({}),
+              }) as DOMRect;
 
             const board = Array(24).fill(null);
             boardRenderer.render(board, null, []);

@@ -54,6 +54,10 @@ public class ChatWebSocketControllerTest {
         when(gameService.getPlayerColor(anyString(), eq("player-1"))).thenReturn(PlayerColor.WHITE);
         when(gameService.getPlayerColor(anyString(), eq("player-2"))).thenReturn(PlayerColor.BLACK);
         
+        // Mock getPlayerMapping for chat broadcast
+        when(gameService.getPlayerMapping("game-123")).thenReturn("player-1:player-2");
+        when(gameService.getPlayerMapping("game-456")).thenReturn("player-1:player-2");
+        
         controller = new ChatWebSocketController(messagingTemplate, gameService);
     }
     
@@ -70,21 +74,29 @@ public class ChatWebSocketControllerTest {
         // Act
         controller.handleChatMessage(message);
         
-        // Assert
-        verify(messagingTemplate, times(1)).convertAndSend(
-            eq("/topic/game/game-123/chat"),
+        // Assert - should send to both players via user queues
+        verify(messagingTemplate, times(1)).convertAndSendToUser(
+            eq("player-1"),
+            eq("/queue/chat"),
+            any(ChatMessageBroadcast.class)
+        );
+        verify(messagingTemplate, times(1)).convertAndSendToUser(
+            eq("player-2"),
+            eq("/queue/chat"),
             any(ChatMessageBroadcast.class)
         );
         
-        verify(messagingTemplate).convertAndSend(
-            eq("/topic/game/game-123/chat"),
+        verify(messagingTemplate).convertAndSendToUser(
+            eq("player-1"),
+            eq("/queue/chat"),
             broadcastCaptor.capture()
         );
         
         ChatMessageBroadcast broadcast = broadcastCaptor.getValue();
         assertNotNull(broadcast);
         assertEquals("game-123", broadcast.getGameId());
-        assertEquals(PlayerColor.WHITE, broadcast.getSenderColor()); // player-1 should be WHITE
+        assertEquals("player-1", broadcast.getSenderId());
+        assertEquals(PlayerColor.WHITE, broadcast.getSenderColor());
         assertEquals("Hello, good game!", broadcast.getContent());
         assertNotNull(broadcast.getTimestamp());
     }
@@ -103,8 +115,9 @@ public class ChatWebSocketControllerTest {
         controller.handleChatMessage(message);
         
         // Assert
-        verify(messagingTemplate).convertAndSend(
-            eq("/topic/game/game-123/chat"),
+        verify(messagingTemplate).convertAndSendToUser(
+            eq("player-1"),
+            eq("/queue/chat"),
             broadcastCaptor.capture()
         );
         
@@ -127,8 +140,9 @@ public class ChatWebSocketControllerTest {
         controller.handleChatMessage(message);
         
         // Assert - should not broadcast empty messages
-        verify(messagingTemplate, times(0)).convertAndSend(
-            eq("/topic/game/game-123/chat"),
+        verify(messagingTemplate, times(0)).convertAndSendToUser(
+            anyString(),
+            eq("/queue/chat"),
             any(ChatMessageBroadcast.class)
         );
     }
@@ -148,8 +162,9 @@ public class ChatWebSocketControllerTest {
         controller.handleChatMessage(message);
         
         // Assert
-        verify(messagingTemplate).convertAndSend(
-            eq("/topic/game/game-123/chat"),
+        verify(messagingTemplate).convertAndSendToUser(
+            eq("player-1"),
+            eq("/queue/chat"),
             broadcastCaptor.capture()
         );
         
@@ -157,6 +172,31 @@ public class ChatWebSocketControllerTest {
         assertNotNull(broadcast);
         // Message should be truncated to 200 characters
         assertEquals(200, broadcast.getContent().length());
+    }
+    
+    @SuppressWarnings("null") // Mock objects are non-null in test context
+    @Test
+    @DisplayName("Silently ignore chat messages for non-existent games")
+    void testIgnoreMessagesForNonExistentGame() {
+        // Arrange - game that doesn't exist (getPlayerMapping returns null)
+        ChatMessage message = new ChatMessage();
+        message.setGameId("game-nonexistent");
+        message.setPlayerId("player-1");
+        message.setContent("Hello?");
+        
+        when(gameService.getPlayerMapping("game-nonexistent")).thenReturn(null);
+        
+        // Act - should NOT throw an exception
+        controller.handleChatMessage(message);
+        
+        // Assert - should not broadcast anything
+        verify(messagingTemplate, times(0)).convertAndSendToUser(
+            anyString(),
+            eq("/queue/chat"),
+            any(ChatMessageBroadcast.class)
+        );
+        // Should not even try to get player color
+        verify(gameService, times(0)).getPlayerColor(eq("game-nonexistent"), anyString());
     }
     
     @SuppressWarnings("null") // Mock objects are non-null in test context
@@ -175,13 +215,14 @@ public class ChatWebSocketControllerTest {
         // Assert
         verify(gameService, times(1)).getPlayerColor("game-456", "player-2");
         
-        verify(messagingTemplate).convertAndSend(
-            eq("/topic/game/game-456/chat"),
+        verify(messagingTemplate).convertAndSendToUser(
+            eq("player-1"),
+            eq("/queue/chat"),
             broadcastCaptor.capture()
         );
         
         ChatMessageBroadcast broadcast = broadcastCaptor.getValue();
         assertNotNull(broadcast);
-        assertEquals(PlayerColor.BLACK, broadcast.getSenderColor()); // player-2 should be BLACK
+        assertEquals(PlayerColor.BLACK, broadcast.getSenderColor());
     }
 }

@@ -590,7 +590,7 @@ The implementation uses:
     - Test disconnect handling
     - _Requirements: 5.3, 6.2_
 
-- [ ] 29. Implement disconnect and reconnect handling
+- [x] 29. Implement disconnect and reconnect handling
   - [x] 29.1 Add session management
     - Track WebSocket sessions for each player
     - Implement disconnect detection
@@ -679,7 +679,7 @@ The implementation uses:
     - Show "Return to Menu" button
     - _Requirements: 5.5, 5.6_
 
-- [-] 33. Integrate online multiplayer with GameController
+- [x] 33. Integrate online multiplayer with GameController
   - [x] 33.1 Add online mode to GameController
     - Modify GameController to support online mode
     - Send moves via WebSocket instead of local application
@@ -695,7 +695,7 @@ The implementation uses:
     - Test rematch functionality
     - _Requirements: 5.2, 5.3, 6.2_
 
-- [ ] 34. Checkpoint - Online multiplayer complete
+- [x] 34. Checkpoint - Online multiplayer complete
   - Test matchmaking with multiple browser windows
   - Test complete online game with chat
   - Test disconnect scenarios

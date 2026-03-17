@@ -525,7 +525,9 @@ export class TutorialController {
       // Restore previous board state
       if (this.tutorialState.boardStateHistory.length > 0 && this.gameController) {
         const previousState = this.tutorialState.boardStateHistory.pop();
-        this.gameController.setBoardState(previousState);
+        if (previousState) {
+          this.gameController.setBoardState(previousState);
+        }
       }
 
       this.executeCurrentStep();
@@ -645,7 +647,7 @@ export class TutorialController {
       this.isActive = false;
 
       setTimeout(() => {
-        if (this.gameController) {
+        if (this.gameController && currentStep.opponentMove !== null) {
           // Simulate opponent placement using public API
           this.gameController.handlePositionClick(currentStep.opponentMove);
         }

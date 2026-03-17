@@ -2,7 +2,6 @@ package com.ninemensmorris.service;
 
 import java.util.Objects;
 import java.util.Random;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -10,6 +9,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import com.ninemensmorris.dto.GameStartMessage;
+import com.ninemensmorris.model.GameMode;
 import com.ninemensmorris.model.PlayerColor;
 
 /**
@@ -29,6 +29,8 @@ import com.ninemensmorris.model.PlayerColor;
 public class MatchmakingService {
     
     private final SimpMessagingTemplate messagingTemplate;
+    private final GameService gameService;
+    private final SessionManagementService sessionManagementService;
     private final ConcurrentLinkedQueue<QueuedPlayer> queue;
     private final ConcurrentHashMap<String, QueuedPlayer> playerMap;
     private final Random random;
@@ -36,7 +38,7 @@ public class MatchmakingService {
     /**
      * Represents a player in the matchmaking queue.
      */
-    @SuppressWarnings("unused") // sessionId will be used in future tasks for session management
+    @SuppressWarnings("unused") // sessionId preserved for potential future use in session-based matchmaking
     private static class QueuedPlayer {
         final String playerId;
         final String sessionId;
@@ -51,9 +53,14 @@ public class MatchmakingService {
      * Creates a new MatchmakingService.
      * 
      * @param messagingTemplate the messaging template for WebSocket communication
+     * @param gameService the game service for creating games
+     * @param sessionManagementService the session management service for tracking player-game associations
      */
-    public MatchmakingService(SimpMessagingTemplate messagingTemplate) {
+    public MatchmakingService(SimpMessagingTemplate messagingTemplate, GameService gameService,
+                              SessionManagementService sessionManagementService) {
         this.messagingTemplate = messagingTemplate;
+        this.gameService = gameService;
+        this.sessionManagementService = sessionManagementService;
         this.queue = new ConcurrentLinkedQueue<>();
         this.playerMap = new ConcurrentHashMap<>();
         this.random = new Random();
@@ -121,8 +128,7 @@ public class MatchmakingService {
                 playerMap.remove(player2.playerId);
                 
                 // Create game and notify players
-                String gameId = generateGameId();
-                notifyPlayersOfMatch(player1, player2, gameId);
+                notifyPlayersOfMatch(player1, player2);
             }
         }
     }
@@ -133,31 +139,48 @@ public class MatchmakingService {
      * 
      * @param player1 the first player
      * @param player2 the second player
-     * @param gameId the unique game identifier
      */
-    private void notifyPlayersOfMatch(QueuedPlayer player1, QueuedPlayer player2, String gameId) {
+    private void notifyPlayersOfMatch(QueuedPlayer player1, QueuedPlayer player2) {
         // Randomly assign colors
         boolean player1IsWhite = random.nextBoolean();
-        PlayerColor player1Color = player1IsWhite ? PlayerColor.WHITE : PlayerColor.BLACK;
-        PlayerColor player2Color = player1IsWhite ? PlayerColor.BLACK : PlayerColor.WHITE;
         
-        // Create messages for both players
+        String whitePlayerId = player1IsWhite ? player1.playerId : player2.playerId;
+        String blackPlayerId = player1IsWhite ? player2.playerId : player1.playerId;
+        
+        // Create the game on the server via GameService
+        com.ninemensmorris.engine.GameState createdGame = gameService.createGame(
+                GameMode.ONLINE_MULTIPLAYER, whitePlayerId, blackPlayerId);
+        String actualGameId = createdGame.getGameId();
+        
+        // Associate both players with the game for disconnect handling
+        sessionManagementService.associatePlayerWithGame(
+                Objects.requireNonNull(whitePlayerId), Objects.requireNonNull(actualGameId));
+        sessionManagementService.associatePlayerWithGame(
+                Objects.requireNonNull(blackPlayerId), actualGameId);
+        
+        // Build personalized message for player 1
         GameStartMessage message1 = new GameStartMessage();
-        message1.setGameId(gameId);
+        message1.setGameId(actualGameId);
         message1.setPlayer1Id(player1.playerId);
         message1.setPlayer2Id(player2.playerId);
-        message1.setPlayer1Color(player1Color);
-        message1.setPlayer2Color(player2Color);
+        PlayerColor p1Color = player1IsWhite ? PlayerColor.WHITE : PlayerColor.BLACK;
+        PlayerColor p2Color = player1IsWhite ? PlayerColor.BLACK : PlayerColor.WHITE;
+        message1.setPlayer1Color(p1Color);
+        message1.setPlayer2Color(p2Color);
+        message1.setPlayerColor(p1Color);
+        message1.setOpponentId(player2.playerId);
         
+        // Build personalized message for player 2
         GameStartMessage message2 = new GameStartMessage();
-        message2.setGameId(gameId);
+        message2.setGameId(actualGameId);
         message2.setPlayer1Id(player1.playerId);
         message2.setPlayer2Id(player2.playerId);
-        message2.setPlayer1Color(player1Color);
-        message2.setPlayer2Color(player2Color);
+        message2.setPlayer1Color(p1Color);
+        message2.setPlayer2Color(p2Color);
+        message2.setPlayerColor(p2Color);
+        message2.setOpponentId(player1.playerId);
         
-        // Send notifications to both players
-        // Ensure player IDs are non-null before passing to messaging template
+        // Send personalized notifications to both players
         String player1Id = Objects.requireNonNull(player1.playerId, "Player 1 ID must not be null");
         String player2Id = Objects.requireNonNull(player2.playerId, "Player 2 ID must not be null");
         
@@ -172,14 +195,5 @@ public class MatchmakingService {
                 "/queue/game-start",
                 message2
         );
-    }
-    
-    /**
-     * Generates a unique game identifier.
-     * 
-     * @return a unique game ID
-     */
-    private String generateGameId() {
-        return "game-" + UUID.randomUUID().toString();
     }
 }

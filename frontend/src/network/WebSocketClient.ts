@@ -48,19 +48,12 @@ export interface OpponentReconnectedMessage {
 }
 
 // Callback types for message handlers
-// eslint-disable-next-line no-unused-vars
 export type GameStateUpdateHandler = (update: GameStateUpdate) => void;
-// eslint-disable-next-line no-unused-vars
 export type GameStartHandler = (message: GameStartMessage) => void;
-// eslint-disable-next-line no-unused-vars
 export type GameEndHandler = (message: GameEndMessage) => void;
-// eslint-disable-next-line no-unused-vars
 export type ChatMessageHandler = (message: ChatMessageBroadcast) => void;
-// eslint-disable-next-line no-unused-vars
 export type OpponentDisconnectedHandler = (message: OpponentDisconnectedMessage) => void;
-// eslint-disable-next-line no-unused-vars
 export type OpponentReconnectedHandler = (message: OpponentReconnectedMessage) => void;
-// eslint-disable-next-line no-unused-vars
 export type ConnectionStatusHandler = (connected: boolean) => void;
 
 /**
@@ -87,19 +80,28 @@ export class WebSocketClient {
    * @param playerId - Unique identifier for this player
    * @param serverUrl - WebSocket server URL (default: http://localhost:8080/ws)
    */
-  connect(playerId: string, serverUrl: string = 'http://localhost:8080/ws'): Promise<void> {
+  connect(playerId: string, serverUrl?: string): Promise<void> {
     return new Promise((resolve, reject) => {
       this.playerId = playerId;
 
+      // Use relative URL to leverage Vite proxy in dev, or same-origin in production
+      const wsUrl = serverUrl ?? `${window.location.origin}/ws`;
+
       // Create STOMP client with SockJS
+      // Disable auto-reconnect during initial connection so the promise rejects on failure
       this.client = new Client({
-        webSocketFactory: (): WebSocket => new SockJS(serverUrl) as WebSocket,
-        reconnectDelay: 5000,
+        webSocketFactory: (): WebSocket => new SockJS(wsUrl) as WebSocket,
+        connectHeaders: { playerId },
+        reconnectDelay: 0, // Disable auto-reconnect initially
         heartbeatIncoming: 4000,
         heartbeatOutgoing: 4000,
 
         onConnect: (): void => {
           logger.debug('WebSocket connected');
+          // Enable auto-reconnect now that we have a successful connection
+          if (this.client) {
+            this.client.reconnectDelay = 5000;
+          }
           this.notifyConnectionStatus(true);
           this.subscribeToUserQueues();
           resolve();
@@ -119,6 +121,7 @@ export class WebSocketClient {
         onWebSocketError: (error): void => {
           logger.error('WebSocket error:', error);
           this.notifyConnectionStatus(false);
+          reject(new Error('WebSocket connection failed'));
         },
       });
 
@@ -291,7 +294,7 @@ export class WebSocketClient {
       case 'PLACE':
         return { position: move.to };
       case 'MOVE':
-        return { from: move.from, to: move.to };
+        return { fromPosition: move.from, toPosition: move.to };
       case 'REMOVE':
         return { position: move.to };
       default:

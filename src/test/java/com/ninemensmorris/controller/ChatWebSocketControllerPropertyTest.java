@@ -62,6 +62,9 @@ public class ChatWebSocketControllerPropertyTest {
         // Mock getPlayerColor to return WHITE for player-1
         when(gameService.getPlayerColor(anyString(), eq("player-1"))).thenReturn(PlayerColor.WHITE);
         
+        // Mock getPlayerMapping for user-based broadcasting
+        when(gameService.getPlayerMapping("game-test-123")).thenReturn("player-1:player-2");
+        
         controller = new ChatWebSocketController(messagingTemplate, gameService);
         
         String gameId = "game-test-123";
@@ -75,15 +78,22 @@ public class ChatWebSocketControllerPropertyTest {
         // Act
         controller.handleChatMessage(message);
         
-        // Assert - verify broadcast was called
-        verify(messagingTemplate, times(1)).convertAndSend(
-            eq("/topic/game/" + gameId + "/chat"),
+        // Assert - verify broadcast was sent to both players via user queues
+        verify(messagingTemplate, times(1)).convertAndSendToUser(
+            eq("player-1"),
+            eq("/queue/chat"),
+            any(ChatMessageBroadcast.class)
+        );
+        verify(messagingTemplate, times(1)).convertAndSendToUser(
+            eq("player-2"),
+            eq("/queue/chat"),
             any(ChatMessageBroadcast.class)
         );
         
-        // Capture the broadcast message
-        verify(messagingTemplate).convertAndSend(
-            eq("/topic/game/" + gameId + "/chat"),
+        // Capture the broadcast message sent to player-1
+        verify(messagingTemplate).convertAndSendToUser(
+            eq("player-1"),
+            eq("/queue/chat"),
             broadcastCaptor.capture()
         );
         

@@ -63,21 +63,35 @@ public class ChatWebSocketController {
             content = content.substring(0, MAX_MESSAGE_LENGTH);
         }
         
+        // Check if game still exists before processing
+        String playerMapping = gameService.getPlayerMapping(message.getGameId());
+        if (playerMapping == null) {
+            // Game no longer exists (already cleaned up) — silently ignore
+            return;
+        }
+        
+        // Get actual player color from game service
+        PlayerColor senderColor;
+        try {
+            senderColor = gameService.getPlayerColor(message.getGameId(), message.getPlayerId());
+        } catch (IllegalArgumentException e) {
+            // Game was cleaned up between the check and this call — ignore
+            return;
+        }
+        
         // Create broadcast message
         ChatMessageBroadcast broadcast = new ChatMessageBroadcast();
         broadcast.setGameId(message.getGameId());
-        
-        // Get actual player color from game service
-        PlayerColor senderColor = gameService.getPlayerColor(message.getGameId(), message.getPlayerId());
+        broadcast.setSenderId(message.getPlayerId());
         broadcast.setSenderColor(senderColor);
-        
         broadcast.setContent(content);
         broadcast.setTimestamp(System.currentTimeMillis());
         
-        // Broadcast to the game-specific chat topic
-        messagingTemplate.convertAndSend(
-            "/topic/game/" + message.getGameId() + "/chat",
-            broadcast
-        );
+        // Broadcast to both players via their user queues
+        String[] parts = playerMapping.split(":");
+        if (parts.length == 2) {
+            messagingTemplate.convertAndSendToUser(parts[0], "/queue/chat", broadcast);
+            messagingTemplate.convertAndSendToUser(parts[1], "/queue/chat", broadcast);
+        }
     }
 }

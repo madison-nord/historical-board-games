@@ -59,6 +59,27 @@ describe('WebSocketClient', () => {
       expect(client.getPlayerId()).toBe('player-1');
     });
 
+    it('should send playerId as STOMP connect header', async () => {
+      let capturedConfig: any = null;
+      (Client as any).mockImplementation((config: any) => {
+        capturedConfig = config;
+        mockStompClient.onConnect = config.onConnect;
+        mockStompClient.onStompError = config.onStompError;
+        mockStompClient.onWebSocketClose = config.onWebSocketClose;
+        mockStompClient.onWebSocketError = config.onWebSocketError;
+        return mockStompClient;
+      });
+
+      const testClient = new WebSocketClient();
+      const connectPromise = testClient.connect('my-player-id');
+      mockStompClient.connected = true;
+      mockStompClient.onConnect();
+      await connectPromise;
+
+      expect(capturedConfig.connectHeaders).toBeDefined();
+      expect(capturedConfig.connectHeaders.playerId).toBe('my-player-id');
+    });
+
     it('should handle connection errors', async () => {
       const connectPromise = client.connect('player-1');
 
@@ -175,7 +196,7 @@ describe('WebSocketClient', () => {
       });
     });
 
-    it('should send MOVE move', () => {
+    it('should send MOVE move with fromPosition/toPosition matching backend DTO', () => {
       client.sendMove({
         type: MoveType.MOVE,
         from: 5,
@@ -188,8 +209,8 @@ describe('WebSocketClient', () => {
         body: JSON.stringify({
           gameId: 'game-123',
           playerId: 'player-1',
-          from: 5,
-          to: 6,
+          fromPosition: 5,
+          toPosition: 6,
         }),
       });
     });

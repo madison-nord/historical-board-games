@@ -10,6 +10,7 @@ import com.ninemensmorris.model.PlayerColor;
 public class ChatMessageBroadcast {
     
     private String gameId;
+    private String senderId;
     private PlayerColor senderColor;
     private String content;
     private Long timestamp;
@@ -17,8 +18,9 @@ public class ChatMessageBroadcast {
     public ChatMessageBroadcast() {
     }
     
-    public ChatMessageBroadcast(String gameId, PlayerColor senderColor, String content, Long timestamp) {
+    public ChatMessageBroadcast(String gameId, String senderId, PlayerColor senderColor, String content, Long timestamp) {
         this.gameId = gameId;
+        this.senderId = senderId;
         this.senderColor = senderColor;
         this.content = content;
         this.timestamp = timestamp;
@@ -30,6 +32,14 @@ public class ChatMessageBroadcast {
     
     public void setGameId(String gameId) {
         this.gameId = gameId;
+    }
+    
+    public String getSenderId() {
+        return senderId;
+    }
+    
+    public void setSenderId(String senderId) {
+        this.senderId = senderId;
     }
     
     public PlayerColor getSenderColor() {

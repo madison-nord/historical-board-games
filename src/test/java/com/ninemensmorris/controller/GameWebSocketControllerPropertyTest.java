@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -15,7 +16,10 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import com.ninemensmorris.dto.GameStateUpdate;
 import com.ninemensmorris.dto.PlacePieceMessage;
+import com.ninemensmorris.engine.Board;
 import com.ninemensmorris.engine.GameState;
+import com.ninemensmorris.model.GamePhase;
+import com.ninemensmorris.model.PlayerColor;
 import com.ninemensmorris.service.GameService;
 
 import net.jqwik.api.ForAll;
@@ -60,11 +64,24 @@ public class GameWebSocketControllerPropertyTest {
         String gameId = "game-test-123";
         String playerId = "player-1";
         
-        // Create a real game state (immutable)
-        GameState mockState = new GameState(gameId);
+        // Create a mock game state with a real Board for serialization
+        GameState mockState = mock(GameState.class);
+        when(mockState.getCurrentPlayer()).thenReturn(PlayerColor.BLACK);
+        when(mockState.getPhase()).thenReturn(GamePhase.PLACEMENT);
+        when(mockState.isGameOver()).thenReturn(false);
+        when(mockState.isMillFormed()).thenReturn(false);
+        when(mockState.getWhitePiecesRemaining()).thenReturn(8);
+        when(mockState.getBlackPiecesRemaining()).thenReturn(9);
+        when(mockState.getWhitePiecesOnBoard()).thenReturn(1);
+        when(mockState.getBlackPiecesOnBoard()).thenReturn(0);
+        when(mockState.getWinner()).thenReturn(null);
+        when(mockState.getBoard()).thenReturn(new Board());
         
         when(gameService.placePiece(eq(gameId), eq(playerId), eq(position)))
             .thenReturn(mockState);
+        
+        // Mock player mapping for user-based broadcasting
+        when(gameService.getPlayerMapping(gameId)).thenReturn("player-1:player-2");
         
         PlacePieceMessage message = new PlacePieceMessage();
         message.setGameId(gameId);
@@ -74,15 +91,22 @@ public class GameWebSocketControllerPropertyTest {
         // Act
         controller.handlePlacePiece(message);
         
-        // Assert - verify broadcast was called
-        verify(messagingTemplate, times(1)).convertAndSend(
-            eq("/topic/game/" + gameId),
+        // Assert - verify both players receive the update via user queues
+        verify(messagingTemplate, times(1)).convertAndSendToUser(
+            eq("player-1"),
+            eq("/queue/game-state"),
+            any(GameStateUpdate.class)
+        );
+        verify(messagingTemplate, times(1)).convertAndSendToUser(
+            eq("player-2"),
+            eq("/queue/game-state"),
             any(GameStateUpdate.class)
         );
         
-        // Capture the broadcast message
-        verify(messagingTemplate).convertAndSend(
-            eq("/topic/game/" + gameId),
+        // Capture the update sent to player-1
+        verify(messagingTemplate).convertAndSendToUser(
+            eq("player-1"),
+            eq("/queue/game-state"),
             updateCaptor.capture()
         );
         

@@ -78,32 +78,21 @@
   max-width: 90vw;
   max-height: 90vh;
   box-shadow: var(--shadow-lg);
-  animation: dialogFadeIn var(--transition-normal);
+  opacity: 1;
+  animation: dialogFadeIn var(--transition-normal) forwards;
 }
 
 .game-dialog::backdrop {
   background-color: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(4px);
-  animation: backdropFadeIn var(--transition-normal);
 }
 
 @keyframes dialogFadeIn {
   from {
-    opacity: 0;
     transform: scale(0.95) translateY(-20px);
   }
   to {
-    opacity: 1;
     transform: scale(1) translateY(0);
-  }
-}
-
-@keyframes backdropFadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
   }
 }
 
@@ -539,11 +528,9 @@
 @keyframes slideInRight {
   from {
     transform: translateX(100%);
-    opacity: 0;
   }
   to {
     transform: translateX(0);
-    opacity: 1;
   }
 }
 
@@ -580,6 +567,38 @@
 
 .chat-mute-button.muted {
   color: var(--color-error);
+}
+
+.chat-header-buttons {
+  display: flex;
+  gap: var(--spacing-xs);
+  align-items: center;
+}
+
+.chat-collapse-button {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: var(--font-size-small);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  line-height: 1;
+}
+
+.chat-collapse-button:hover {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.chat-panel.collapsed .chat-messages,
+.chat-panel.collapsed .chat-input-container {
+  display: none;
+}
+
+.chat-panel.collapsed {
+  max-height: none;
 }
 
 .chat-messages {
@@ -623,11 +642,9 @@
 
 @keyframes fadeIn {
   from {
-    opacity: 0;
     transform: translateY(10px);
   }
   to {
-    opacity: 1;
     transform: translateY(0);
   }
 }
@@ -785,6 +802,20 @@
   /* Ensure touch targets are at least 44x44 pixels */
   .game-button {
     min-height: 44px;
+  }
+
+  /* Chat panel on mobile - compact at bottom */
+  .chat-panel {
+    width: calc(100vw - var(--spacing-md) * 2);
+    max-width: 320px;
+    max-height: 300px;
+    right: var(--spacing-sm);
+    bottom: var(--spacing-sm);
+  }
+
+  .chat-messages {
+    max-height: 150px;
+    min-height: 100px;
   }
 }
 

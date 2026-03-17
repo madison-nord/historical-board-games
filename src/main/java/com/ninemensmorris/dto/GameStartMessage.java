@@ -15,6 +15,11 @@ public class GameStartMessage {
     private PlayerColor player1Color;
     private PlayerColor player2Color;
     
+    /** Per-player fields: the color assigned to the receiving player */
+    private PlayerColor playerColor;
+    /** Per-player fields: the opponent's ID for the receiving player */
+    private String opponentId;
+    
     public GameStartMessage() {
     }
     
@@ -65,5 +70,21 @@ public class GameStartMessage {
     
     public void setPlayer2Color(PlayerColor player2Color) {
         this.player2Color = player2Color;
+    }
+    
+    public PlayerColor getPlayerColor() {
+        return playerColor;
+    }
+    
+    public void setPlayerColor(PlayerColor playerColor) {
+        this.playerColor = playerColor;
+    }
+    
+    public String getOpponentId() {
+        return opponentId;
+    }
+    
+    public void setOpponentId(String opponentId) {
+        this.opponentId = opponentId;
     }
 }

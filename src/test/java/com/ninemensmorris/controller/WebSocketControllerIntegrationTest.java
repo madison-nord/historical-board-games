@@ -7,9 +7,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -21,7 +23,10 @@ import com.ninemensmorris.dto.ChatMessageBroadcast;
 import com.ninemensmorris.dto.GameStateUpdate;
 import com.ninemensmorris.dto.JoinMatchmakingMessage;
 import com.ninemensmorris.dto.PlacePieceMessage;
+import com.ninemensmorris.engine.Board;
 import com.ninemensmorris.engine.GameState;
+import com.ninemensmorris.model.GamePhase;
+import com.ninemensmorris.model.PlayerColor;
 import com.ninemensmorris.service.GameService;
 import com.ninemensmorris.service.MatchmakingService;
 
@@ -43,9 +48,6 @@ public class WebSocketControllerIntegrationTest {
     private SimpMessagingTemplate messagingTemplate;
     
     @Captor
-    private ArgumentCaptor<GameStateUpdate> gameStateCaptor;
-    
-    @Captor
     private ArgumentCaptor<ChatMessageBroadcast> chatBroadcastCaptor;
     
     private GameWebSocketController gameController;
@@ -59,6 +61,32 @@ public class WebSocketControllerIntegrationTest {
         gameController = new GameWebSocketController(gameService, messagingTemplate);
         chatController = new ChatWebSocketController(messagingTemplate, gameService);
         matchmakingController = new MatchmakingWebSocketController(matchmakingService);
+        
+        // Mock player mappings for user-based broadcasting
+        when(gameService.getPlayerMapping("game-integration-test")).thenReturn("player-1:player-2");
+        when(gameService.getPlayerMapping("game-chat-test")).thenReturn("player-1:player-2");
+        when(gameService.getPlayerMapping("game-combined-test")).thenReturn("player-1:player-2");
+        
+        // Mock getPlayerColor for chat tests
+        when(gameService.getPlayerColor(anyString(), eq("player-1"))).thenReturn(PlayerColor.WHITE);
+        when(gameService.getPlayerColor(anyString(), eq("player-2"))).thenReturn(PlayerColor.BLACK);
+    }
+    
+    /** Creates a mock GameState with a real Board for broadcastGameState serialization */
+    @SuppressWarnings("null")
+    private GameState createMockGameState() {
+        GameState mockState = mock(GameState.class);
+        when(mockState.getCurrentPlayer()).thenReturn(PlayerColor.BLACK);
+        when(mockState.getPhase()).thenReturn(GamePhase.PLACEMENT);
+        when(mockState.isGameOver()).thenReturn(false);
+        when(mockState.isMillFormed()).thenReturn(false);
+        when(mockState.getWhitePiecesRemaining()).thenReturn(8);
+        when(mockState.getBlackPiecesRemaining()).thenReturn(9);
+        when(mockState.getWhitePiecesOnBoard()).thenReturn(1);
+        when(mockState.getBlackPiecesOnBoard()).thenReturn(0);
+        when(mockState.getWinner()).thenReturn(null);
+        when(mockState.getBoard()).thenReturn(new Board());
+        return mockState;
     }
     
     @SuppressWarnings("null") // Mock objects are non-null in test context
@@ -69,8 +97,7 @@ public class WebSocketControllerIntegrationTest {
         String gameId = "game-integration-test";
         String player1Id = "player-1";
         
-        // Create a real game state (immutable)
-        GameState mockState = new GameState(gameId);
+        GameState mockState = createMockGameState();
         
         when(gameService.placePiece(eq(gameId), eq(player1Id), eq(0)))
             .thenReturn(mockState);
@@ -83,18 +110,26 @@ public class WebSocketControllerIntegrationTest {
         // Act
         gameController.handlePlacePiece(message);
         
-        // Assert
-        verify(messagingTemplate, times(1)).convertAndSend(
-            eq("/topic/game/" + gameId),
+        // Assert - should send to both players via user queues
+        verify(messagingTemplate, times(1)).convertAndSendToUser(
+            eq("player-1"),
+            eq("/queue/game-state"),
+            any(GameStateUpdate.class)
+        );
+        verify(messagingTemplate, times(1)).convertAndSendToUser(
+            eq("player-2"),
+            eq("/queue/game-state"),
             any(GameStateUpdate.class)
         );
         
-        verify(messagingTemplate).convertAndSend(
-            eq("/topic/game/" + gameId),
-            gameStateCaptor.capture()
+        ArgumentCaptor<GameStateUpdate> captor = ArgumentCaptor.forClass(GameStateUpdate.class);
+        verify(messagingTemplate).convertAndSendToUser(
+            eq("player-1"),
+            eq("/queue/game-state"),
+            captor.capture()
         );
         
-        GameStateUpdate update = gameStateCaptor.getValue();
+        GameStateUpdate update = captor.getValue();
         assertNotNull(update);
         assertEquals(gameId, update.getGameId());
         assertEquals(mockState.getCurrentPlayer(), update.getCurrentPlayer());
@@ -117,14 +152,21 @@ public class WebSocketControllerIntegrationTest {
         // Act
         chatController.handleChatMessage(message);
         
-        // Assert
-        verify(messagingTemplate, times(1)).convertAndSend(
-            eq("/topic/game/" + gameId + "/chat"),
+        // Assert - should send to both players via user queues
+        verify(messagingTemplate, times(1)).convertAndSendToUser(
+            eq("player-1"),
+            eq("/queue/chat"),
+            any(ChatMessageBroadcast.class)
+        );
+        verify(messagingTemplate, times(1)).convertAndSendToUser(
+            eq("player-2"),
+            eq("/queue/chat"),
             any(ChatMessageBroadcast.class)
         );
         
-        verify(messagingTemplate).convertAndSend(
-            eq("/topic/game/" + gameId + "/chat"),
+        verify(messagingTemplate).convertAndSendToUser(
+            eq("player-1"),
+            eq("/queue/chat"),
             chatBroadcastCaptor.capture()
         );
         
@@ -194,8 +236,7 @@ public class WebSocketControllerIntegrationTest {
         String gameId = "game-combined-test";
         String playerId = "player-1";
         
-        // Create a real game state (immutable)
-        GameState mockState = new GameState(gameId);
+        GameState mockState = createMockGameState();
         
         when(gameService.placePiece(eq(gameId), eq(playerId), eq(0)))
             .thenReturn(mockState);
@@ -215,14 +256,27 @@ public class WebSocketControllerIntegrationTest {
         gameController.handlePlacePiece(gameMessage);
         chatController.handleChatMessage(chatMessage);
         
-        // Assert - both messages should be broadcast
-        verify(messagingTemplate, times(1)).convertAndSend(
-            eq("/topic/game/" + gameId),
+        // Assert - game state sent to both players via user queues
+        verify(messagingTemplate, times(1)).convertAndSendToUser(
+            eq("player-1"),
+            eq("/queue/game-state"),
+            any(GameStateUpdate.class)
+        );
+        verify(messagingTemplate, times(1)).convertAndSendToUser(
+            eq("player-2"),
+            eq("/queue/game-state"),
             any(GameStateUpdate.class)
         );
         
-        verify(messagingTemplate, times(1)).convertAndSend(
-            eq("/topic/game/" + gameId + "/chat"),
+        // Assert - chat sent to both players via user queues
+        verify(messagingTemplate, times(1)).convertAndSendToUser(
+            eq("player-1"),
+            eq("/queue/chat"),
+            any(ChatMessageBroadcast.class)
+        );
+        verify(messagingTemplate, times(1)).convertAndSendToUser(
+            eq("player-2"),
+            eq("/queue/chat"),
             any(ChatMessageBroadcast.class)
         );
     }

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#1a1a1a">
     <title>Historical Board Games - Play Classic Strategy Games Online</title>
@@ -12,9 +13,17 @@
 </head>
 <body>
     <div id="app">
-        <canvas id="game-canvas"></canvas>
+        <canvas id="game-canvas" role="img" aria-label="Nine Men's Morris game board">
+            Your browser does not support the canvas element. Please use a modern browser to play.
+        </canvas>
         <div id="ui-container"></div>
     </div>
+    <script>
+        // Polyfill for Node.js 'global' used by sockjs-client
+        if (typeof global === 'undefined') {
+            window.global = window;
+        }
+    </script>
     <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

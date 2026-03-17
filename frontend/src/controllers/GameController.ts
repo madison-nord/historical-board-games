@@ -95,7 +95,8 @@ export class GameController {
         this.currentGameState.phase,
         this.currentGameState.whitePiecesRemaining,
         this.currentGameState.blackPiecesRemaining,
-        deltaTime
+        deltaTime,
+        this.isOnlineMode() ? this.playerColor : undefined
       );
     }
 
@@ -122,13 +123,13 @@ export class GameController {
 
   /**
    * Set WebSocket client for online multiplayer mode
+   * Note: Does NOT set onGameStart handler here — onlineMultiplayer.ts manages game start flow
    */
   public setWebSocketClient(client: WebSocketClient): void {
     this.webSocketClient = client;
 
-    // Set up message handlers
+    // Set up message handlers (except onGameStart, managed by onlineMultiplayer.ts)
     this.webSocketClient.setOnGameStateUpdate(this.handleGameStateUpdate.bind(this));
-    this.webSocketClient.setOnGameStart(this.handleGameStart.bind(this));
     this.webSocketClient.setOnGameEnd(this.handleGameEnd.bind(this));
   }
 
@@ -211,7 +212,7 @@ export class GameController {
 
     // Enable input for player's turn
     const isPlayerTurn =
-      this.gameMode !== GameMode.SINGLE_PLAYER ||
+      this.gameMode === GameMode.LOCAL_TWO_PLAYER ||
       this.currentGameState.currentPlayer === this.playerColor;
     this.boardRenderer.setInputEnabled(isPlayerTurn);
 
@@ -243,10 +244,10 @@ export class GameController {
 
     // In single-player mode, only allow input when it's the player's turn
     if (
-      this.gameMode === GameMode.SINGLE_PLAYER &&
+      (this.gameMode === GameMode.SINGLE_PLAYER || this.gameMode === GameMode.ONLINE_MULTIPLAYER) &&
       this.currentGameState.currentPlayer !== this.playerColor
     ) {
-      logger.debug('handlePositionClick: Returning early - not player turn in single-player');
+      logger.debug('handlePositionClick: Returning early - not player turn');
       return;
     }
 
@@ -634,6 +635,20 @@ export class GameController {
         }
       }
 
+      // In online mode, send removal to server via applyMove
+      if (this.isOnlineMode()) {
+        const move: Move = {
+          type: MoveType.REMOVE,
+          from: -1,
+          to: position,
+          player: this.currentGameState.currentPlayer,
+          removed: position,
+        };
+        this.boardRenderer.clearHighlights();
+        this.applyMove(move);
+        return;
+      }
+
       this.removePiece(position);
       this.boardRenderer.clearHighlights();
     } else {
@@ -921,6 +936,12 @@ export class GameController {
         );
         this.boardRenderer.setInputEnabled(isPlayerTurn && !this.isAiThinking);
       }
+      // In online multiplayer mode, enable input only if it's the player's turn
+      else if (this.gameMode === GameMode.ONLINE_MULTIPLAYER) {
+        const isPlayerTurn = this.currentGameState.currentPlayer === this.playerColor;
+        logger.debug(`switchPlayer: Online mode - isPlayerTurn=${isPlayerTurn}`);
+        this.boardRenderer.setInputEnabled(isPlayerTurn);
+      }
     } else {
       logger.debug('switchPlayer: Input NOT enabled - game over or mill formed');
     }
@@ -1091,7 +1112,8 @@ export class GameController {
       this.currentGameState.phase,
       this.currentGameState.whitePiecesRemaining,
       this.currentGameState.blackPiecesRemaining,
-      16 // deltaTime in ms (60 FPS = ~16ms per frame)
+      16, // deltaTime in ms (60 FPS = ~16ms per frame)
+      this.isOnlineMode() ? this.playerColor : undefined
     );
   }
 
@@ -1260,9 +1282,13 @@ export class GameController {
 
     // Enable input if it's our turn
     const isOurTurn = this.currentGameState.currentPlayer === this.playerColor;
-    this.boardRenderer.setInputEnabled(
-      isOurTurn && !this.currentGameState.isGameOver && !this.currentGameState.millFormed
-    );
+    const shouldEnableInput = isOurTurn && !this.currentGameState.isGameOver;
+    this.boardRenderer.setInputEnabled(shouldEnableInput);
+
+    // If a mill was formed and it's our turn, highlight removable pieces
+    if (this.currentGameState.millFormed && isOurTurn && !this.currentGameState.isGameOver) {
+      this.handleMillFormed();
+    }
   }
 
   /**

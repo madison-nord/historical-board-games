@@ -7,9 +7,7 @@ import { PlayerColor } from '../models/PlayerColor';
  */
 export class UIManager {
   private currentDialog: HTMLDialogElement | null = null;
-  // eslint-disable-next-line no-unused-vars
   private onGameModeSelected: ((mode: string) => void) | null = null;
-  // eslint-disable-next-line no-unused-vars
   private onColorSelected: ((color: PlayerColor) => void) | null = null;
   private onResumeGame: (() => void) | null = null;
   private onNewGame: (() => void) | null = null;
@@ -66,10 +64,10 @@ export class UIManager {
     onlineMultiplayerBtn.addEventListener(
       'click',
       this.withDebounce(() => {
+        this.closeCurrentDialog();
         if (this.onGameModeSelected) {
           this.onGameModeSelected('online-multiplayer');
         }
-        this.closeCurrentDialog();
       })
     );
 
@@ -579,7 +577,6 @@ export class UIManager {
   /**
    * Set callback for when a game mode is selected
    */
-  // eslint-disable-next-line no-unused-vars
   public setOnGameModeSelected(callback: (mode: string) => void): void {
     this.onGameModeSelected = callback;
   }
@@ -587,7 +584,6 @@ export class UIManager {
   /**
    * Set callback for when a color is selected in single-player mode
    */
-  // eslint-disable-next-line no-unused-vars
   public setOnColorSelected(callback: (color: PlayerColor) => void): void {
     this.onColorSelected = callback;
   }
@@ -624,9 +620,28 @@ export class UIManager {
     const dialog = document.createElement('dialog');
     dialog.className = 'game-dialog';
 
-    // Close on backdrop click
+    // Close on backdrop click, but ignore clicks that arrive before the dialog
+    // has been laid out. We use both a requestAnimationFrame guard AND a
+    // zero-size check because in real browsers the rAF callback can fire
+    // before a propagating click event from the previous dialog reaches us,
+    // and at that point getBoundingClientRect() returns all zeros.
+    let ready = false;
+    requestAnimationFrame(() => {
+      ready = true;
+    });
+
     dialog.addEventListener('click', e => {
+      if (!ready) {
+        return;
+      }
       const rect = dialog.getBoundingClientRect();
+
+      // If the rect has zero dimensions, the dialog hasn't been laid out yet
+      // (e.g. just added to top layer). Don't close on stale propagated clicks.
+      if (rect.width === 0 && rect.height === 0) {
+        return;
+      }
+
       const isInDialog =
         rect.top <= e.clientY &&
         e.clientY <= rect.top + rect.height &&

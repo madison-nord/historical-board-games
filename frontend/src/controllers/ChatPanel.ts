@@ -17,8 +17,9 @@ export class ChatPanel {
   private inputField: HTMLInputElement | null = null;
   private sendButton: HTMLButtonElement | null = null;
   private muteButton: HTMLButtonElement | null = null;
+  private collapseButton: HTMLButtonElement | null = null;
+  private isCollapsed: boolean = false;
   private isMuted: boolean = false;
-  // eslint-disable-next-line no-unused-vars
   private onSendMessage: ((content: string) => void) | null = null;
 
   /**
@@ -91,7 +92,6 @@ export class ChatPanel {
   /**
    * Set callback for when user sends a message
    */
-  // eslint-disable-next-line no-unused-vars
   public setOnSendMessage(callback: (content: string) => void): void {
     this.onSendMessage = callback;
   }
@@ -104,6 +104,20 @@ export class ChatPanel {
     if (this.muteButton) {
       this.muteButton.textContent = this.isMuted ? '🔇 Unmute' : '🔊 Mute';
       this.muteButton.classList.toggle('muted', this.isMuted);
+    }
+  }
+
+  /**
+   * Toggle collapse/expand state
+   */
+  public toggleCollapse(): void {
+    this.isCollapsed = !this.isCollapsed;
+    if (this.container) {
+      this.container.classList.toggle('collapsed', this.isCollapsed);
+    }
+    if (this.collapseButton) {
+      this.collapseButton.textContent = this.isCollapsed ? '▲' : '▼';
+      this.collapseButton.title = this.isCollapsed ? 'Expand chat' : 'Minimize chat';
     }
   }
 
@@ -128,8 +142,19 @@ export class ChatPanel {
     this.muteButton.textContent = '🔊 Mute';
     this.muteButton.addEventListener('click', () => this.toggleMute());
 
+    this.collapseButton = document.createElement('button');
+    this.collapseButton.className = 'chat-collapse-button';
+    this.collapseButton.textContent = '▼';
+    this.collapseButton.title = 'Minimize chat';
+    this.collapseButton.addEventListener('click', () => this.toggleCollapse());
+
+    const headerButtons = document.createElement('div');
+    headerButtons.className = 'chat-header-buttons';
+    headerButtons.appendChild(this.muteButton);
+    headerButtons.appendChild(this.collapseButton);
+
     header.appendChild(title);
-    header.appendChild(this.muteButton);
+    header.appendChild(headerButtons);
 
     // Messages container
     this.messagesContainer = document.createElement('div');
@@ -214,6 +239,7 @@ export class ChatPanel {
       this.inputField = null;
       this.sendButton = null;
       this.muteButton = null;
+      this.collapseButton = null;
     }
   }
 }
