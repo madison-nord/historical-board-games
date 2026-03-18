@@ -53,6 +53,7 @@ uiManager.setOnGameModeSelected((mode: string) => {
       startTutorial();
       break;
     case 'online-multiplayer':
+      announcementBanner.dismiss();
       startOnlineMultiplayer(uiManager, boardRenderer, gc => {
         gameController = gc;
         if (gc) {
@@ -82,6 +83,7 @@ uiManager.setOnResumeGame(() => {
 
 uiManager.setOnNewGame(() => {
   logger.info('Starting new game instead of resuming');
+  announcementBanner.dismiss();
   LocalStorage.clearGameState();
   uiManager.showMainMenu();
 });
@@ -98,6 +100,7 @@ if (savedGame && savedGame.gameMode !== GameMode.ONLINE_MULTIPLAYER) {
 
 function startGame(mode: GameMode, playerColor: PlayerColor): void {
   logger.info(`Starting game: ${mode}`);
+  announcementBanner.dismiss();
   gameController = new GameController(mode, boardRenderer, playerColor);
   gameController.setInfoPanel(infoPanel);
   gameController.setAnnouncementBanner(announcementBanner);
@@ -116,6 +119,7 @@ function startGame(mode: GameMode, playerColor: PlayerColor): void {
 
 function startTutorial(): void {
   logger.info('Starting tutorial');
+  announcementBanner.dismiss();
   tutorialController = new TutorialController();
   gameController = new GameController(GameMode.TUTORIAL, boardRenderer, PlayerColor.WHITE);
 
