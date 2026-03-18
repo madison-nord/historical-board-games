@@ -91,7 +91,40 @@ public class GameState implements Cloneable {
         this.winner = winner;
         this.moveHistory = new ArrayList<>(moveHistory);
     }
-    
+
+    /**
+     * Creates a GameState from raw board data, typically received from the frontend.
+     * Used by the AI REST endpoint to reconstruct game state from JSON.
+     *
+     * @param gameId the game identifier
+     * @param boardColors array of 24 PlayerColor values (null for empty positions)
+     * @param phase the current game phase
+     * @param currentPlayer the player whose turn it is
+     * @param whitePiecesRemaining white pieces not yet placed
+     * @param blackPiecesRemaining black pieces not yet placed
+     * @param whitePiecesOnBoard white pieces currently on board
+     * @param blackPiecesOnBoard black pieces currently on board
+     * @param millFormed whether a mill was just formed
+     * @return a new GameState reconstructed from the provided data
+     */
+    public static GameState fromBoardData(String gameId, PlayerColor[] boardColors,
+                                          GamePhase phase, PlayerColor currentPlayer,
+                                          int whitePiecesRemaining, int blackPiecesRemaining,
+                                          int whitePiecesOnBoard, int blackPiecesOnBoard,
+                                          boolean millFormed) {
+        Board board = new Board();
+        for (int i = 0; i < 24; i++) {
+            if (boardColors[i] != null) {
+                board.getPosition(i).setOccupant(boardColors[i]);
+            }
+        }
+        return new GameState(gameId, board, phase, currentPlayer,
+                           whitePiecesRemaining, blackPiecesRemaining,
+                           whitePiecesOnBoard, blackPiecesOnBoard,
+                           millFormed, GameStatus.IN_PROGRESS, null,
+                           new ArrayList<>());
+    }
+
     /**
      * Applies a move to this game state and returns a new game state.
      * This method does not validate the move - validation should be done

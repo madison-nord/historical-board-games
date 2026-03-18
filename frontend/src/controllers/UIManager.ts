@@ -1,4 +1,6 @@
 import { PlayerColor } from '../models/PlayerColor';
+import { GameMode } from '../models/GameMode';
+import { deriveGameEndMessage } from './InfoPanel';
 
 /**
  * UIManager handles all menu and dialog interactions for the game.
@@ -172,7 +174,12 @@ export class UIManager {
    * @param winner - The color of the winning player, or null for a draw
    * @param isOnlineGame - Whether this is an online multiplayer game (shows rematch button)
    */
-  public showGameResult(winner: PlayerColor | null, isOnlineGame: boolean = false): void {
+  public showGameResult(
+    winner: PlayerColor | null,
+    isOnlineGame: boolean = false,
+    gameMode?: GameMode,
+    localPlayerColor?: PlayerColor
+  ): void {
     this.closeCurrentDialog();
 
     const dialog = this.createDialog();
@@ -184,9 +191,24 @@ export class UIManager {
     const title = document.createElement('h2');
     title.className = 'dialog-title result-title';
 
+    // Use mode-aware messaging for online/single-player modes
+    const useModeAwareMessage =
+      gameMode !== undefined &&
+      localPlayerColor !== undefined &&
+      (gameMode === GameMode.ONLINE_MULTIPLAYER || gameMode === GameMode.SINGLE_PLAYER);
+
     if (winner === null) {
       title.textContent = 'Game Draw!';
       title.classList.add('draw');
+    } else if (useModeAwareMessage) {
+      const derived = deriveGameEndMessage(
+        winner,
+        `${winner === PlayerColor.WHITE ? 'White' : 'Black'} player has won the game!`,
+        gameMode!,
+        localPlayerColor!
+      );
+      title.textContent = derived.message;
+      title.classList.add(winner === localPlayerColor ? 'white-wins' : 'black-wins');
     } else if (winner === PlayerColor.WHITE) {
       title.textContent = 'White Wins!';
       title.classList.add('white-wins');
@@ -197,10 +219,19 @@ export class UIManager {
 
     const message = document.createElement('p');
     message.className = 'result-message';
-    message.textContent =
-      winner === null
-        ? 'The game ended in a draw.'
-        : `${winner === PlayerColor.WHITE ? 'White' : 'Black'} player has won the game!`;
+    if (winner === null) {
+      message.textContent = 'The game ended in a draw.';
+    } else if (useModeAwareMessage) {
+      const derived = deriveGameEndMessage(
+        winner,
+        `${winner === PlayerColor.WHITE ? 'White' : 'Black'} player has won the game!`,
+        gameMode!,
+        localPlayerColor!
+      );
+      message.textContent = derived.subtitle;
+    } else {
+      message.textContent = `${winner === PlayerColor.WHITE ? 'White' : 'Black'} player has won the game!`;
+    }
 
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'result-buttons';

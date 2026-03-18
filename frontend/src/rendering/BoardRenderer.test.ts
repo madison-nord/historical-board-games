@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { BoardRenderer } from './BoardRenderer';
 import { PlayerColor, GamePhase } from '../models/index.js';
 
@@ -166,6 +166,30 @@ describe('BoardRenderer', () => {
         renderer.setHoverPosition(5);
         renderer.setHoverPosition(null);
       }).not.toThrow();
+    });
+  });
+
+  describe('infoPanelActive flag', () => {
+    it('should skip drawGameInfo when infoPanelActive is true', () => {
+      const drawGameInfoSpy = vi.spyOn(renderer as any, 'drawGameInfo');
+      const board = new Array(24).fill(null);
+
+      renderer.setInfoPanelActive(true);
+      renderer.render(board, PlayerColor.WHITE, GamePhase.PLACEMENT, 9, 9, 16);
+
+      expect(drawGameInfoSpy).not.toHaveBeenCalled();
+    });
+
+    it('should call drawGameInfo when infoPanelActive is set back to false', () => {
+      const drawGameInfoSpy = vi.spyOn(renderer as any, 'drawGameInfo');
+      const board = new Array(24).fill(null);
+
+      // Activate info panel, then deactivate
+      renderer.setInfoPanelActive(true);
+      renderer.setInfoPanelActive(false);
+      renderer.render(board, PlayerColor.WHITE, GamePhase.PLACEMENT, 9, 9, 16);
+
+      expect(drawGameInfoSpy).toHaveBeenCalled();
     });
   });
 });

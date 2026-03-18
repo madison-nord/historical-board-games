@@ -7,6 +7,8 @@ import { TutorialController } from './controllers/TutorialController.js';
 import { GameMode, PlayerColor } from './models/index.js';
 import { LocalStorage } from './utils/LocalStorage.js';
 import { startOnlineMultiplayer } from './onlineMultiplayer.js';
+import { InfoPanel } from './controllers/InfoPanel.js';
+import { AnnouncementBanner } from './controllers/AnnouncementBanner.js';
 
 logger.info("Nine Men's Morris - Game Loading...");
 
@@ -22,6 +24,15 @@ const boardRenderer = new BoardRenderer(canvas);
 
 // Initialize UI manager
 const uiManager = new UIManager();
+
+// Initialize Info Panel and Announcement Banner
+const infoPanel = new InfoPanel();
+infoPanel.create();
+const announcementBanner = new AnnouncementBanner();
+announcementBanner.create();
+
+// Disable canvas game info text since InfoPanel is active
+boardRenderer.setInfoPanelActive(true);
 
 // Global game controller reference
 let gameController: GameController | null = null;
@@ -44,7 +55,11 @@ uiManager.setOnGameModeSelected((mode: string) => {
     case 'online-multiplayer':
       startOnlineMultiplayer(uiManager, boardRenderer, gc => {
         gameController = gc;
-      });
+        if (gc) {
+          gc.setInfoPanel(infoPanel);
+          gc.setAnnouncementBanner(announcementBanner);
+        }
+      }, infoPanel);
       break;
   }
 });
@@ -59,6 +74,8 @@ uiManager.setOnResumeGame(() => {
   const savedGame = LocalStorage.loadGameState();
   if (savedGame) {
     gameController = new GameController(savedGame.gameMode, boardRenderer, savedGame.playerColor);
+    gameController.setInfoPanel(infoPanel);
+    gameController.setAnnouncementBanner(announcementBanner);
     gameController.startGame();
   }
 });
@@ -82,6 +99,18 @@ if (savedGame && savedGame.gameMode !== GameMode.ONLINE_MULTIPLAYER) {
 function startGame(mode: GameMode, playerColor: PlayerColor): void {
   logger.info(`Starting game: ${mode}`);
   gameController = new GameController(mode, boardRenderer, playerColor);
+  gameController.setInfoPanel(infoPanel);
+  gameController.setAnnouncementBanner(announcementBanner);
+
+  // Wire onGameEnd callback so the result dialog appears after game ends
+  if (mode === GameMode.SINGLE_PLAYER) {
+    gameController.setOnGameEnd(winner =>
+      uiManager.showGameResult(winner, false, GameMode.SINGLE_PLAYER, playerColor)
+    );
+  } else if (mode === GameMode.LOCAL_TWO_PLAYER) {
+    gameController.setOnGameEnd(winner => uiManager.showGameResult(winner));
+  }
+
   gameController.startGame();
 }
 
@@ -89,6 +118,10 @@ function startTutorial(): void {
   logger.info('Starting tutorial');
   tutorialController = new TutorialController();
   gameController = new GameController(GameMode.TUTORIAL, boardRenderer, PlayerColor.WHITE);
+
+  // Wire InfoPanel and AnnouncementBanner for tutorial mode
+  gameController.setInfoPanel(infoPanel);
+  gameController.setAnnouncementBanner(announcementBanner);
 
   // Set tutorial controller on game controller so it can validate actions
   gameController.setTutorialController(tutorialController);

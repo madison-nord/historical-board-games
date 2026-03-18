@@ -28,18 +28,25 @@ body {
 #app {
     width: 100vw;
     height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     position: relative;
-    /* Use CSS Grid for better responsive control */
+    /* Use CSS Grid for multi-area layout: info | canvas | chat */
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(200px, 250px) 1fr;
     grid-template-rows: 1fr;
+    grid-template-areas: "info canvas";
     place-items: center;
+    gap: 16px;
+    padding: 16px;
+}
+
+/* When chat panel is present (online mode), add third column */
+#app:has(#chat-panel) {
+    grid-template-columns: minmax(200px, 250px) 1fr minmax(200px, 280px);
+    grid-template-areas: "info canvas chat";
 }
 
 #game-canvas {
+    grid-area: canvas;
     max-width: 100%;
     max-height: 100%;
     width: auto;
@@ -50,6 +57,8 @@ body {
     object-fit: contain;
     /* Prevent canvas from being dragged on mobile */
     touch-action: none;
+    justify-self: center;
+    align-self: center;
 }
 
 #ui-container {
@@ -63,6 +72,108 @@ body {
 
 #ui-container > * {
     pointer-events: auto;
+}
+
+/* ============================================
+   Info Panel Container & Announcement Container
+   ============================================ */
+
+#info-panel-container {
+    grid-area: info;
+    align-self: start;
+}
+
+#announcement-container {
+    position: relative;
+}
+
+/* ============================================
+   Info Panel Styles
+   ============================================ */
+
+.info-panel {
+    background: rgba(45, 45, 45, 0.95);
+    padding: 16px;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 14px;
+    line-height: 1.6;
+    width: 100%;
+    min-height: 150px;
+    box-sizing: border-box;
+}
+
+.info-panel-turn {
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.info-panel-phase {
+    color: #b0b0b0;
+    margin-bottom: 4px;
+}
+
+.info-panel-pieces {
+    color: #b0b0b0;
+    margin-bottom: 4px;
+}
+
+.info-panel-player-color {
+    color: #4a90e2;
+    margin-bottom: 8px;
+}
+
+.info-panel-action {
+    color: #4a90e2;
+    font-style: italic;
+    margin-top: 8px;
+}
+
+/* ============================================
+   Announcement Banner Styles
+   ============================================ */
+
+.announcement-banner {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    text-align: center;
+    padding: 20px 40px;
+    border-radius: 12px;
+    animation: announcementFadeIn 0.3s ease-in;
+}
+
+.announcement-message {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.announcement-subtitle {
+    font-size: 14px;
+    color: #b0b0b0;
+    margin-top: 8px;
+}
+
+.announcement-turn {
+    background: rgba(45, 45, 45, 0.9);
+    color: #ffffff;
+}
+
+.announcement-phase {
+    background: rgba(74, 144, 226, 0.9);
+    color: #ffffff;
+}
+
+.announcement-game-end {
+    background: rgba(45, 45, 45, 0.95);
+    color: #ffd700;
+}
+
+@keyframes announcementFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 /* Game board container */
@@ -216,6 +327,19 @@ body {
 
 /* Tablet Portrait and Mobile Landscape (481px - 767px) */
 @media (min-width: 481px) and (max-width: 767px) {
+    #app {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr auto;
+        grid-template-areas: "info" "canvas" "chat";
+        gap: 8px;
+        padding: 8px;
+    }
+
+    #app:has(#chat-panel) {
+        grid-template-columns: 1fr;
+        grid-template-areas: "info" "canvas" "chat";
+    }
+
     #game-canvas {
         max-width: min(90vw, 90vh);
         max-height: min(90vw, 90vh);
@@ -243,7 +367,16 @@ body {
 /* Mobile Portrait (375px - 480px) */
 @media (min-width: 375px) and (max-width: 480px) {
     #app {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr auto;
+        grid-template-areas: "info" "canvas" "chat";
+        gap: 8px;
         padding: 8px;
+    }
+
+    #app:has(#chat-panel) {
+        grid-template-columns: 1fr;
+        grid-template-areas: "info" "canvas" "chat";
     }
 
     #game-canvas {
@@ -282,7 +415,16 @@ body {
 /* Small Mobile (below 375px) */
 @media (max-width: 374px) {
     #app {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr auto;
+        grid-template-areas: "info" "canvas" "chat";
+        gap: 4px;
         padding: 4px;
+    }
+
+    #app:has(#chat-panel) {
+        grid-template-columns: 1fr;
+        grid-template-areas: "info" "canvas" "chat";
     }
 
     #game-canvas {
@@ -331,8 +473,16 @@ body {
 /* Landscape orientation on mobile devices */
 @media (max-width: 767px) and (orientation: landscape) {
     #app {
-        flex-direction: row;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr auto;
+        grid-template-areas: "info" "canvas" "chat";
+        gap: 8px;
         padding: 8px;
+    }
+
+    #app:has(#chat-panel) {
+        grid-template-columns: 1fr;
+        grid-template-areas: "info" "canvas" "chat";
     }
 
     #game-canvas {

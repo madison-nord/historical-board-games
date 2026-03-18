@@ -5,6 +5,7 @@ import { UIManager } from './controllers/UIManager.js';
 import { GameMode, GamePhase, PlayerColor } from './models/index.js';
 import { WebSocketClient } from './network/WebSocketClient.js';
 import { ChatPanel } from './controllers/ChatPanel.js';
+import { InfoPanel } from './controllers/InfoPanel.js';
 
 /**
  * Start the online multiplayer flow:
@@ -13,11 +14,13 @@ import { ChatPanel } from './controllers/ChatPanel.js';
  * @param ui - UIManager instance for dialogs
  * @param renderer - BoardRenderer instance for game rendering
  * @param setGameController - callback to set the global game controller reference
+ * @param infoPanel - InfoPanel instance for displaying game state
  */
 export async function startOnlineMultiplayer(
   ui: UIManager,
   renderer: BoardRenderer,
-  setGameController: (gc: GameController | null) => void
+  setGameController: (gc: GameController | null) => void,
+  infoPanel: InfoPanel
 ): Promise<void> {
   const webSocketClient = new WebSocketClient();
   const chatPanel = new ChatPanel();
@@ -56,7 +59,7 @@ export async function startOnlineMultiplayer(
         activeGameController.updateDisplay();
       }
     }
-    ui.showGameResult(myPlayerColor, true);
+    ui.showGameResult(myPlayerColor, true, GameMode.ONLINE_MULTIPLAYER, myPlayerColor!);
     chatPanel.destroy();
 
     ui.setOnRematch(() => {
@@ -100,6 +103,18 @@ export async function startOnlineMultiplayer(
 
     setGameController(gc);
 
+    // Explicitly update InfoPanel with initial game state so it's never empty
+    const initialState = gc.getCurrentGameState();
+    if (initialState) {
+      infoPanel.update(
+        initialState,
+        GameMode.ONLINE_MULTIPLAYER,
+        message.playerColor as PlayerColor,
+        null,
+        false
+      );
+    }
+
     // Override game end handler AFTER setWebSocketClient (which sets its own)
     // so we can also show the UI result dialog
     webSocketClient.setOnGameEnd(msg => {
@@ -111,7 +126,7 @@ export async function startOnlineMultiplayer(
           activeGameController.updateDisplay();
         }
       }
-      ui.showGameResult(msg.winner, true);
+      ui.showGameResult(msg.winner, true, GameMode.ONLINE_MULTIPLAYER, myPlayerColor!);
       chatPanel.destroy();
 
       ui.setOnRematch(() => {
@@ -124,7 +139,7 @@ export async function startOnlineMultiplayer(
     // Fallback: detect game-over from state updates in case GameEndMessage
     // is not received (e.g. server sends gameOver=true in state update)
     gc.setOnGameOverFromStateUpdate(winner => {
-      ui.showGameResult(winner, true);
+      ui.showGameResult(winner, true, GameMode.ONLINE_MULTIPLAYER, myPlayerColor!);
       chatPanel.destroy();
 
       ui.setOnRematch(() => {

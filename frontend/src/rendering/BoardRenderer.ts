@@ -34,6 +34,7 @@ export class BoardRenderer {
   private hoverPosition: number | null = null;
   private onPositionClick: ((position: number) => void) | null = null;
   private inputEnabled: boolean = true;
+  private infoPanelActive: boolean = false;
 
   // Tutorial mode: clickable positions control
   private clickablePositions: number[] | null = null; // null = all positions clickable
@@ -628,8 +629,10 @@ export class BoardRenderer {
     // Render animations
     this.renderAnimations();
 
-    // Draw game info
-    this.drawGameInfo(currentPlayer, phase, whitePiecesRemaining, blackPiecesRemaining, playerColor);
+    // Draw game info (skip when InfoPanel is active)
+    if (!this.infoPanelActive) {
+      this.drawGameInfo(currentPlayer, phase, whitePiecesRemaining, blackPiecesRemaining, playerColor);
+    }
   }
 
   /**
@@ -956,6 +959,13 @@ export class BoardRenderer {
       this.setHoverPosition(null);
       this.canvas.style.cursor = 'default';
     }
+  }
+
+  /**
+   * Set whether the InfoPanel is active (disables canvas game info text)
+   */
+  public setInfoPanelActive(active: boolean): void {
+    this.infoPanelActive = active;
   }
 
   /**

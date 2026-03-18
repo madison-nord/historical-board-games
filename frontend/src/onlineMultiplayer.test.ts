@@ -37,17 +37,20 @@ import { startOnlineMultiplayer } from './onlineMultiplayer';
 import { UIManager } from './controllers/UIManager';
 import { GameController } from './controllers/GameController';
 import { BoardRenderer } from './rendering/BoardRenderer';
+import { InfoPanel } from './controllers/InfoPanel';
 import { GameMode, PlayerColor } from './models';
 
 describe('Online Multiplayer Flow', () => {
   let mockUIManager: UIManager;
   let mockBoardRenderer: BoardRenderer;
   let mockSetGameController: ReturnType<typeof vi.fn>;
+  let mockInfoPanel: InfoPanel;
 
   beforeEach(() => {
     mockUIManager = new UIManager();
     mockBoardRenderer = { setInputEnabled: vi.fn() } as unknown as BoardRenderer;
     mockSetGameController = vi.fn();
+    mockInfoPanel = { create: vi.fn(), update: vi.fn(), show: vi.fn(), hide: vi.fn(), destroy: vi.fn() } as unknown as InfoPanel;
 
     vi.spyOn(mockUIManager, 'showMatchmakingDialog').mockImplementation(() => {});
     vi.spyOn(mockUIManager, 'showMatchFoundDialog').mockImplementation(() => {});
@@ -68,7 +71,7 @@ describe('Online Multiplayer Flow', () => {
   });
 
   it('should connect to WebSocket server and show matchmaking dialog', async () => {
-    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController);
+    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController, mockInfoPanel);
 
     expect(mockUIManager.showMatchmakingDialog).toHaveBeenCalled();
     expect(lastCreatedWsClient.connect).toHaveBeenCalledWith(expect.any(String));
@@ -76,19 +79,19 @@ describe('Online Multiplayer Flow', () => {
   });
 
   it('should set up cancel matchmaking callback', async () => {
-    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController);
+    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController, mockInfoPanel);
 
     expect(mockUIManager.setOnCancelMatchmaking).toHaveBeenCalledWith(expect.any(Function));
   });
 
   it('should set up game start handler on WebSocket client', async () => {
-    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController);
+    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController, mockInfoPanel);
 
     expect(lastCreatedWsClient.setOnGameStart).toHaveBeenCalledWith(expect.any(Function));
   });
 
   it('should set up opponent disconnected handler', async () => {
-    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController);
+    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController, mockInfoPanel);
 
     expect(lastCreatedWsClient.setOnOpponentDisconnected).toHaveBeenCalledWith(
       expect.any(Function)
@@ -96,13 +99,13 @@ describe('Online Multiplayer Flow', () => {
   });
 
   it('should set up opponent reconnected handler', async () => {
-    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController);
+    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController, mockInfoPanel);
 
     expect(lastCreatedWsClient.setOnOpponentReconnected).toHaveBeenCalledWith(expect.any(Function));
   });
 
   it('should set up chat message handler', async () => {
-    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController);
+    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController, mockInfoPanel);
 
     expect(lastCreatedWsClient.setOnChatMessage).toHaveBeenCalledWith(expect.any(Function));
   });
@@ -130,7 +133,7 @@ describe('Online Multiplayer Flow', () => {
       return failClient;
     });
 
-    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController);
+    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController, mockInfoPanel);
 
     expect(mockUIManager.showErrorDialog).toHaveBeenCalledWith(expect.stringContaining('connect'));
   });
@@ -157,13 +160,13 @@ describe('Online Multiplayer Flow', () => {
       return failClient;
     });
 
-    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController);
+    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController, mockInfoPanel);
 
     expect(lastCreatedWsClient.joinMatchmaking).not.toHaveBeenCalled();
   });
 
   it('should create GameController when game starts', async () => {
-    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController);
+    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController, mockInfoPanel);
 
     const gameStartHandler = lastCreatedWsClient.setOnGameStart.mock.calls[0][0];
     gameStartHandler({
@@ -180,7 +183,7 @@ describe('Online Multiplayer Flow', () => {
   });
 
   it('should show match found dialog when game starts', async () => {
-    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController);
+    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController, mockInfoPanel);
 
     const gameStartHandler = lastCreatedWsClient.setOnGameStart.mock.calls[0][0];
     gameStartHandler({
@@ -193,7 +196,7 @@ describe('Online Multiplayer Flow', () => {
   });
 
   it('should call setGameController callback when game starts', async () => {
-    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController);
+    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController, mockInfoPanel);
 
     const gameStartHandler = lastCreatedWsClient.setOnGameStart.mock.calls[0][0];
     gameStartHandler({
@@ -206,7 +209,7 @@ describe('Online Multiplayer Flow', () => {
   });
 
   it('should show opponent disconnected dialog on disconnect event', async () => {
-    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController);
+    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController, mockInfoPanel);
 
     const handler = lastCreatedWsClient.setOnOpponentDisconnected.mock.calls[0][0];
     handler({ gameId: 'test-game-123', timeoutSeconds: 60 });
@@ -215,7 +218,7 @@ describe('Online Multiplayer Flow', () => {
   });
 
   it('should show opponent reconnected dialog on reconnect event', async () => {
-    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController);
+    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController, mockInfoPanel);
 
     const handler = lastCreatedWsClient.setOnOpponentReconnected.mock.calls[0][0];
     handler({ gameId: 'test-game-123' });
@@ -224,7 +227,7 @@ describe('Online Multiplayer Flow', () => {
   });
 
   it('should show game result on game end', async () => {
-    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController);
+    await startOnlineMultiplayer(mockUIManager, mockBoardRenderer, mockSetGameController, mockInfoPanel);
 
     // First start a game so the game end handler inside onGameStart is set
     const gameStartHandler = lastCreatedWsClient.setOnGameStart.mock.calls[0][0];
@@ -243,6 +246,6 @@ describe('Online Multiplayer Flow', () => {
       reason: 'Opponent has fewer than 3 pieces',
     });
 
-    expect(mockUIManager.showGameResult).toHaveBeenCalledWith(PlayerColor.WHITE, true);
+    expect(mockUIManager.showGameResult).toHaveBeenCalledWith(PlayerColor.WHITE, true, GameMode.ONLINE_MULTIPLAYER, PlayerColor.WHITE);
   });
 });

@@ -500,7 +500,7 @@ describe('GameController - Comprehensive Tests', () => {
         PlayerColor.WHITE
       );
 
-      // Mock fetch for AI move
+      // Mock fetch to simulate the backend minimax AI endpoint
       global.fetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
@@ -520,10 +520,10 @@ describe('GameController - Comprehensive Tests', () => {
       // Make player move
       aiController.handlePositionClick(0);
 
-      // Wait for AI to start thinking (500ms delay in checkForAIMove)
-      await new Promise(resolve => setTimeout(resolve, 600));
+      // Wait for AI to start thinking (500ms delay in checkForAIMove) and complete
+      await new Promise(resolve => setTimeout(resolve, 700));
 
-      // AI should have made a move by now
+      // AI should have made a move (placed a BLACK piece at position 8 via backend AI)
       const state = aiController.getCurrentGameState();
       expect(state?.board[8]).toBe(PlayerColor.BLACK);
 

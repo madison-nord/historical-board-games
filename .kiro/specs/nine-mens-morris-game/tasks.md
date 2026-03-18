@@ -701,7 +701,7 @@ The implementation uses:
   - Test disconnect scenarios
   - Ask the user if questions arise
 
-- [ ] 34.1 Execute game-status-display spec tasks
+- [x] 34.1 Execute game-status-display spec tasks
   - UI/UX issues discovered during Task 34 manual testing require implementation before checkpoint completion
   - See `.kiro/specs/game-status-display/tasks.md` for full task breakdown
   - Covers: HTML Info Panel, Announcement Banner, Chat Panel repositioning, CSS Grid layout

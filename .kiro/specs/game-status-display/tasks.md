@@ -8,8 +8,8 @@ The implementation uses TypeScript with Vitest and fast-check for testing. All n
 
 ## Tasks
 
-- [ ] 1. Implement pure derivation functions and their property tests
-  - [ ] 1.1 Create derivation functions in `frontend/src/controllers/InfoPanel.ts`
+- [x] 1. Implement pure derivation functions and their property tests
+  - [x] 1.1 Create derivation functions in `frontend/src/controllers/InfoPanel.ts`
     - Export `deriveActionInstruction(data: InfoPanelData): string` function
     - Export `InfoPanelData` interface
     - Export `deriveTurnMessage(newPlayer, gameMode, localPlayerColor): string` function
@@ -19,7 +19,7 @@ The implementation uses TypeScript with Vitest and fast-check for testing. All n
     - All functions must be pure (no side effects, no DOM access)
     - _Requirements: 1.1, 1.2, 1.3, 2.1, 2.2, 2.3, 3.1, 3.2, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.6, 5.7_
 
-  - [ ] 1.2 Write property tests for derivation functions
+  - [x] 1.2 Write property tests for derivation functions
     - Create `frontend/src/controllers/InfoPanel.property.test.ts`
     - Implement fast-check generators: `arbGamePhase`, `arbPlayerColor`, `arbGameMode`, `arbPieceCount`, `arbPosition`, `arbGameState`, `arbWinReason`
     - **Property 2: Action instruction derivation correctness** — validate all 6 instruction branches
@@ -33,8 +33,8 @@ The implementation uses TypeScript with Vitest and fast-check for testing. All n
     - Each property test must run with `{ numRuns: 100 }` minimum
     - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.5, 5.6, 5.7_
 
-- [ ] 2. Implement InfoPanel DOM component
-  - [ ] 2.1 Implement InfoPanel class in `frontend/src/controllers/InfoPanel.ts`
+- [x] 2. Implement InfoPanel DOM component
+  - [x] 2.1 Implement InfoPanel class in `frontend/src/controllers/InfoPanel.ts`
     - Implement `create()` method that builds DOM structure: container, turnIndicator, phaseDisplay, piecesDisplay, playerColorDisplay, actionInstruction
     - Implement `update(gameState, gameMode, playerColor, selectedPosition, isAiThinking)` method using `deriveActionInstruction`
     - Implement `show()`, `hide()`, `destroy()` methods
@@ -43,7 +43,7 @@ The implementation uses TypeScript with Vitest and fast-check for testing. All n
     - Show piecesDisplay only during PLACEMENT phase
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
 
-  - [ ] 2.2 Write unit tests for InfoPanel
+  - [x] 2.2 Write unit tests for InfoPanel
     - Create `frontend/src/controllers/InfoPanel.test.ts`
     - Test: panel creates correct DOM structure with all expected child elements
     - Test: `show()` and `hide()` toggle visibility
@@ -53,15 +53,15 @@ The implementation uses TypeScript with Vitest and fast-check for testing. All n
     - Test: `update()` before `create()` does not throw
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.7_
 
-  - [ ] 2.3 Write property test for InfoPanel update rendering
+  - [x] 2.3 Write property test for InfoPanel update rendering
     - Add to `frontend/src/controllers/InfoPanel.property.test.ts`
     - **Property 1: InfoPanel update renders correct game state** — for any valid game state, DOM content reflects current player, phase, piece counts, and player color
     - **Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.6, 4.6**
     - Must run with `{ numRuns: 100 }` minimum
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.6, 4.6_
 
-- [ ] 3. Implement AnnouncementBanner component
-  - [ ] 3.1 Implement AnnouncementBanner class in `frontend/src/controllers/AnnouncementBanner.ts`
+- [x] 3. Implement AnnouncementBanner component
+  - [x] 3.1 Implement AnnouncementBanner class in `frontend/src/controllers/AnnouncementBanner.ts`
     - Export `AnnouncementOptions` interface with message, subtitle, duration, type fields
     - Implement `create()` method that builds hidden banner container
     - Implement `show(options)` method: dismiss existing, display new, set auto-dismiss timer
@@ -72,7 +72,7 @@ The implementation uses TypeScript with Vitest and fast-check for testing. All n
     - Default duration: 2000ms for turn/phase, 0 (persistent) for game-end
     - _Requirements: 2.4, 2.5, 3.1, 3.2, 3.4, 5.1, 5.4_
 
-  - [ ] 3.2 Write unit tests for AnnouncementBanner
+  - [x] 3.2 Write unit tests for AnnouncementBanner
     - Create `frontend/src/controllers/AnnouncementBanner.test.ts`
     - Test: banner creates correct DOM structure
     - Test: turn announcement auto-dismisses after duration
@@ -85,7 +85,7 @@ The implementation uses TypeScript with Vitest and fast-check for testing. All n
     - Test: `dismiss()` when no announcement is visible is a no-op
     - _Requirements: 2.4, 2.5, 3.1, 3.2, 5.3, 5.4_
 
-- [ ] 4. Checkpoint - Verify new components work in isolation
+- [x] 4. Checkpoint - Verify new components work in isolation
   - Run all frontend tests: `cd frontend && npm test -- --silent`
   - Verify all property tests pass with 100+ iterations (Properties 1-5)
   - Verify all InfoPanel unit tests pass (DOM structure, show/hide, update, destroy)
@@ -95,8 +95,8 @@ The implementation uses TypeScript with Vitest and fast-check for testing. All n
   - Verify frontend build succeeds: `cd frontend && npm run build`
   - Ask the user if questions arise
 
-- [ ] 5. Integrate InfoPanel and AnnouncementBanner with GameController
-  - [ ] 5.1 Add setters and update calls in `frontend/src/controllers/GameController.ts`
+- [x] 5. Integrate InfoPanel and AnnouncementBanner with GameController
+  - [x] 5.1 Add setters and update calls in `frontend/src/controllers/GameController.ts`
     - Add `private infoPanel: InfoPanel | null = null` and `private announcementBanner: AnnouncementBanner | null = null` fields
     - Add `setInfoPanel(infoPanel: InfoPanel): void` and `setAnnouncementBanner(banner: AnnouncementBanner): void` methods
     - Add `private phaseTransitionOccurred: boolean = false` flag for announcement priority
@@ -107,7 +107,7 @@ The implementation uses TypeScript with Vitest and fast-check for testing. All n
     - In `handleMovementClick()`: call `infoPanel.update(...)` when piece is selected/deselected for immediate action instruction update
     - _Requirements: 1.6, 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 3.4, 4.6, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 7.1_
 
-  - [ ] 5.2 Write unit tests for GameController integration
+  - [x] 5.2 Write unit tests for GameController integration
     - Add tests to existing `frontend/src/controllers/GameController.test.ts` or create a new test file
     - Test: `updateDisplay()` calls `infoPanel.update()` with correct state
     - Test: `switchPlayer()` triggers turn announcement via `announcementBanner.show()`
@@ -116,21 +116,21 @@ The implementation uses TypeScript with Vitest and fast-check for testing. All n
     - Test: phase transition takes priority over turn change (Req 3.4)
     - _Requirements: 1.6, 2.1, 3.4, 5.1, 7.1_
 
-- [ ] 6. Modify BoardRenderer to disable canvas game info text
-  - [ ] 6.1 Add infoPanelActive flag to `frontend/src/rendering/BoardRenderer.ts`
+- [x] 6. Modify BoardRenderer to disable canvas game info text
+  - [x] 6.1 Add infoPanelActive flag to `frontend/src/rendering/BoardRenderer.ts`
     - Add `private infoPanelActive: boolean = false` field
     - Add `public setInfoPanelActive(active: boolean): void` method
     - In `render()` full signature path: skip `drawGameInfo()` call when `infoPanelActive` is true
     - _Requirements: 1.7_
 
-  - [ ] 6.2 Write unit tests for BoardRenderer infoPanelActive flag
+  - [x] 6.2 Write unit tests for BoardRenderer infoPanelActive flag
     - Add tests to existing BoardRenderer test file or create new
     - Test: `drawGameInfo()` is skipped when `infoPanelActive` is true
     - Test: `drawGameInfo()` resumes when `infoPanelActive` is set back to false
     - _Requirements: 1.7_
 
-- [ ] 7. Update CSS layout and ChatPanel repositioning
-  - [ ] 7.1 Update CSS Grid layout in `frontend/src/styles/main.css`
+- [x] 7. Update CSS layout and ChatPanel repositioning
+  - [x] 7.1 Update CSS Grid layout in `frontend/src/styles/main.css`
     - Change `#app` grid to support multi-area layout: info-panel, canvas, chat-panel
     - Desktop (>768px): three-column layout with info panel left, canvas center, chat panel right (online only)
     - Mobile (≤768px): single-column stacked layout with info panel above canvas
@@ -140,7 +140,7 @@ The implementation uses TypeScript with Vitest and fast-check for testing. All n
     - Ensure canvas is not clipped or overlapped by panels
     - _Requirements: 1.5, 1.8, 6.1, 6.2, 6.4_
 
-  - [ ] 7.2 Modify ChatPanel for non-overlapping layout in `frontend/src/controllers/ChatPanel.ts`
+  - [x] 7.2 Modify ChatPanel for non-overlapping layout in `frontend/src/controllers/ChatPanel.ts`
     - Change CSS positioning: remove `position: fixed`, use grid area placement on desktop (>768px)
     - On mobile (≤768px): collapsed by default with toggle button, positioned below canvas
     - Add `private unreadCount: number = 0` and `private notificationBadge: HTMLElement | null = null`
@@ -150,7 +150,7 @@ The implementation uses TypeScript with Vitest and fast-check for testing. All n
     - Update `toggleCollapse()` to call `clearNotificationBadge()` when expanding
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 7.2_
 
-  - [ ] 7.3 Write unit tests for ChatPanel notification badge
+  - [x] 7.3 Write unit tests for ChatPanel notification badge
     - Add tests for notification badge behavior
     - Test: toggle button exists and works
     - Test: notification badge appears when message received while collapsed
@@ -158,14 +158,14 @@ The implementation uses TypeScript with Vitest and fast-check for testing. All n
     - Test: unread count increments correctly
     - _Requirements: 6.3, 6.5_
 
-  - [ ] 7.4 Write property test for ChatPanel notification badge
+  - [x] 7.4 Write property test for ChatPanel notification badge
     - Add to `frontend/src/controllers/InfoPanel.property.test.ts` or create separate file
     - **Property 6: Chat notification badge on collapsed panel** — for any sequence of messages while collapsed, badge count equals messages received since last expand; expanding resets to zero
     - **Validates: Requirements 6.5**
     - Must run with `{ numRuns: 100 }` minimum
     - _Requirements: 6.5_
 
-- [ ] 8. Checkpoint - Verify layout and integration
+- [x] 8. Checkpoint - Verify layout and integration
   - Run all frontend tests: `cd frontend && npm test -- --silent`
   - Verify GameController integration tests pass (updateDisplay calls InfoPanel, switchPlayer triggers announcement, phase transition priority)
   - Verify BoardRenderer infoPanelActive tests pass (drawGameInfo skipped/resumed)
@@ -176,14 +176,14 @@ The implementation uses TypeScript with Vitest and fast-check for testing. All n
   - Verify no regressions in existing tests (all 289+ existing tests still pass)
   - Ask the user if questions arise
 
-- [ ] 9. Wire everything together in main.ts and index.html
-  - [ ] 9.1 Update `frontend/index.html` for new layout structure
+- [x] 9. Wire everything together in main.ts and index.html
+  - [x] 9.1 Update `frontend/index.html` for new layout structure
     - Add `<div id="info-panel-container"></div>` element inside `#app` before the canvas
     - Add `<div id="announcement-container"></div>` element inside `#app` overlaying the canvas area
     - Ensure semantic HTML structure supports the CSS Grid layout
     - _Requirements: 1.5_
 
-  - [ ] 9.2 Update `frontend/src/main.ts` to create and wire components
+  - [x] 9.2 Update `frontend/src/main.ts` to create and wire components
     - Import `InfoPanel` and `AnnouncementBanner`
     - Create `InfoPanel` and `AnnouncementBanner` instances
     - Call `infoPanel.create()` and `announcementBanner.create()`
@@ -193,7 +193,7 @@ The implementation uses TypeScript with Vitest and fast-check for testing. All n
     - Ensure components are created before `startGame()` is called
     - _Requirements: 1.5, 1.7, 7.1, 7.3, 7.4, 7.5_
 
-- [ ] 10. Final checkpoint - Ensure all tests pass
+- [x] 10. Final checkpoint - Ensure all tests pass
   - Run full frontend test suite: `cd frontend && npm test -- --silent`
   - Run full backend test suite: `mvn test --quiet`
   - Verify ALL property tests pass with 100+ iterations (Properties 1-6)

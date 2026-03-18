@@ -21,6 +21,8 @@ export class ChatPanel {
   private isCollapsed: boolean = false;
   private isMuted: boolean = false;
   private onSendMessage: ((content: string) => void) | null = null;
+  private unreadCount: number = 0;
+  private notificationBadge: HTMLElement | null = null;
 
   /**
    * Create and show the chat panel
@@ -78,6 +80,11 @@ export class ChatPanel {
 
     // Auto-scroll to bottom
     this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+
+    // Show notification badge if collapsed
+    if (this.isCollapsed) {
+      this.updateNotificationBadge();
+    }
   }
 
   /**
@@ -119,6 +126,10 @@ export class ChatPanel {
       this.collapseButton.textContent = this.isCollapsed ? '▲' : '▼';
       this.collapseButton.title = this.isCollapsed ? 'Expand chat' : 'Minimize chat';
     }
+    // Clear notification badge when expanding
+    if (!this.isCollapsed) {
+      this.clearNotificationBadge();
+    }
   }
 
   /**
@@ -128,6 +139,10 @@ export class ChatPanel {
     this.container = document.createElement('div');
     this.container.className = 'chat-panel';
     this.container.id = 'chat-panel';
+    // Apply critical layout constraints inline so they work in all environments
+    this.container.style.overflow = 'hidden';
+    this.container.style.height = '500px';
+    this.container.style.maxHeight = '500px';
 
     // Header
     const header = document.createElement('div');
@@ -142,16 +157,40 @@ export class ChatPanel {
     this.muteButton.textContent = '🔊 Mute';
     this.muteButton.addEventListener('click', () => this.toggleMute());
 
+    // Collapse button wrapper (for positioning the badge)
+    const collapseButtonWrapper = document.createElement('div');
+    collapseButtonWrapper.style.position = 'relative';
+
     this.collapseButton = document.createElement('button');
     this.collapseButton.className = 'chat-collapse-button';
     this.collapseButton.textContent = '▼';
     this.collapseButton.title = 'Minimize chat';
     this.collapseButton.addEventListener('click', () => this.toggleCollapse());
 
+    // Notification badge
+    this.notificationBadge = document.createElement('span');
+    this.notificationBadge.className = 'chat-notification-badge';
+    this.notificationBadge.style.display = 'none';
+    this.notificationBadge.style.position = 'absolute';
+    this.notificationBadge.style.top = '-4px';
+    this.notificationBadge.style.right = '-4px';
+    this.notificationBadge.style.background = '#e74c3c';
+    this.notificationBadge.style.color = 'white';
+    this.notificationBadge.style.borderRadius = '50%';
+    this.notificationBadge.style.width = '18px';
+    this.notificationBadge.style.height = '18px';
+    this.notificationBadge.style.fontSize = '11px';
+    this.notificationBadge.style.lineHeight = '18px';
+    this.notificationBadge.style.textAlign = 'center';
+    this.notificationBadge.style.fontWeight = 'bold';
+
+    collapseButtonWrapper.appendChild(this.collapseButton);
+    collapseButtonWrapper.appendChild(this.notificationBadge);
+
     const headerButtons = document.createElement('div');
     headerButtons.className = 'chat-header-buttons';
     headerButtons.appendChild(this.muteButton);
-    headerButtons.appendChild(this.collapseButton);
+    headerButtons.appendChild(collapseButtonWrapper);
 
     header.appendChild(title);
     header.appendChild(headerButtons);
@@ -189,7 +228,35 @@ export class ChatPanel {
     this.container.appendChild(this.messagesContainer);
     this.container.appendChild(inputContainer);
 
-    document.body.appendChild(this.container);
+    // Append to #app container for CSS Grid layout, fallback to document.body
+    const appContainer = document.getElementById('app');
+    if (appContainer) {
+      appContainer.appendChild(this.container);
+    } else {
+      document.body.appendChild(this.container);
+    }
+  }
+
+  /**
+   * Increment unread count and show badge when collapsed and message arrives
+   */
+  private updateNotificationBadge(): void {
+    this.unreadCount++;
+    if (this.notificationBadge) {
+      this.notificationBadge.textContent = this.unreadCount > 9 ? '9+' : String(this.unreadCount);
+      this.notificationBadge.style.display = 'block';
+    }
+  }
+
+  /**
+   * Reset unread count and hide the badge
+   */
+  private clearNotificationBadge(): void {
+    this.unreadCount = 0;
+    if (this.notificationBadge) {
+      this.notificationBadge.style.display = 'none';
+      this.notificationBadge.textContent = '';
+    }
   }
 
   /**
@@ -240,6 +307,8 @@ export class ChatPanel {
       this.sendButton = null;
       this.muteButton = null;
       this.collapseButton = null;
+      this.notificationBadge = null;
+      this.unreadCount = 0;
     }
   }
 }

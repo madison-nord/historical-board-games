@@ -9,6 +9,9 @@ import {
   GameEndMessage,
 } from '../network/WebSocketClient.js';
 import type { TutorialController } from './TutorialController.js';
+import type { InfoPanel } from './InfoPanel.js';
+import { deriveTurnMessage, derivePhaseMessage, deriveGameEndMessage } from './InfoPanel.js';
+import type { AnnouncementBanner } from './AnnouncementBanner.js';
 
 /**
  * Interface representing the current game state
@@ -55,6 +58,10 @@ export class GameController {
   private onlineGameId: string | null = null; // Game ID for online multiplayer
   private isWaitingForOpponent: boolean = false; // Waiting for opponent move
   private onGameOverFromStateUpdate: ((winner: PlayerColor | null) => void) | null = null;
+  private infoPanel: InfoPanel | null = null;
+  private announcementBanner: AnnouncementBanner | null = null;
+  private phaseTransitionOccurred: boolean = false;
+  private onGameEnd: ((winner: PlayerColor | null) => void) | null = null;
 
   constructor(
     gameMode: GameMode,
@@ -141,6 +148,40 @@ export class GameController {
    */
   public setOnGameOverFromStateUpdate(callback: (winner: PlayerColor | null) => void): void {
     this.onGameOverFromStateUpdate = callback;
+  }
+
+  /**
+   * Set the InfoPanel instance for displaying game state.
+   * If game state already exists, immediately updates the panel with current state.
+   */
+  public setInfoPanel(infoPanel: InfoPanel): void {
+    this.infoPanel = infoPanel;
+    // If game state already exists (e.g., online game after setBoardState),
+    // update the panel immediately so it's never empty
+    if (this.currentGameState) {
+      this.infoPanel.update(
+        this.currentGameState as Parameters<InfoPanel['update']>[0],
+        this.gameMode,
+        this.playerColor,
+        this.selectedPosition,
+        this.isAiThinking
+      );
+    }
+  }
+
+  /**
+   * Set the AnnouncementBanner instance for displaying game event announcements
+   */
+  public setAnnouncementBanner(banner: AnnouncementBanner): void {
+    this.announcementBanner = banner;
+  }
+
+  /**
+   * Set callback for when a local/single-player game ends.
+   * This allows main.ts to show the game result dialog with navigation buttons.
+   */
+  public setOnGameEnd(callback: (winner: PlayerColor | null) => void): void {
+    this.onGameEnd = callback;
   }
 
   /**
@@ -243,12 +284,19 @@ export class GameController {
    * Handle position clicks from the board renderer
    */
   public handlePositionClick(position: number): void {
-    logger.debug(
-      `handlePositionClick: position=${position}, phase=${this.currentGameState?.phase}, isGameOver=${this.currentGameState?.isGameOver}, isAiThinking=${this.isAiThinking}, millFormed=${this.currentGameState?.millFormed}`
-    );
+    logger.debug('handlePositionClick called', {
+      position,
+      phase: this.currentGameState?.phase,
+      isGameOver: this.currentGameState?.isGameOver,
+      isAiThinking: this.isAiThinking,
+      millFormed: this.currentGameState?.millFormed,
+      currentPlayer: this.currentGameState?.currentPlayer,
+      playerColor: this.playerColor,
+      gameMode: this.gameMode,
+    });
 
     if (!this.currentGameState || this.currentGameState.isGameOver || this.isAiThinking) {
-      logger.debug('handlePositionClick: Returning early - game over or AI thinking');
+      logger.debug('Returning early - game over or AI thinking');
       return;
     }
 
@@ -560,17 +608,31 @@ export class GameController {
     this.updateDisplay();
 
     try {
-      // Call backend API to get AI move
+      // Try backend minimax AI first, fall back to local random AI
       const aiMove = await this.getAIMoveFromBackend();
 
       if (aiMove) {
-        // Apply the AI move
         this.applyMove(aiMove);
       } else {
-        logger.error('Failed to get AI move');
+        logger.warn('Backend AI unavailable, using local fallback');
+        const fallbackMove = this.getLocalFallbackAIMove();
+        if (fallbackMove) {
+          this.applyMove(fallbackMove);
+        } else {
+          logger.warn('No valid moves available for AI — game-end check will handle it');
+        }
       }
     } catch (error) {
       logger.error('Error getting AI move:', error);
+      // Even on error, try the local fallback
+      try {
+        const fallbackMove = this.getLocalFallbackAIMove();
+        if (fallbackMove) {
+          this.applyMove(fallbackMove);
+        }
+      } catch (fallbackError) {
+        logger.error('Fallback AI also failed:', fallbackError);
+      }
     } finally {
       this.isAiThinking = false;
 
@@ -588,7 +650,9 @@ export class GameController {
   }
 
   /**
-   * Get AI move from backend API
+   * Get AI move from the backend minimax AI via REST endpoint.
+   * Sends the current game state and receives the best move computed
+   * by the minimax algorithm with alpha-beta pruning.
    */
   private async getAIMoveFromBackend(): Promise<Move | null> {
     if (!this.currentGameState) {
@@ -603,7 +667,14 @@ export class GameController {
         },
         body: JSON.stringify({
           gameId: this.currentGameState.gameId,
-          gameState: this.currentGameState,
+          phase: this.currentGameState.phase,
+          currentPlayer: this.currentGameState.currentPlayer,
+          board: this.currentGameState.board,
+          whitePiecesRemaining: this.currentGameState.whitePiecesRemaining,
+          blackPiecesRemaining: this.currentGameState.blackPiecesRemaining,
+          whitePiecesOnBoard: this.currentGameState.whitePiecesOnBoard,
+          blackPiecesOnBoard: this.currentGameState.blackPiecesOnBoard,
+          millFormed: this.currentGameState.millFormed ?? false,
         }),
       });
 
@@ -612,11 +683,77 @@ export class GameController {
       }
 
       const aiMove = await response.json();
-      return aiMove;
+      return {
+        type: aiMove.type,
+        from: aiMove.from,
+        to: aiMove.to,
+        player: aiMove.player,
+        removed: aiMove.removed,
+      };
     } catch (error) {
-      logger.error('Failed to get AI move:', error);
+      logger.error('Failed to get AI move from backend:', error);
       return null;
     }
+  }
+
+  /**
+   * Compute a random valid move locally as a fallback when the backend AI fails.
+   * In PLACEMENT phase: picks a random empty position.
+   * In MOVEMENT/FLYING phase: finds all AI pieces with valid moves, picks a random one.
+   * Returns null if no valid moves exist (game-end check will handle it).
+   */
+  private getLocalFallbackAIMove(): Move | null {
+    if (!this.currentGameState) {
+      return null;
+    }
+
+    const aiColor = this.playerColor === PlayerColor.WHITE ? PlayerColor.BLACK : PlayerColor.WHITE;
+
+    if (this.currentGameState.phase === GamePhase.PLACEMENT) {
+      // Pick a random empty position
+      const emptyPositions: number[] = [];
+      for (let i = 0; i < 24; i++) {
+        if (this.currentGameState.board[i] === null) {
+          emptyPositions.push(i);
+        }
+      }
+      if (emptyPositions.length === 0) {
+        return null;
+      }
+      const target = emptyPositions[Math.floor(Math.random() * emptyPositions.length)];
+      return {
+        type: MoveType.PLACE,
+        from: -1,
+        to: target,
+        player: aiColor,
+        removed: -1,
+      };
+    }
+
+    // MOVEMENT or FLYING phase: find all AI pieces with valid moves
+    const piecesWithMoves: { from: number; moves: number[] }[] = [];
+    for (let i = 0; i < 24; i++) {
+      if (this.currentGameState.board[i] === aiColor) {
+        const moves = this.getValidMovesFrom(i);
+        if (moves.length > 0) {
+          piecesWithMoves.push({ from: i, moves });
+        }
+      }
+    }
+
+    if (piecesWithMoves.length === 0) {
+      return null;
+    }
+
+    const chosen = piecesWithMoves[Math.floor(Math.random() * piecesWithMoves.length)];
+    const destination = chosen.moves[Math.floor(Math.random() * chosen.moves.length)];
+    return {
+      type: MoveType.MOVE,
+      from: chosen.from,
+      to: destination,
+      player: aiColor,
+      removed: -1,
+    };
   }
 
   /**
@@ -683,6 +820,17 @@ export class GameController {
     const removablePieces = this.getRemovablePieces(opponent);
 
     if (removablePieces.length > 0) {
+      // If it's the AI's turn (single-player mode), auto-remove a random piece
+      if (
+        this.gameMode === GameMode.SINGLE_PLAYER &&
+        this.currentGameState.currentPlayer !== this.playerColor
+      ) {
+        logger.debug('AI formed a mill, auto-removing a piece');
+        const targetPiece = removablePieces[Math.floor(Math.random() * removablePieces.length)];
+        this.removePiece(targetPiece);
+        return;
+      }
+
       this.boardRenderer.highlightValidMoves(removablePieces);
       // The main handlePositionClick will route to handleRemovalClick
       // No need for setupRemovalMode
@@ -955,6 +1103,23 @@ export class GameController {
     } else {
       logger.debug('switchPlayer: Input NOT enabled - game over or mill formed');
     }
+
+    // Show turn change announcement (skip if a phase transition just occurred)
+    if (
+      this.announcementBanner &&
+      !this.phaseTransitionOccurred &&
+      !this.currentGameState.isGameOver
+    ) {
+      this.announcementBanner.show({
+        message: deriveTurnMessage(
+          this.currentGameState.currentPlayer,
+          this.gameMode,
+          this.playerColor
+        ),
+        type: 'turn',
+      });
+    }
+    this.phaseTransitionOccurred = false;
   }
 
   /**
@@ -998,6 +1163,17 @@ export class GameController {
     if (oldPhase !== this.currentGameState.phase) {
       this.clearSelection();
       logger.info(`Phase changed from ${oldPhase} to ${this.currentGameState.phase}`);
+
+      // Show phase transition announcement and suppress the turn announcement
+      this.phaseTransitionOccurred = true;
+      const phaseMsg = derivePhaseMessage(this.currentGameState.phase);
+      if (phaseMsg.message) {
+        this.announcementBanner?.show({
+          message: phaseMsg.message,
+          subtitle: phaseMsg.subtitle,
+          type: 'phase',
+        });
+      }
     }
   }
 
@@ -1094,6 +1270,26 @@ export class GameController {
     // Clear saved game state on completion
     this.clearSavedGame();
 
+    // Determine the reason for the win
+    const loser = winner === PlayerColor.WHITE ? PlayerColor.BLACK : PlayerColor.WHITE;
+    const loserPieces =
+      loser === PlayerColor.WHITE
+        ? this.currentGameState.whitePiecesOnBoard
+        : this.currentGameState.blackPiecesOnBoard;
+    const reason = loserPieces < 3 ? 'Reduced to fewer than 3 pieces' : 'No legal moves available';
+
+    // Show game-end announcement
+    const endMsg = deriveGameEndMessage(winner, reason, this.gameMode, this.playerColor);
+    this.announcementBanner?.show({
+      message: endMsg.message,
+      subtitle: endMsg.subtitle,
+      type: 'game-end',
+      duration: 0,
+    });
+
+    // Notify outer scope (main.ts) so it can show the result dialog with navigation buttons
+    this.onGameEnd?.(winner);
+
     logger.info(`Game Over! Winner: ${winner}`);
     this.updateDisplay();
   }
@@ -1104,7 +1300,11 @@ export class GameController {
   private clearSelection(): void {
     this.selectedPosition = null;
     this.validMoves = [];
-    this.boardRenderer.clearHighlights();
+    // Preserve mill removal highlights — handleMillFormed() sets them
+    // and they must remain visible until the player selects a piece to remove
+    if (!this.currentGameState?.millFormed) {
+      this.boardRenderer.clearHighlights();
+    }
   }
 
   /**
@@ -1124,6 +1324,15 @@ export class GameController {
       this.currentGameState.blackPiecesRemaining,
       16, // deltaTime in ms (60 FPS = ~16ms per frame)
       this.isOnlineMode() ? this.playerColor : undefined
+    );
+
+    // Update the InfoPanel with current game state
+    this.infoPanel?.update(
+      this.currentGameState as Parameters<InfoPanel['update']>[0],
+      this.gameMode,
+      this.playerColor,
+      this.selectedPosition,
+      this.isAiThinking
     );
   }
 
@@ -1366,6 +1575,20 @@ export class GameController {
     // Disable input
     this.boardRenderer.setInputEnabled(false);
     this.clearSelection();
+
+    // Show game-end announcement
+    const endMsg = deriveGameEndMessage(
+      message.winner as PlayerColor | null,
+      message.reason || 'Game over',
+      this.gameMode,
+      this.playerColor
+    );
+    this.announcementBanner?.show({
+      message: endMsg.message,
+      subtitle: endMsg.subtitle,
+      type: 'game-end',
+      duration: 0,
+    });
 
     // Update display
     this.updateDisplay();
