@@ -474,7 +474,8 @@ export class TutorialController {
     // 5. Configure input control (enable/disable positions)
     if (this.boardRenderer) {
       if (step.type === 'interactive') {
-        // Interactive step: enable only allowed positions
+        // Interactive step: enable input and only allowed positions
+        this.boardRenderer.setInputEnabled(true);
         this.boardRenderer.setClickablePositions(step.allowedPositions);
         this.tutorialState.enabledPositions = step.allowedPositions;
       } else {

@@ -39,6 +39,7 @@ describe('TutorialController Unit Tests', () => {
       highlightValidMoves: vi.fn(),
       clearHighlights: vi.fn(),
       setClickablePositions: vi.fn(),
+      setInputEnabled: vi.fn(),
       render: vi.fn(), // Prevent real rendering during tests
     };
 

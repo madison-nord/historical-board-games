@@ -1085,9 +1085,12 @@ export class GameController {
     );
 
     if (!this.currentGameState.isGameOver && !this.currentGameState.millFormed) {
-      // In local two-player mode, always enable input
-      if (this.gameMode === GameMode.LOCAL_TWO_PLAYER) {
-        logger.debug('switchPlayer: Enabling input for local two-player mode');
+      // In local two-player or tutorial mode, always enable input
+      if (
+        this.gameMode === GameMode.LOCAL_TWO_PLAYER ||
+        this.gameMode === GameMode.TUTORIAL
+      ) {
+        logger.debug('switchPlayer: Enabling input for local/tutorial mode');
         this.boardRenderer.setInputEnabled(true);
       }
       // In single-player mode, enable input only if it's the player's turn

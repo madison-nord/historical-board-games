@@ -767,54 +767,54 @@ The implementation uses:
     - Test that game state is preserved during resize
     - _Requirements: 9.3_
 
-- [ ] 38. Write E2E tests for game flows
-  - [ ] 38.1 Write test for single-player game (player wins)
+- [x] 38. Write E2E tests for game flows
+  - [x] 38.1 Write test for single-player game (player wins)
     - Start single-player mode
     - Play through complete game with winning moves
     - Verify win notification
     - _Requirements: 3.1_
   
-  - [ ] 38.2 Write test for single-player game (AI wins)
+  - [x] 38.2 Write test for single-player game (AI wins)
     - Start single-player mode
     - Make suboptimal moves
     - Verify AI wins
     - _Requirements: 3.1_
   
-  - [ ] 38.3 Write test for local two-player game
+  - [x] 38.3 Write test for local two-player game
     - Start local two-player mode
     - Verify turn indicator switches
     - Play through complete game
     - Verify game result
     - _Requirements: 4.1, 4.2_
   
-  - [ ] 38.4 Write test for tutorial completion
+  - [x] 38.4 Write test for tutorial completion
     - Start tutorial mode
     - Step through all tutorial steps
     - Verify completion and practice offer
     - _Requirements: 7.1, 7.6_
   
-  - [ ] 38.5 Write test for online multiplayer
+  - [x] 38.5 Write test for online multiplayer
     - Create two browser contexts (two players)
     - Both join matchmaking
     - Verify match found
     - Play moves and verify synchronization
     - _Requirements: 5.1, 5.2, 5.3_
   
-  - [ ] 38.6 Write test for chat functionality
+  - [x] 38.6 Write test for chat functionality
     - Set up online game with two players
     - Send messages between players
     - Verify message delivery
     - Test mute functionality
     - _Requirements: 6.1, 6.2, 6.5_
   
-  - [ ] 38.7 Write test for disconnect scenario
+  - [x] 38.7 Write test for disconnect scenario
     - Set up online game
     - Disconnect one player
     - Verify disconnect notification
     - Verify wait/claim victory options
     - _Requirements: 5.4_
   
-  - [ ] 38.8 Write test for game state persistence
+  - [x] 38.8 Write test for game state persistence
     - Start single-player game
     - Make several moves
     - Close and reopen browser
