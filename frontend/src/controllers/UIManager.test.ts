@@ -37,13 +37,14 @@ describe('UIManager', () => {
       uiManager.showMainMenu();
 
       const buttons = document.querySelectorAll('.menu-buttons button');
-      expect(buttons.length).toBe(4);
+      expect(buttons.length).toBe(5);
 
       const buttonTexts = Array.from(buttons).map(btn => btn.textContent);
       expect(buttonTexts).toContain('Single Player');
       expect(buttonTexts).toContain('Local Two Player');
       expect(buttonTexts).toContain('Online Multiplayer');
       expect(buttonTexts).toContain('Tutorial');
+      expect(buttonTexts).toContain('History & Rules');
     });
 
     it('should call onGameModeSelected when local two player is clicked', () => {

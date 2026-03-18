@@ -9,6 +9,7 @@ import { LocalStorage } from './utils/LocalStorage.js';
 import { startOnlineMultiplayer } from './onlineMultiplayer.js';
 import { InfoPanel } from './controllers/InfoPanel.js';
 import { AnnouncementBanner } from './controllers/AnnouncementBanner.js';
+import { InfoPage } from './controllers/InfoPage.js';
 
 logger.info("Nine Men's Morris - Game Loading...");
 
@@ -33,6 +34,17 @@ announcementBanner.create();
 
 // Disable canvas game info text since InfoPanel is active
 boardRenderer.setInfoPanelActive(true);
+
+// Initialize Info Page (accessible from main menu without starting a game)
+const infoPage = new InfoPage();
+infoPage.setOnBackToMenu(() => {
+  infoPage.close();
+  uiManager.showMainMenu();
+});
+uiManager.setOnInfoPageRequested(() => {
+  uiManager.closeCurrentDialog();
+  infoPage.show();
+});
 
 // Global game controller reference
 let gameController: GameController | null = null;

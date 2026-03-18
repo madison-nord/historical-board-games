@@ -26,6 +26,8 @@ export interface GameState {
   blackPiecesOnBoard: number;
   board: (PlayerColor | null)[];
   isGameOver: boolean;
+  /** Alias for isGameOver — required by models/GameState contract */
+  gameOver: boolean;
   winner: PlayerColor | null;
   millFormed: boolean;
 }
@@ -224,6 +226,7 @@ export class GameController {
       blackPiecesOnBoard: this.currentGameState.blackPiecesOnBoard,
       board: [...this.currentGameState.board],
       isGameOver: this.currentGameState.isGameOver,
+      gameOver: this.currentGameState.isGameOver,
       winner: this.currentGameState.winner,
       millFormed: this.currentGameState.millFormed,
     };
@@ -247,6 +250,7 @@ export class GameController {
       blackPiecesOnBoard: 0,
       board: new Array(24).fill(null),
       isGameOver: false,
+      gameOver: false,
       winner: null,
       millFormed: false,
     };
@@ -1261,6 +1265,7 @@ export class GameController {
     }
 
     this.currentGameState.isGameOver = true;
+    this.currentGameState.gameOver = true;
     this.currentGameState.winner = winner;
 
     // Disable input
@@ -1412,6 +1417,7 @@ export class GameController {
       blackPiecesOnBoard: savedGame.blackPiecesOnBoard,
       board: savedGame.board,
       isGameOver: savedGame.isGameOver,
+      gameOver: savedGame.isGameOver,
       winner: savedGame.winner,
       millFormed: savedGame.millFormed,
     };
@@ -1489,6 +1495,7 @@ export class GameController {
       blackPiecesOnBoard: update.blackPiecesOnBoard,
       board: update.board,
       isGameOver: update.gameOver,
+      gameOver: update.gameOver,
       winner: update.winner,
       millFormed: update.millFormed,
     };
@@ -1540,6 +1547,7 @@ export class GameController {
       blackPiecesOnBoard: 0,
       board: new Array(24).fill(null),
       isGameOver: false,
+      gameOver: false,
       winner: null,
       millFormed: false,
     };
@@ -1570,6 +1578,7 @@ export class GameController {
 
     // Update game state
     this.currentGameState.isGameOver = true;
+    this.currentGameState.gameOver = true;
     this.currentGameState.winner = message.winner as PlayerColor | null;
 
     // Disable input

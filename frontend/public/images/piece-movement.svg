@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="Movement diagram showing a piece at position 1 can move to positions 0, 2, or 9">
+  <title>Piece Movement Example</title>
+  <style>
+    .line { stroke: #8B7355; stroke-width: 2; fill: none; }
+    .pos { fill: #ccc; stroke: #8B7355; stroke-width: 1.5; }
+    .pos-active { fill: #f5f5dc; stroke: #4a7c59; stroke-width: 2.5; }
+    .piece { fill: #f5f5dc; stroke: #333; stroke-width: 2; }
+    .arrow { stroke: #4a7c59; stroke-width: 2.5; fill: none; marker-end: url(#arrowhead); }
+    .label { font-family: Arial, sans-serif; font-size: 12px; fill: #5a4a3a; text-anchor: middle; }
+    .label-bold { font-family: Arial, sans-serif; font-size: 12px; fill: #4a7c59; text-anchor: middle; font-weight: bold; }
+  </style>
+  <defs>
+    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#4a7c59" />
+    </marker>
+  </defs>
+
+  <!-- Partial board: top portion showing positions 0, 1, 2 (outer) and 8, 9, 10 (middle) -->
+  <!-- Outer top edge -->
+  <line x1="40" y1="60" x2="360" y2="60" class="line" />
+  <!-- Middle top edge -->
+  <line x1="100" y1="140" x2="300" y2="140" class="line" />
+  <!-- Outer left edge (partial) -->
+  <line x1="40" y1="60" x2="40" y2="200" class="line" />
+  <!-- Outer right edge (partial) -->
+  <line x1="360" y1="60" x2="360" y2="200" class="line" />
+  <!-- Middle left edge (partial) -->
+  <line x1="100" y1="140" x2="100" y2="200" class="line" />
+  <!-- Middle right edge (partial) -->
+  <line x1="300" y1="140" x2="300" y2="200" class="line" />
+  <!-- Radial: position 1 to 9 -->
+  <line x1="200" y1="60" x2="200" y2="140" class="line" />
+
+  <!-- Destination positions (highlighted) -->
+  <circle cx="40" cy="60" r="12" class="pos-active" />
+  <circle cx="360" cy="60" r="12" class="pos-active" />
+  <circle cx="200" cy="140" r="12" class="pos-active" />
+
+  <!-- Other positions -->
+  <circle cx="100" cy="140" r="10" class="pos" />
+  <circle cx="300" cy="140" r="10" class="pos" />
+
+  <!-- Piece at position 1 -->
+  <circle cx="200" cy="60" r="14" class="piece" />
+
+  <!-- Arrows from position 1 to adjacent positions -->
+  <path d="M 182,60 L 56,60" class="arrow" />
+  <path d="M 218,60 L 344,60" class="arrow" />
+  <path d="M 200,78 L 200,124" class="arrow" />
+
+  <!-- Labels -->
+  <text x="40" y="42" class="label-bold">0</text>
+  <text x="200" y="42" class="label-bold">1</text>
+  <text x="360" y="42" class="label-bold">2</text>
+  <text x="100" y="162" class="label">8</text>
+  <text x="200" y="162" class="label-bold">9</text>
+  <text x="300" y="162" class="label">10</text>
+
+  <!-- Legend -->
+  <text x="200" y="240" class="label" style="font-size:13px;">Position 1 can move to adjacent positions 0, 2, or 9</text>
+  <circle cx="120" cy="270" r="8" class="piece" />
+  <text x="170" y="274" class="label">= Your piece</text>
+  <circle cx="250" cy="270" r="8" class="pos-active" />
+  <text x="320" y="274" class="label">= Valid destination</text>
+</svg>

@@ -55,6 +55,7 @@ export async function startOnlineMultiplayer(
       const gs = activeGameController.getCurrentGameState();
       if (gs) {
         gs.isGameOver = true;
+        gs.gameOver = true;
         gs.winner = myPlayerColor;
         activeGameController.updateDisplay();
       }
@@ -94,6 +95,7 @@ export async function startOnlineMultiplayer(
       blackPiecesOnBoard: 0,
       board: new Array(24).fill(null),
       isGameOver: false,
+      gameOver: false,
       winner: null,
       millFormed: false,
     });
@@ -122,6 +124,7 @@ export async function startOnlineMultiplayer(
         const gs = activeGameController.getCurrentGameState();
         if (gs) {
           gs.isGameOver = true;
+          gs.gameOver = true;
           gs.winner = msg.winner;
           activeGameController.updateDisplay();
         }

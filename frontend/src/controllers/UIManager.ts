@@ -17,6 +17,7 @@ export class UIManager {
   private onWaitForReconnect: (() => void) | null = null;
   private onClaimVictory: (() => void) | null = null;
   private onRematch: (() => void) | null = null;
+  private onInfoPageRequested: (() => void) | null = null;
   private isProcessingClick: boolean = false;
   private disconnectCountdownInterval: number | null = null;
 
@@ -84,10 +85,21 @@ export class UIManager {
       })
     );
 
+    const infoPageBtn = this.createButton('History & Rules', 'secondary');
+    infoPageBtn.addEventListener(
+      'click',
+      this.withDebounce(() => {
+        if (this.onInfoPageRequested) {
+          this.onInfoPageRequested();
+        }
+      })
+    );
+
     buttonContainer.appendChild(singlePlayerBtn);
     buttonContainer.appendChild(localTwoPlayerBtn);
     buttonContainer.appendChild(onlineMultiplayerBtn);
     buttonContainer.appendChild(tutorialBtn);
+    buttonContainer.appendChild(infoPageBtn);
 
     content.appendChild(title);
     content.appendChild(subtitle);
@@ -623,6 +635,13 @@ export class UIManager {
    */
   public setOnNewGame(callback: () => void): void {
     this.onNewGame = callback;
+  }
+
+  /**
+   * Set callback for when user requests the info page
+   */
+  public setOnInfoPageRequested(callback: () => void): void {
+    this.onInfoPageRequested = callback;
   }
 
   /**

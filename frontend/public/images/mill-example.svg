@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250" width="400" height="250" role="img" aria-label="Mill example showing three white pieces in a row along the top of the outer square">
+  <title>Mill Formation Example</title>
+  <style>
+    .line { stroke: #8B7355; stroke-width: 2; fill: none; }
+    .pos { fill: #ccc; stroke: #8B7355; stroke-width: 1.5; }
+    .piece-white { fill: #f5f5dc; stroke: #333; stroke-width: 2; }
+    .mill-highlight { stroke: #c0392b; stroke-width: 3; fill: none; stroke-dasharray: 8 4; }
+    .label { font-family: Arial, sans-serif; font-size: 12px; fill: #5a4a3a; text-anchor: middle; }
+    .label-mill { font-family: Arial, sans-serif; font-size: 12px; fill: #c0392b; text-anchor: middle; font-weight: bold; }
+  </style>
+
+  <!-- Partial board: top portion -->
+  <!-- Outer top edge -->
+  <line x1="40" y1="60" x2="360" y2="60" class="line" />
+  <!-- Middle top edge -->
+  <line x1="100" y1="120" x2="300" y2="120" class="line" />
+  <!-- Outer left edge (partial) -->
+  <line x1="40" y1="60" x2="40" y2="180" class="line" />
+  <!-- Outer right edge (partial) -->
+  <line x1="360" y1="60" x2="360" y2="180" class="line" />
+  <!-- Middle left edge (partial) -->
+  <line x1="100" y1="120" x2="100" y2="180" class="line" />
+  <!-- Middle right edge (partial) -->
+  <line x1="300" y1="120" x2="300" y2="180" class="line" />
+  <!-- Radial: 1 to 9 -->
+  <line x1="200" y1="60" x2="200" y2="120" class="line" />
+
+  <!-- Mill highlight line -->
+  <line x1="30" y1="60" x2="370" y2="60" class="mill-highlight" />
+
+  <!-- Empty positions -->
+  <circle cx="100" cy="120" r="10" class="pos" />
+  <circle cx="200" cy="120" r="10" class="pos" />
+  <circle cx="300" cy="120" r="10" class="pos" />
+
+  <!-- Mill pieces (white) at positions 0, 1, 2 -->
+  <circle cx="40" cy="60" r="14" class="piece-white" />
+  <circle cx="200" cy="60" r="14" class="piece-white" />
+  <circle cx="360" cy="60" r="14" class="piece-white" />
+
+  <!-- Labels -->
+  <text x="40" y="42" class="label-mill">0</text>
+  <text x="200" y="42" class="label-mill">1</text>
+  <text x="360" y="42" class="label-mill">2</text>
+  <text x="100" y="142" class="label">8</text>
+  <text x="200" y="142" class="label">9</text>
+  <text x="300" y="142" class="label">10</text>
+
+  <!-- Legend -->
+  <text x="200" y="210" class="label-mill" style="font-size:14px;">MILL FORMED!</text>
+  <text x="200" y="232" class="label" style="font-size:12px;">Three pieces in a row (positions 0, 1, 2) — remove an opponent's piece</text>
+</svg>

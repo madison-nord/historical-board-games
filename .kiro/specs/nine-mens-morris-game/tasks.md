@@ -695,7 +695,7 @@ The implementation uses:
     - Test rematch functionality
     - _Requirements: 5.2, 5.3, 6.2_
 
-- [-] 34. Checkpoint - Online multiplayer complete
+- [x] 34. Checkpoint - Online multiplayer complete
   - Test matchmaking with multiple browser windows
   - Test complete online game with chat
   - Test disconnect scenarios
@@ -710,8 +710,8 @@ The implementation uses:
 
 ### Phase 12: Information Page
 
-- [ ] 35. Create information page with game history and rules
-  - [ ] 35.1 Write original content
+- [x] 35. Create information page with game history and rules
+  - [x] 35.1 Write original content
     - Research Nine Men's Morris history (ancient origins, archaeological finds)
     - Write engaging historical overview (original content, not copied)
     - Write clear, accessible rules explanation
@@ -720,7 +720,7 @@ The implementation uses:
     - Explain win conditions
     - _Requirements: 8.1, 8.2_
   
-  - [ ] 35.2 Create information page HTML and styling
+  - [x] 35.2 Create information page HTML and styling
     - Create info.html page
     - Add navigation from main menu
     - Create visual diagrams for board layout
@@ -730,7 +730,7 @@ The implementation uses:
     - Ensure page is accessible without starting game
     - _Requirements: 8.2, 8.3, 8.4_
   
-  - [ ] 35.3 Write tests for information page
+  - [x] 35.3 Write tests for information page
     - Test that page is accessible from main menu
     - Test that page contains all required sections
     - Test that diagrams are present

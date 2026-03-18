@@ -3,6 +3,7 @@
 /* Import UI component styles */
 @import './ui.css';
 @import './tutorial.css';
+@import './info-page.css';
 
 * {
     margin: 0;
