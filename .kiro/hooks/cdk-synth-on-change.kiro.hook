@@ -1,5 +1,5 @@
 {
-  "enabled": true,
+  "enabled": false,
   "name": "CDK Synth on Change",
   "description": "Run CDK synth when CDK code is modified following CDK best practices",
   "version": "1",

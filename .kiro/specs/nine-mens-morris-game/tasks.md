@@ -748,21 +748,21 @@ The implementation uses:
     - _Requirements: 9.1, 9.2_
 
 
-- [ ] 37. Write E2E tests for visual and responsive design
-  - [ ] 37.1 Write tests for desktop rendering
+- [x] 37. Write E2E tests for visual and responsive design
+  - [x] 37.1 Write tests for desktop rendering
     - Test board rendering at 1920x1080 with screenshot comparison
     - Test board rendering at 1366x768 with screenshot comparison
     - Test board rendering at 1024x768 with screenshot comparison
     - _Requirements: 9.1_
   
-  - [ ] 37.2 Write tests for mobile rendering
+  - [x] 37.2 Write tests for mobile rendering
     - Test board rendering on iPhone SE (375x667) with screenshot
     - Test board rendering on iPhone 12 (390x844) with screenshot
     - Test board rendering on iPad (768x1024) with screenshot
     - Test touch target sizes (minimum 44x44 pixels)
     - _Requirements: 9.2, 9.6_
   
-  - [ ] 37.3 Write tests for responsive behavior
+  - [x] 37.3 Write tests for responsive behavior
     - Test layout adaptation during window resize
     - Test that game state is preserved during resize
     - _Requirements: 9.3_

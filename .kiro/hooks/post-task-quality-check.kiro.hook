@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Post-Task Quality Check",
+  "description": "Runs lint and test coverage after a spec task is completed, instead of on every file save",
+  "version": "1",
+  "when": {
+    "type": "postTaskExecution"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A spec task was just completed. Run a quick quality check: 1) Run ESLint on changed frontend files: cd frontend && npx eslint src --quiet --max-warnings=0 2) Run getDiagnostics on any files that were modified 3) Report any issues found. Keep output minimal — only report problems, not successes. Do NOT run the full test suite (tests are run manually during task execution)."
+  }
+}
