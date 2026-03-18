@@ -822,13 +822,13 @@ The implementation uses:
     - Verify game state restored
     - _Requirements: 11.1, 11.2_
 
-- [ ] 39. Write E2E tests for animations and performance
-  - [ ] 39.1 Write test for animation smoothness
+- [x] 39. Write E2E tests for animations and performance
+  - [x] 39.1 Write test for animation smoothness
     - Monitor frame rate during animations
     - Verify FPS is above 55 (close to 60)
     - _Requirements: 10.5_
   
-  - [ ] 39.2 Write test for visual feedback timing
+  - [x] 39.2 Write test for visual feedback timing
     - Measure time from click to visual feedback
     - Verify feedback appears within 100ms
     - _Requirements: 10.6_
