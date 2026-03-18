@@ -833,23 +833,23 @@ The implementation uses:
     - Verify feedback appears within 100ms
     - _Requirements: 10.6_
 
-- [ ] 40. Write E2E tests for input methods and accessibility
-  - [ ] 40.1 Write test for mouse input
+- [x] 40. Write E2E tests for input methods and accessibility
+  - [x] 40.1 Write test for mouse input
     - Test clicking positions with mouse
     - Verify moves are registered
     - _Requirements: 9.5_
   
-  - [ ] 40.2 Write test for touch input
+  - [x] 40.2 Write test for touch input
     - Test tapping positions with touch
     - Verify moves are registered
     - _Requirements: 9.5_
   
-  - [ ] 40.3 Write test for keyboard navigation
+  - [x] 40.3 Write test for keyboard navigation
     - Test tabbing through interactive elements
     - Test activating buttons with Enter
     - _Requirements: Accessibility_
   
-  - [ ] 40.4 Write test for screen reader compatibility
+  - [x] 40.4 Write test for screen reader compatibility
     - Verify ARIA labels are present
     - Verify role attributes are correct
     - Verify aria-live regions for dynamic content
