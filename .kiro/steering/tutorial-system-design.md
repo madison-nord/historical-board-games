@@ -1,3 +1,9 @@
+---
+title: Tutorial System Design
+inclusion: fileMatch
+fileMatchPattern: '*Tutorial*,*tutorial*'
+---
+
 # Tutorial System - Complete Design Specification
 
 ## Overview

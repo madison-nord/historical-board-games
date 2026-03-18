@@ -1,6 +1,7 @@
 ---
-title: MCP (Model Context Protocol) Best Practices
-inclusion: always
+title: MCP Best Practices
+inclusion: fileMatch
+fileMatchPattern: '*mcp*,*.mcp.*'
 ---
 
 # MCP (Model Context Protocol) Best Practices
