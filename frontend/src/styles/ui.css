@@ -814,11 +814,8 @@
   .game-button {
     min-width: 100px;
     padding: 12px var(--spacing-md);
-  }
-
-  /* Ensure touch targets are at least 44x44 pixels */
-  .game-button {
-    min-height: 44px;
+    /* Ensure touch targets are at least 44x44 pixels */
+    min-height: 46px;
   }
 
   /* Chat panel on mobile - compact at bottom */

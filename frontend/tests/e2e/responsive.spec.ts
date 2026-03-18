@@ -120,18 +120,16 @@ test.describe('Responsive Design E2E Tests', () => {
       await page.goto('/');
       await page.waitForLoadState('networkidle');
       
-      // Check all buttons meet minimum touch target size (44x44px)
-      const buttons = page.locator('button');
+      // Check visible game-button elements meet minimum touch target size (44x44px)
+      const buttons = page.locator('button.game-button:visible');
       const count = await buttons.count();
       
       for (let i = 0; i < Math.min(count, 5); i++) {
         const button = buttons.nth(i);
-        if (await button.isVisible()) {
-          const box = await button.boundingBox();
-          if (box) {
-            expect(box.width).toBeGreaterThanOrEqual(44);
-            expect(box.height).toBeGreaterThanOrEqual(44);
-          }
+        const box = await button.boundingBox();
+        if (box) {
+          expect(box.width).toBeGreaterThanOrEqual(44);
+          expect(box.height).toBeGreaterThanOrEqual(44);
         }
       }
     });

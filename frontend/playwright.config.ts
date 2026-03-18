@@ -40,6 +40,10 @@ export default defineConfig({
       use: { ...devices['iPhone 12'] },
     },
     {
+      name: 'iPhone SE',
+      use: { ...devices['iPhone SE'] },
+    },
+    {
       name: 'iPad',
       use: { ...devices['iPad Pro'] },
     },
