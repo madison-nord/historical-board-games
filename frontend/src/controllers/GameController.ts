@@ -491,8 +491,14 @@ export class GameController {
         return; // Exit early - server will send state update
       } catch (error) {
         logger.error('Failed to send move to server:', error);
-        // Re-enable input on error
+        // Re-enable input on error so the player can retry
         this.boardRenderer.setInputEnabled(true);
+        this.announcementBanner?.show({
+          message: 'Failed to send move',
+          subtitle: 'Please check your connection and try again.',
+          type: 'game-end',
+          duration: 3000,
+        });
         return;
       }
     }
@@ -633,9 +639,23 @@ export class GameController {
         const fallbackMove = this.getLocalFallbackAIMove();
         if (fallbackMove) {
           this.applyMove(fallbackMove);
+        } else {
+          logger.warn('No valid fallback moves available');
+          this.announcementBanner?.show({
+            message: 'AI encountered an error',
+            subtitle: 'No valid moves could be computed.',
+            type: 'game-end',
+            duration: 3000,
+          });
         }
       } catch (fallbackError) {
         logger.error('Fallback AI also failed:', fallbackError);
+        this.announcementBanner?.show({
+          message: 'AI encountered an error',
+          subtitle: 'Please try starting a new game.',
+          type: 'game-end',
+          duration: 3000,
+        });
       }
     } finally {
       this.isAiThinking = false;
@@ -1487,41 +1507,51 @@ export class GameController {
 
     logger.debug('Received game state update:', update);
 
-    // Update local game state from server (server is source of truth)
-    this.currentGameState = {
-      gameId: update.gameId,
-      phase: update.phase as GamePhase,
-      currentPlayer: update.currentPlayer,
-      whitePiecesRemaining: update.whitePiecesRemaining,
-      blackPiecesRemaining: update.blackPiecesRemaining,
-      whitePiecesOnBoard: update.whitePiecesOnBoard,
-      blackPiecesOnBoard: update.blackPiecesOnBoard,
-      board: update.board,
-      isGameOver: update.gameOver,
-      gameOver: update.gameOver,
-      winner: update.winner,
-      millFormed: update.millFormed,
-    };
+    try {
+      // Update local game state from server (server is source of truth)
+      this.currentGameState = {
+        gameId: update.gameId,
+        phase: update.phase as GamePhase,
+        currentPlayer: update.currentPlayer,
+        whitePiecesRemaining: update.whitePiecesRemaining,
+        blackPiecesRemaining: update.blackPiecesRemaining,
+        whitePiecesOnBoard: update.whitePiecesOnBoard,
+        blackPiecesOnBoard: update.blackPiecesOnBoard,
+        board: update.board,
+        isGameOver: update.gameOver,
+        gameOver: update.gameOver,
+        winner: update.winner,
+        millFormed: update.millFormed,
+      };
 
-    // Clear waiting state
-    this.isWaitingForOpponent = false;
+      // Clear waiting state
+      this.isWaitingForOpponent = false;
 
-    // Update display
-    this.updateDisplay();
+      // Update display
+      this.updateDisplay();
 
-    // Enable input if it's our turn
-    const isOurTurn = this.currentGameState.currentPlayer === this.playerColor;
-    const shouldEnableInput = isOurTurn && !this.currentGameState.isGameOver;
-    this.boardRenderer.setInputEnabled(shouldEnableInput);
+      // Enable input if it's our turn
+      const isOurTurn = this.currentGameState.currentPlayer === this.playerColor;
+      const shouldEnableInput = isOurTurn && !this.currentGameState.isGameOver;
+      this.boardRenderer.setInputEnabled(shouldEnableInput);
 
-    // If a mill was formed and it's our turn, highlight removable pieces
-    if (this.currentGameState.millFormed && isOurTurn && !this.currentGameState.isGameOver) {
-      this.handleMillFormed();
-    }
+      // If a mill was formed and it's our turn, highlight removable pieces
+      if (this.currentGameState.millFormed && isOurTurn && !this.currentGameState.isGameOver) {
+        this.handleMillFormed();
+      }
 
-    // If game is over, notify via callback so the UI can show the result dialog
-    if (this.currentGameState.isGameOver && this.onGameOverFromStateUpdate) {
-      this.onGameOverFromStateUpdate(this.currentGameState.winner);
+      // If game is over, notify via callback so the UI can show the result dialog
+      if (this.currentGameState.isGameOver && this.onGameOverFromStateUpdate) {
+        this.onGameOverFromStateUpdate(this.currentGameState.winner);
+      }
+    } catch (error) {
+      logger.error('Failed to process game state update:', error);
+      this.announcementBanner?.show({
+        message: 'Sync error',
+        subtitle: 'Failed to process server update. The game may be out of sync.',
+        type: 'game-end',
+        duration: 4000,
+      });
     }
   }
 
@@ -1535,38 +1565,48 @@ export class GameController {
 
     logger.info('Game started:', message);
 
-    // Store online game ID and player color
-    this.onlineGameId = message.gameId;
-    this.playerColor = message.playerColor as PlayerColor;
+    try {
+      // Store online game ID and player color
+      this.onlineGameId = message.gameId;
+      this.playerColor = message.playerColor as PlayerColor;
 
-    // Initialize game state
-    this.currentGameState = {
-      gameId: message.gameId,
-      phase: GamePhase.PLACEMENT,
-      currentPlayer: PlayerColor.WHITE,
-      whitePiecesRemaining: 9,
-      blackPiecesRemaining: 9,
-      whitePiecesOnBoard: 0,
-      blackPiecesOnBoard: 0,
-      board: new Array(24).fill(null),
-      isGameOver: false,
-      gameOver: false,
-      winner: null,
-      millFormed: false,
-    };
+      // Initialize game state
+      this.currentGameState = {
+        gameId: message.gameId,
+        phase: GamePhase.PLACEMENT,
+        currentPlayer: PlayerColor.WHITE,
+        whitePiecesRemaining: 9,
+        blackPiecesRemaining: 9,
+        whitePiecesOnBoard: 0,
+        blackPiecesOnBoard: 0,
+        board: new Array(24).fill(null),
+        isGameOver: false,
+        gameOver: false,
+        winner: null,
+        millFormed: false,
+      };
 
-    this.selectedPosition = null;
-    this.validMoves = [];
-    this.isWaitingForOpponent = false;
+      this.selectedPosition = null;
+      this.validMoves = [];
+      this.isWaitingForOpponent = false;
 
-    // Update display
-    this.updateDisplay();
+      // Update display
+      this.updateDisplay();
 
-    // Enable input if we're white (white goes first)
-    const isOurTurn = this.playerColor === PlayerColor.WHITE;
-    this.boardRenderer.setInputEnabled(isOurTurn);
+      // Enable input if we're white (white goes first)
+      const isOurTurn = this.playerColor === PlayerColor.WHITE;
+      this.boardRenderer.setInputEnabled(isOurTurn);
 
-    logger.info(`Online game started. You are ${this.playerColor}`);
+      logger.info(`Online game started. You are ${this.playerColor}`);
+    } catch (error) {
+      logger.error('Failed to initialize online game:', error);
+      this.announcementBanner?.show({
+        message: 'Failed to start game',
+        subtitle: 'An error occurred while setting up the match.',
+        type: 'game-end',
+        duration: 4000,
+      });
+    }
   }
 
   /**
@@ -1579,32 +1619,42 @@ export class GameController {
 
     logger.info('Game ended:', message);
 
-    // Update game state
-    this.currentGameState.isGameOver = true;
-    this.currentGameState.gameOver = true;
-    this.currentGameState.winner = message.winner as PlayerColor | null;
+    try {
+      // Update game state
+      this.currentGameState.isGameOver = true;
+      this.currentGameState.gameOver = true;
+      this.currentGameState.winner = message.winner as PlayerColor | null;
 
-    // Disable input
-    this.boardRenderer.setInputEnabled(false);
-    this.clearSelection();
+      // Disable input
+      this.boardRenderer.setInputEnabled(false);
+      this.clearSelection();
 
-    // Show game-end announcement
-    const endMsg = deriveGameEndMessage(
-      message.winner as PlayerColor | null,
-      message.reason || 'Game over',
-      this.gameMode,
-      this.playerColor
-    );
-    this.announcementBanner?.show({
-      message: endMsg.message,
-      subtitle: endMsg.subtitle,
-      type: 'game-end',
-      duration: 0,
-    });
+      // Show game-end announcement
+      const endMsg = deriveGameEndMessage(
+        message.winner as PlayerColor | null,
+        message.reason || 'Game over',
+        this.gameMode,
+        this.playerColor
+      );
+      this.announcementBanner?.show({
+        message: endMsg.message,
+        subtitle: endMsg.subtitle,
+        type: 'game-end',
+        duration: 0,
+      });
 
-    // Update display
-    this.updateDisplay();
+      // Update display
+      this.updateDisplay();
 
-    logger.info(`Game Over! Winner: ${message.winner}. Reason: ${message.reason}`);
+      logger.info(`Game Over! Winner: ${message.winner}. Reason: ${message.reason}`);
+    } catch (error) {
+      logger.error('Failed to process game end:', error);
+      // Ensure game is marked as over even if display fails
+      if (this.currentGameState) {
+        this.currentGameState.isGameOver = true;
+        this.currentGameState.gameOver = true;
+      }
+      this.boardRenderer.setInputEnabled(false);
+    }
   }
 }

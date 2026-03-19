@@ -140,17 +140,33 @@ export class WebSocketClient {
       }
 
       // Unsubscribe from all subscriptions
-      this.subscriptions.forEach(sub => sub.unsubscribe());
+      this.subscriptions.forEach(sub => {
+        try {
+          sub.unsubscribe();
+        } catch (error) {
+          logger.error('Failed to unsubscribe:', error);
+        }
+      });
       this.subscriptions.clear();
 
       // Deactivate client
-      this.client.deactivate().then(() => {
-        this.client = null;
-        this.playerId = null;
-        this.gameId = null;
-        this.notifyConnectionStatus(false);
-        resolve();
-      });
+      this.client
+        .deactivate()
+        .then(() => {
+          this.client = null;
+          this.playerId = null;
+          this.gameId = null;
+          this.notifyConnectionStatus(false);
+          resolve();
+        })
+        .catch(error => {
+          logger.error('Error during WebSocket disconnect:', error);
+          this.client = null;
+          this.playerId = null;
+          this.gameId = null;
+          this.notifyConnectionStatus(false);
+          resolve();
+        });
     });
   }
 
@@ -209,10 +225,15 @@ export class WebSocketClient {
       throw new Error('Not connected to server');
     }
 
-    this.client.publish({
-      destination: '/app/matchmaking/join',
-      body: JSON.stringify({ playerId: this.playerId }),
-    });
+    try {
+      this.client.publish({
+        destination: '/app/matchmaking/join',
+        body: JSON.stringify({ playerId: this.playerId }),
+      });
+    } catch (error) {
+      logger.error('Failed to join matchmaking:', error);
+      throw new Error('Failed to join matchmaking. Please check your connection.');
+    }
   }
 
   /**
@@ -223,10 +244,14 @@ export class WebSocketClient {
       throw new Error('Not connected to server');
     }
 
-    this.client.publish({
-      destination: '/app/matchmaking/leave',
-      body: JSON.stringify({ playerId: this.playerId }),
-    });
+    try {
+      this.client.publish({
+        destination: '/app/matchmaking/leave',
+        body: JSON.stringify({ playerId: this.playerId }),
+      });
+    } catch (error) {
+      logger.error('Failed to leave matchmaking:', error);
+    }
   }
 
   /**
@@ -238,17 +263,22 @@ export class WebSocketClient {
       throw new Error('Not connected or not in a game');
     }
 
-    const destination = this.getMoveDestination(move);
-    const payload = {
-      gameId: this.gameId,
-      playerId: this.playerId,
-      ...this.getMovePayload(move),
-    };
+    try {
+      const destination = this.getMoveDestination(move);
+      const payload = {
+        gameId: this.gameId,
+        playerId: this.playerId,
+        ...this.getMovePayload(move),
+      };
 
-    this.client.publish({
-      destination,
-      body: JSON.stringify(payload),
-    });
+      this.client.publish({
+        destination,
+        body: JSON.stringify(payload),
+      });
+    } catch (error) {
+      logger.error('Failed to send move:', error);
+      throw new Error('Failed to send move. Please check your connection.');
+    }
   }
 
   /**
@@ -260,14 +290,18 @@ export class WebSocketClient {
       throw new Error('Not connected or not in a game');
     }
 
-    this.client.publish({
-      destination: '/app/chat/send',
-      body: JSON.stringify({
-        gameId: this.gameId,
-        playerId: this.playerId,
-        content,
-      }),
-    });
+    try {
+      this.client.publish({
+        destination: '/app/chat/send',
+        body: JSON.stringify({
+          gameId: this.gameId,
+          playerId: this.playerId,
+          content,
+        }),
+      });
+    } catch (error) {
+      logger.error('Failed to send chat message:', error);
+    }
   }
 
   /**
@@ -306,9 +340,13 @@ export class WebSocketClient {
    * Handle game state update message
    */
   private handleGameStateUpdate(message: IMessage): void {
-    const update: GameStateUpdate = JSON.parse(message.body);
-    if (this.onGameStateUpdateHandler) {
-      this.onGameStateUpdateHandler(update);
+    try {
+      const update: GameStateUpdate = JSON.parse(message.body);
+      if (this.onGameStateUpdateHandler) {
+        this.onGameStateUpdateHandler(update);
+      }
+    } catch (error) {
+      logger.error('Failed to parse game state update:', error);
     }
   }
 
@@ -316,10 +354,14 @@ export class WebSocketClient {
    * Handle game start message
    */
   private handleGameStart(message: IMessage): void {
-    const startMessage: GameStartMessage = JSON.parse(message.body);
-    this.gameId = startMessage.gameId;
-    if (this.onGameStartHandler) {
-      this.onGameStartHandler(startMessage);
+    try {
+      const startMessage: GameStartMessage = JSON.parse(message.body);
+      this.gameId = startMessage.gameId;
+      if (this.onGameStartHandler) {
+        this.onGameStartHandler(startMessage);
+      }
+    } catch (error) {
+      logger.error('Failed to parse game start message:', error);
     }
   }
 
@@ -327,20 +369,29 @@ export class WebSocketClient {
    * Handle game end message
    */
   private handleGameEnd(message: IMessage): void {
-    const endMessage: GameEndMessage = JSON.parse(message.body);
-    if (this.onGameEndHandler) {
-      this.onGameEndHandler(endMessage);
+    try {
+      const endMessage: GameEndMessage = JSON.parse(message.body);
+      if (this.onGameEndHandler) {
+        this.onGameEndHandler(endMessage);
+      }
+      this.gameId = null;
+    } catch (error) {
+      logger.error('Failed to parse game end message:', error);
+      this.gameId = null;
     }
-    this.gameId = null;
   }
 
   /**
    * Handle chat message
    */
   private handleChatMessage(message: IMessage): void {
-    const chatMessage: ChatMessageBroadcast = JSON.parse(message.body);
-    if (this.onChatMessageHandler) {
-      this.onChatMessageHandler(chatMessage);
+    try {
+      const chatMessage: ChatMessageBroadcast = JSON.parse(message.body);
+      if (this.onChatMessageHandler) {
+        this.onChatMessageHandler(chatMessage);
+      }
+    } catch (error) {
+      logger.error('Failed to parse chat message:', error);
     }
   }
 
@@ -348,9 +399,13 @@ export class WebSocketClient {
    * Handle opponent disconnected message
    */
   private handleOpponentDisconnected(message: IMessage): void {
-    const disconnectMessage: OpponentDisconnectedMessage = JSON.parse(message.body);
-    if (this.onOpponentDisconnectedHandler) {
-      this.onOpponentDisconnectedHandler(disconnectMessage);
+    try {
+      const disconnectMessage: OpponentDisconnectedMessage = JSON.parse(message.body);
+      if (this.onOpponentDisconnectedHandler) {
+        this.onOpponentDisconnectedHandler(disconnectMessage);
+      }
+    } catch (error) {
+      logger.error('Failed to parse opponent disconnected message:', error);
     }
   }
 
@@ -358,9 +413,13 @@ export class WebSocketClient {
    * Handle opponent reconnected message
    */
   private handleOpponentReconnected(message: IMessage): void {
-    const reconnectMessage: OpponentReconnectedMessage = JSON.parse(message.body);
-    if (this.onOpponentReconnectedHandler) {
-      this.onOpponentReconnectedHandler(reconnectMessage);
+    try {
+      const reconnectMessage: OpponentReconnectedMessage = JSON.parse(message.body);
+      if (this.onOpponentReconnectedHandler) {
+        this.onOpponentReconnectedHandler(reconnectMessage);
+      }
+    } catch (error) {
+      logger.error('Failed to parse opponent reconnected message:', error);
     }
   }
 

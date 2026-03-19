@@ -1,8 +1,12 @@
 package com.ninemensmorris.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
+import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 
 import com.ninemensmorris.dto.ChatMessage;
@@ -22,6 +26,8 @@ import com.ninemensmorris.service.GameService;
  */
 @Controller
 public class ChatWebSocketController {
+    
+    private static final Logger logger = LoggerFactory.getLogger(ChatWebSocketController.class);
     
     private static final int MAX_MESSAGE_LENGTH = 200;
     
@@ -50,48 +56,66 @@ public class ChatWebSocketController {
      */
     @MessageMapping("/chat/send")
     public void handleChatMessage(@NonNull ChatMessage message) {
-        // Trim and sanitize content
-        String content = message.getContent().trim();
-        
-        // Reject empty messages
-        if (content.isEmpty()) {
-            return;
-        }
-        
-        // Limit message length
-        if (content.length() > MAX_MESSAGE_LENGTH) {
-            content = content.substring(0, MAX_MESSAGE_LENGTH);
-        }
-        
-        // Check if game still exists before processing
-        String playerMapping = gameService.getPlayerMapping(message.getGameId());
-        if (playerMapping == null) {
-            // Game no longer exists (already cleaned up) — silently ignore
-            return;
-        }
-        
-        // Get actual player color from game service
-        PlayerColor senderColor;
         try {
-            senderColor = gameService.getPlayerColor(message.getGameId(), message.getPlayerId());
-        } catch (IllegalArgumentException e) {
-            // Game was cleaned up between the check and this call — ignore
-            return;
+            // Trim and sanitize content
+            String content = message.getContent().trim();
+            
+            // Reject empty messages
+            if (content.isEmpty()) {
+                return;
+            }
+            
+            // Limit message length
+            if (content.length() > MAX_MESSAGE_LENGTH) {
+                content = content.substring(0, MAX_MESSAGE_LENGTH);
+            }
+            
+            // Check if game still exists before processing
+            String playerMapping = gameService.getPlayerMapping(message.getGameId());
+            if (playerMapping == null) {
+                // Game no longer exists (already cleaned up) — silently ignore
+                return;
+            }
+            
+            // Get actual player color from game service
+            PlayerColor senderColor;
+            try {
+                senderColor = gameService.getPlayerColor(message.getGameId(), message.getPlayerId());
+            } catch (IllegalArgumentException e) {
+                // Game was cleaned up between the check and this call — ignore
+                return;
+            }
+            
+            // Create broadcast message
+            ChatMessageBroadcast broadcast = new ChatMessageBroadcast();
+            broadcast.setGameId(message.getGameId());
+            broadcast.setSenderId(message.getPlayerId());
+            broadcast.setSenderColor(senderColor);
+            broadcast.setContent(content);
+            broadcast.setTimestamp(System.currentTimeMillis());
+            
+            // Broadcast to both players via their user queues
+            String[] parts = playerMapping.split(":");
+            if (parts.length == 2) {
+                messagingTemplate.convertAndSendToUser(parts[0], "/queue/chat", broadcast);
+                messagingTemplate.convertAndSendToUser(parts[1], "/queue/chat", broadcast);
+            }
+        } catch (Exception e) {
+            logger.error("Error handling chat message for game {}: {}", 
+                message.getGameId(), e.getMessage(), e);
         }
-        
-        // Create broadcast message
-        ChatMessageBroadcast broadcast = new ChatMessageBroadcast();
-        broadcast.setGameId(message.getGameId());
-        broadcast.setSenderId(message.getPlayerId());
-        broadcast.setSenderColor(senderColor);
-        broadcast.setContent(content);
-        broadcast.setTimestamp(System.currentTimeMillis());
-        
-        // Broadcast to both players via their user queues
-        String[] parts = playerMapping.split(":");
-        if (parts.length == 2) {
-            messagingTemplate.convertAndSendToUser(parts[0], "/queue/chat", broadcast);
-            messagingTemplate.convertAndSendToUser(parts[1], "/queue/chat", broadcast);
-        }
+    }
+    
+    /**
+     * Handles exceptions thrown during chat message processing.
+     * 
+     * @param exception the exception that was thrown
+     * @return error message string sent to the user's error queue
+     */
+    @MessageExceptionHandler
+    @SendToUser("/queue/errors")
+    public String handleException(Exception exception) {
+        logger.error("Chat error: {}", exception.getMessage(), exception);
+        return "Chat error: " + exception.getMessage();
     }
 }

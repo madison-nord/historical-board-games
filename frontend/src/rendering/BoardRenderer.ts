@@ -1,4 +1,5 @@
 import { PlayerColor, GamePhase } from '../models/index.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Coordinates for a position on the board
@@ -571,6 +572,41 @@ export class BoardRenderer {
     deltaTime: number = 0,
     playerColor?: PlayerColor
   ): void {
+    try {
+      this.renderInternal(
+        board,
+        currentPlayerOrSelected,
+        phaseOrHighlighted,
+        whitePiecesRemaining,
+        blackPiecesRemaining,
+        deltaTime,
+        playerColor
+      );
+    } catch (error) {
+      logger.error('Rendering error, attempting recovery:', error);
+      try {
+        // Fallback: clear canvas and redraw board skeleton
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.drawBoard();
+        this.drawPieces(board);
+      } catch (fallbackError) {
+        logger.error('Rendering recovery failed:', fallbackError);
+      }
+    }
+  }
+
+  /**
+   * Internal render implementation
+   */
+  private renderInternal(
+    board: (PlayerColor | null)[],
+    currentPlayerOrSelected: PlayerColor | number | null = null,
+    phaseOrHighlighted: GamePhase | number[] = [],
+    whitePiecesRemaining: number = 0,
+    blackPiecesRemaining: number = 0,
+    deltaTime: number = 0,
+    playerColor?: PlayerColor
+  ): void {
     // Detect which signature is being used based on parameter types
     const isSimplifiedSignature = Array.isArray(phaseOrHighlighted);
 
@@ -639,8 +675,9 @@ export class BoardRenderer {
    * Render active animations
    */
   private renderAnimations(): void {
-    for (const anim of this.animations) {
-      const t = Math.min(anim.progress, 1);
+    try {
+      for (const anim of this.animations) {
+        const t = Math.min(anim.progress, 1);
 
       switch (anim.type) {
         case 'placement': {
@@ -746,6 +783,10 @@ export class BoardRenderer {
           break;
         }
       }
+    }
+    } catch (error) {
+      logger.error('Animation rendering error:', error);
+      this.animations = [];
     }
   }
 

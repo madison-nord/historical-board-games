@@ -1,0 +1,199 @@
+﻿
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.8 [39m[90mC:/dev/historical-board-games/frontend[39m
+
+ [32mÔ£ô[39m src/utils/logger.test.ts [2m([22m[2m12 tests[22m[2m)[22m[90m 51[2mms[22m[39m
+ [32mÔ£ô[39m src/controllers/AnnouncementBanner.test.ts [2m([22m[2m18 tests[22m[2m)[22m[90m 111[2mms[22m[39m
+node.exe : [90mstderr[2m | src/network/WebSocketClient.test.ts[2m > 
+[22m[2mWebSocketClient[2m > [22m[2mConnection Management[2m > [22m[2mshould 
+handle connection errors
+At C:\Program Files\nodejs\npm.ps1:29 char:3
++   & $NODE_EXE $NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([90mstderr[2m...nnection errors:String 
+   ) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[22m[39m[Game] STOMP error: { headers: { message: [32m'Connection failed'[39m } }
+
+ [32mÔ£ô[39m src/network/WebSocketClient.test.ts [2m([22m[2m22 tests[22m[2m)[22m[90m 52[2mms[22m[39m
+[90mstderr[2m | src/utils/LocalStorage.test.ts[2m > [22m[2mLocalStorage Unit 
+Tests[2m > [22m[2mloadGameState[2m > [22m[2mshould return null and clear 
+corrupted data
+[22m[39m[Game] Failed to load game state SyntaxError: Unexpected token 'i', 
+"invalid json {" is not valid JSON
+    at JSON.parse (<anonymous>)
+    at Function.loadGameState [90m(C:\dev\historical-board-games\frontend\[39msrc\ut
+ils\LocalStorage.ts:104:30[90m)[39m
+    at 
+[90mC:\dev\historical-board-games\frontend\[39msrc\utils\LocalStorage.test.ts:176:35
+    at [90mfile:///C:/dev/historical-board-games/frontend/[39mnode_modules/[4m@vite
+st[24m/runner/dist/index.js:146:14
+    at [90mfile:///C:/dev/historical-board-games/frontend/[39mnode_modules/[4m@vite
+st[24m/runner/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/dev/historical-board-games/frontend/[39mnode_m
+odules/[4m@vitest[24m/runner/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/dev/historical-board-games/frontend/[39mnode_modules/
+[4m@vitest[24m/runner/dist/index.js:1056:17[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at runSuite [90m(file:///C:/dev/historical-board-games/frontend/[39mnode_modules
+/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/dev/historical-board-games/frontend/[39mnode_modules
+/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+
+[90mstderr[2m | src/utils/LocalStorage.test.ts[2m > [22m[2mLocalStorage Unit 
+Tests[2m > [22m[2mloadGameState[2m > [22m[2mshould return null and clear 
+invalid game data
+[22m[39m[Game] Invalid saved game data, clearing
+
+[90mstderr[2m | src/utils/LocalStorage.test.ts[2m > [22m[2mLocalStorage Unit 
+Tests[2m > [22m[2mloadGameState[2m > [22m[2mshould return null if board array 
+is invalid
+[22m[39m[Game] Invalid saved game data, clearing
+
+[90mstderr[2m | src/utils/LocalStorage.test.ts[2m > [22m[2mLocalStorage Unit 
+Tests[2m > [22m[2mlocalStorage error handling[2m > [22m[2mshould handle 
+corrupted data gracefully
+[22m[39m[Game] Failed to load game state SyntaxError: Unexpected token 'i', 
+"invalid json {" is not valid JSON
+    at JSON.parse (<anonymous>)
+    at Function.loadGameState [90m(C:\dev\historical-board-games\frontend\[39msrc\ut
+ils\LocalStorage.ts:104:30[90m)[39m
+    at 
+[90mC:\dev\historical-board-games\frontend\[39msrc\utils\LocalStorage.test.ts:289:35
+    at [90mfile:///C:/dev/historical-board-games/frontend/[39mnode_modules/[4m@vite
+st[24m/runner/dist/index.js:146:14
+    at [90mfile:///C:/dev/historical-board-games/frontend/[39mnode_modules/[4m@vite
+st[24m/runner/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/dev/historical-board-games/frontend/[39mnode_m
+odules/[4m@vitest[24m/runner/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/dev/historical-board-games/frontend/[39mnode_modules/
+[4m@vitest[24m/runner/dist/index.js:1056:17[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at runSuite [90m(file:///C:/dev/historical-board-games/frontend/[39mnode_modules
+/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/dev/historical-board-games/frontend/[39mnode_modules
+/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+
+[90mstderr[2m | src/utils/LocalStorage.test.ts[2m > [22m[2mLocalStorage Unit 
+Tests[2m > [22m[2mlocalStorage error handling[2m > [22m[2mshould handle missing 
+required fields
+[22m[39m[Game] Invalid saved game data, clearing
+
+[90mstderr[2m | src/utils/LocalStorage.test.ts[2m > [22m[2mLocalStorage Unit 
+Tests[2m > [22m[2mlocalStorage error handling[2m > [22m[2mshould handle invalid 
+board array
+[22m[39m[Game] Invalid saved game data, clearing
+
+ [32mÔ£ô[39m src/utils/LocalStorage.test.ts [2m([22m[2m17 tests[22m[2m)[22m[90m 37[2mms[22m[39m
+ [32mÔ£ô[39m src/rendering/BoardRenderer.online.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 48[2mms[22m[39m
+ [32mÔ£ô[39m src/controllers/GameController.integration.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 48[2mms[22m[39m
+ [32mÔ£ô[39m src/controllers/UIManager.integration.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 104[2mms[22m[39m
+ [32mÔ£ô[39m src/controllers/TutorialController.test.ts [2m([22m[2m28 tests[22m[2m)[22m[90m 63[2mms[22m[39m
+ [32mÔ£ô[39m src/controllers/GameController.phase.test.ts [2m([22m[2m3 tests[22m[2m)[22m[90m 70[2mms[22m[39m
+ [32mÔ£ô[39m src/controllers/InfoPage.content.test.ts [2m([22m[2m20 tests[22m[2m)[22m[90m 197[2mms[22m[39m
+ [32mÔ£ô[39m src/controllers/PersistentWinBannerFix.exploration.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 97[2mms[22m[39m
+[90mstdout[2m | src/controllers/TutorialController.step10.test.ts[2m > [22m[2mTutorialController - Step 10 Movement Flow[2m > [22m[2mshould allow moving from position 0 to position 1 in Step 10
+[22m[39m[TEST] Clicking position 0 to select piece
+
+ [32mÔ£ô[39m src/rendering/BoardRenderer.test.ts [2m([22m[2m18 tests[22m[2m)[22m[90m 101[2mms[22m[39m
+[90mstderr[2m | src/controllers/GameController.online.test.ts[2m > 
+[22m[2mGameController - Online Multiplayer Integration[2m > [22m[2mError 
+Handling[2m > [22m[2mshould handle WebSocket send error gracefully
+[22m[39m[Game] Failed to send move to server: Error: Connection lost
+    at Object.<anonymous> [90m(C:\dev\historical-board-games\frontend\[39msrc\contro
+llers\GameController.online.test.ts:265:15[90m)[39m
+    at Object.mockCall [90m(file:///C:/dev/historical-board-games/frontend/[39mnode_
+modules/[4m@vitest[24m/spy/dist/index.js:61:17[90m)[39m
+    at Object.spy [as sendMove] [90m(file:///C:/dev/historical-board-games/frontend/
+[39mnode_modules/[4mtinyspy[24m/dist/index.js:45:80[90m)[39m
+    at GameController.applyMove [90m(C:\dev\historical-board-games\frontend\[39msrc\
+controllers\GameController.ts:487:30[90m)[39m
+    at GameController.handlePlacementClick [90m(C:\dev\historical-board-games\fronten
+d\[39msrc\controllers\GameController.ts:380:10[90m)[39m
+    at GameController.handlePositionClick [90m(C:\dev\historical-board-games\frontend
+\[39msrc\controllers\GameController.ts:328:14[90m)[39m
+    at [90mC:\dev\historical-board-games\frontend\[39msrc\controllers\GameController
+.online.test.ts:269:7
+    at [90mfile:///C:/dev/historical-board-games/frontend/[39mnode_modules/[4m@vite
+st[24m/runner/dist/index.js:146:14
+    at [90mfile:///C:/dev/historical-board-games/frontend/[39mnode_modules/[4m@vite
+st[24m/runner/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/dev/historical-board-games/frontend/[39mnode_m
+odules/[4m@vitest[24m/runner/dist/index.js:39:7[90m)[39m
+
+ [32mÔ£ô[39m src/controllers/InfoPanel.test.ts [2m([22m[2m19 tests[22m[2m)[22m[90m 152[2mms[22m[39m
+ [32mÔ£ô[39m src/controllers/GameController.online.test.ts [2m([22m[2m20 tests[22m[2m)[22m[90m 94[2mms[22m[39m
+[90mstdout[2m | src/controllers/TutorialController.step10.test.ts[2m > [22m[2mTutorialController - Step 10 Movement Flow[2m > [22m[2mshould allow moving from position 0 to position 1 in Step 10
+[22m[39m[TEST] Selected position: [33m0[39m
+[TEST] Clickable positions after selection: [ [33m1[39m ]
+[TEST] Clicking position 1 to complete move
+
+ [32mÔ£ô[39m src/controllers/GameController.movement.test.ts [2m([22m[2m25 tests[22m[2m)[22m[90m 148[2mms[22m[39m
+ [32mÔ£ô[39m src/controllers/UIManager.test.ts [2m([22m[2m46 tests[22m[2m)[22m[90m 225[2mms[22m[39m
+ [32mÔ£ô[39m src/controllers/GameController.removal.test.ts [2m([22m[2m25 tests[22m[2m)[22m[90m 172[2mms[22m[39m
+[90mstdout[2m | src/controllers/TutorialController.step10.test.ts[2m > [22m[2mTutorialController - Step 10 Movement Flow[2m > [22m[2mshould allow moving from position 0 to position 1 in Step 10
+[22m[39m[TEST] Move completed successfully
+
+ [32mÔ£ô[39m src/rendering/Animation.test.ts [2m([22m[2m15 tests[22m[2m)[22m[90m 32[2mms[22m[39m
+ [32mÔ£ô[39m src/onlineMultiplayer.test.ts [2m([22m[2m14 tests[22m[2m)[22m[90m 73[2mms[22m[39m
+ [32mÔ£ô[39m src/controllers/InfoPage.integration.test.ts [2m([22m[2m16 tests[22m[2m)[22m[33m 384[2mms[22m[39m
+ [32mÔ£ô[39m src/utils/LocalStorage.property.test.ts [2m([22m[2m3 tests[22m[2m)[22m[90m 190[2mms[22m[39m
+ [32mÔ£ô[39m src/controllers/TutorialController.step10.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 570[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m TutorialController - Step 10 Movement Flow[2m > [22mshould allow moving from position 0 to position 1 in Step 10 [33m315[2mms[22m[39m
+ [32mÔ£ô[39m src/utils/LocalStorage.cleanup.property.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 329[2mms[22m[39m
+ [32mÔ£ô[39m src/controllers/PersistentWinBannerFix.preservation.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 631[2mms[22m[39m
+ [32mÔ£ô[39m src/controllers/GameController.test.ts [2m([22m[2m34 tests[22m[2m)[22m[33m 904[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m GameController - Comprehensive Tests[2m > [22mAI Integration[2m > [22mshould indicate AI is thinking during AI turn [33m711[2mms[22m[39m
+ [32mÔ£ô[39m src/controllers/PostTask34Bugfixes.preservation.test.ts [2m([22m[2m20 tests[22m[2m)[22m[33m 870[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Preservation: ChatPanel collapse/mute[2m > [22mshould track unread messages when collapsed and clear badge on expand [33m586[2mms[22m[39m
+[90mstderr[2m | src/controllers/PostTask34Bugfixes.exploration.test.ts[2m > 
+[22m[2mPost-Task 34 Bug Condition Exploration Tests[2m > [22m[2mBug 6 ÔÇö AI 
+Failure Recovery[2m > [22m[2mshould recover when AI backend returns failure (fetch 
+rejects)
+[22m[39m[Game] Failed to get AI move from backend: Error: Network error
+    at [90mC:\dev\historical-board-games\frontend\[39msrc\controllers\PostTask34Bugf
+ixes.exploration.test.ts:320:52
+    at [90mfile:///C:/dev/historical-board-games/frontend/[39mnode_modules/[4m@vite
+st[24m/runner/dist/index.js:146:14
+    at [90mfile:///C:/dev/historical-board-games/frontend/[39mnode_modules/[4m@vite
+st[24m/runner/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/dev/historical-board-games/frontend/[39mnode_m
+odules/[4m@vitest[24m/runner/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/dev/historical-board-games/frontend/[39mnode_modules/
+[4m@vitest[24m/runner/dist/index.js:1056:17[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at runSuite [90m(file:///C:/dev/historical-board-games/frontend/[39mnode_modules
+/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/dev/historical-board-games/frontend/[39mnode_modules
+/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/dev/historical-board-games/frontend/[39mnode_modules
+/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///C:/dev/historical-board-games/frontend/[39mnode_modules
+/[4m@vitest[24m/runner/dist/index.js:1262:5[90m)[39m
+[Game] Backend AI unavailable, using local fallback
+
+ [32mÔ£ô[39m src/controllers/PostTask34Bugfixes.exploration.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 1058[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Post-Task 34 Bug Condition Exploration Tests[2m > [22mBug 2 ÔÇö ChatPanel Overflow[2m > [22mshould have proper DOM structure with overflow constraints on chat-panel [33m408[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Post-Task 34 Bug Condition Exploration Tests[2m > [22mBug 6 ÔÇö AI Failure Recovery[2m > [22mshould recover when AI backend returns failure (fetch rejects) [33m565[2mms[22m[39m
+ [32mÔ£ô[39m src/controllers/InfoPanel.property.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 1063[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m InfoPanel Derivation Functions - Property-Based Tests[2m > [22mProperty 1: InfoPanel update renders correct game state ÔÇö DOM content reflects current player, phase, piece counts, and player color [33m328[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m ChatPanel Notification Badge - Property-Based Tests[2m > [22mProperty 6: Chat notification badge on collapsed panel ÔÇö badge count equals messages received since last expand; expanding resets to zero [33m691[2mms[22m[39m
+ [32mÔ£ô[39m src/controllers/TutorialController.opponent.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 1658[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m TutorialController - Bug Fixes[2m > [22mIssue 1: Opponent piece color at Step 7[2m > [22mshould place opponent piece with BLACK color immediately [33m1302[2mms[22m[39m
+ [32mÔ£ô[39m src/models/models.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 9[2mms[22m[39m
+ [32mÔ£ô[39m src/rendering/BoardRenderer.resize.property.test.ts [2m([22m[2m16 tests[22m[2m)[22m[33m 2341[2mms[22m[39m
+ [32mÔ£ô[39m src/controllers/TutorialController.property.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 1363[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m TutorialController - Property-Based Tests[2m > [22mProperty: Current step is always within valid range [33m596[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m TutorialController - Property-Based Tests[2m > [22mProperty: Board always has 24 positions [33m428[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m TutorialController - Property-Based Tests[2m > [22mProperty: Piece count never exceeds 18 total [33m337[2mms[22m[39m
+ [32mÔ£ô[39m src/controllers/InfoPage.property.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 6732[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m InfoPage Property-Based Tests[2m > [22mProperty 1: Diagram elements are well-formed [33m1676[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m InfoPage Property-Based Tests[2m > [22mProperty 2: isOpen reflects DOM state [33m1128[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m InfoPage Property-Based Tests[2m > [22mProperty 3: show is idempotent on DOM element count [33m3257[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m InfoPage Property-Based Tests[2m > [22mProperty 4: Heading hierarchy is logically ordered [33m669[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m33 passed[39m[22m[90m (33)[39m
+[2m      Tests [22m [1m[32m457 passed[39m[22m[90m (457)[39m
+[2m   Start at [22m 17:52:52
+[2m   Duration [22m 11.43s[2m (transform 8.95s, setup 2.25s, collect 21.89s, tests 19.98s, environment 98.67s, prepare 8.94s)[22m
+

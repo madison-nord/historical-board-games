@@ -1,8 +1,12 @@
 package com.ninemensmorris.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
+import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 
 import com.ninemensmorris.dto.GameEndMessage;
@@ -28,6 +32,8 @@ import com.ninemensmorris.service.GameService;
  */
 @Controller
 public class GameWebSocketController {
+    
+    private static final Logger logger = LoggerFactory.getLogger(GameWebSocketController.class);
     
     private final GameService gameService;
     private final SimpMessagingTemplate messagingTemplate;
@@ -56,15 +62,22 @@ public class GameWebSocketController {
      */
     @MessageMapping("/game/place")
     public void handlePlacePiece(@NonNull PlacePieceMessage message) {
-        // Apply the move through the game service
-        GameState updatedState = gameService.placePiece(
-            message.getGameId(),
-            message.getPlayerId(),
-            message.getPosition()
-        );
-        
-        // Broadcast the updated state to both players
-        broadcastGameState(message.getGameId(), updatedState);
+        try {
+            // Apply the move through the game service
+            GameState updatedState = gameService.placePiece(
+                message.getGameId(),
+                message.getPlayerId(),
+                message.getPosition()
+            );
+            
+            // Broadcast the updated state to both players
+            broadcastGameState(message.getGameId(), updatedState);
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid place piece: {}", e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error handling place piece for game {}: {}", 
+                message.getGameId(), e.getMessage(), e);
+        }
     }
     
     /**
@@ -78,16 +91,23 @@ public class GameWebSocketController {
      */
     @MessageMapping("/game/move")
     public void handleMovePiece(@NonNull MovePieceMessage message) {
-        // Apply the move through the game service
-        GameState updatedState = gameService.movePiece(
-            message.getGameId(),
-            message.getPlayerId(),
-            message.getFromPosition(),
-            message.getToPosition()
-        );
-        
-        // Broadcast the updated state to both players
-        broadcastGameState(message.getGameId(), updatedState);
+        try {
+            // Apply the move through the game service
+            GameState updatedState = gameService.movePiece(
+                message.getGameId(),
+                message.getPlayerId(),
+                message.getFromPosition(),
+                message.getToPosition()
+            );
+            
+            // Broadcast the updated state to both players
+            broadcastGameState(message.getGameId(), updatedState);
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid move piece: {}", e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error handling move piece for game {}: {}", 
+                message.getGameId(), e.getMessage(), e);
+        }
     }
     
     /**
@@ -101,15 +121,22 @@ public class GameWebSocketController {
      */
     @MessageMapping("/game/remove")
     public void handleRemovePiece(@NonNull RemovePieceMessage message) {
-        // Apply the removal through the game service
-        GameState updatedState = gameService.removePiece(
-            message.getGameId(),
-            message.getPlayerId(),
-            message.getPosition()
-        );
-        
-        // Broadcast the updated state to both players
-        broadcastGameState(message.getGameId(), updatedState);
+        try {
+            // Apply the removal through the game service
+            GameState updatedState = gameService.removePiece(
+                message.getGameId(),
+                message.getPlayerId(),
+                message.getPosition()
+            );
+            
+            // Broadcast the updated state to both players
+            broadcastGameState(message.getGameId(), updatedState);
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid remove piece: {}", e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error handling remove piece for game {}: {}", 
+                message.getGameId(), e.getMessage(), e);
+        }
     }
     
     /**
@@ -173,5 +200,19 @@ public class GameWebSocketController {
             return "Black has fewer than 3 pieces";
         }
         return "No legal moves available";
+    }
+    
+    /**
+     * Handles exceptions thrown during WebSocket message processing.
+     * Sends an error message back to the user who triggered the exception.
+     * 
+     * @param exception the exception that was thrown
+     * @return error message string sent to the user's error queue
+     */
+    @MessageExceptionHandler
+    @SendToUser("/queue/errors")
+    public String handleException(Exception exception) {
+        logger.error("WebSocket message handling error: {}", exception.getMessage(), exception);
+        return "Error: " + exception.getMessage();
     }
 }

@@ -3,7 +3,6 @@ package com.ninemensmorris.controller;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -104,7 +103,7 @@ public class GameWebSocketControllerTest {
     }
     
     @Test
-    @DisplayName("Handle place piece message - invalid move throws exception")
+    @DisplayName("Handle place piece message - invalid move is caught and logged")
     @SuppressWarnings("null") // Mock objects are non-null in test context
     void testHandlePlacePieceInvalid() {
         // Arrange
@@ -117,9 +116,10 @@ public class GameWebSocketControllerTest {
         when(gameService.placePiece("game-123", "player-1", 5))
             .thenThrow(new IllegalArgumentException("Position already occupied"));
         
-        // Act & Assert
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> controller.handlePlacePiece(message));
-        assertNotNull(exception);
+        // Act - should NOT throw, error is caught internally
+        controller.handlePlacePiece(message);
+        
+        // Assert - move was attempted but no broadcast should happen
         verify(gameService).placePiece("game-123", "player-1", 5);
         verify(messagingTemplate, never()).convertAndSendToUser(anyString(), anyString(), any(Object.class));
     }
