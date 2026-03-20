@@ -23,6 +23,7 @@ frontend/.vite/
 frontend/playwright-report/
 frontend/test-results/
 frontend/coverage/
+frontend/bundle-analysis.html
 
 # Static resources (built from frontend)
 src/main/resources/static/

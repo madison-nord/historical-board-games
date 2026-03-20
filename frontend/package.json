@@ -39,6 +39,7 @@
     "fast-check": "^4.5.3",
     "jsdom": "^28.1.0",
     "prettier": "^3.8.1",
+    "rollup-plugin-visualizer": "^7.0.1",
     "typescript": "^5.7.2",
     "vite": "^6.0.3",
     "vitest": "^2.1.8"

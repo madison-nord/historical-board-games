@@ -881,8 +881,8 @@ The implementation uses:
     - Test concurrent modification
     - _Requirements: 12.4_
 
-- [ ] 43. Optimize performance and bundle size
-  - [ ] 43.1 Optimize frontend bundle
+- [x] 43. Optimize performance and bundle size
+  - [x] 43.1 Optimize frontend bundle
     - Run Vite production build
     - Analyze bundle size with rollup-plugin-visualizer
     - Code-split if necessary
@@ -890,7 +890,7 @@ The implementation uses:
     - Optimize images and assets
     - _Requirements: 10.5_
   
-  - [ ] 43.2 Optimize backend performance
+  - [x] 43.2 Optimize backend performance
     - Profile AI performance at different depths
     - Optimize minimax algorithm if needed
     - Add caching for frequently accessed game states

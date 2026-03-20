@@ -1,12 +1,13 @@
 package com.ninemensmorris.service;
 
+import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import com.ninemensmorris.engine.GameState;
@@ -19,18 +20,26 @@ import com.ninemensmorris.model.PlayerColor;
 /**
  * Service class for orchestrating Nine Men's Morris games.
  * 
- * This service provides the main interface for game management, including:
- * - Creating new games in different modes (single-player, local, online)
- * - Managing game state and move validation
- * - Integrating with AI for single-player mode
- * - Handling game completion and cleanup
- * - Thread-safe game storage for concurrent access
- * 
- * The service acts as the central coordinator between the game engine,
+ * <p>This service provides the main interface for game management, including:
+ * <ul>
+ *   <li>Creating new games in different modes (single-player, local, online)</li>
+ *   <li>Managing game state and move validation</li>
+ *   <li>Integrating with AI for single-player mode</li>
+ *   <li>Handling game completion and cleanup</li>
+ *   <li>Thread-safe game storage for concurrent access</li>
+ *   <li>Scheduled cleanup of completed and abandoned games</li>
+ * </ul>
+ *
+ * <p>The service acts as the central coordinator between the game engine,
  * AI service, and external interfaces (REST controllers, WebSocket handlers).
  */
 @Service
 public class GameService {
+
+    private static final Logger logger = LoggerFactory.getLogger(GameService.class);
+
+    /** Maximum age in seconds before an inactive game is considered stale and eligible for cleanup. */
+    private static final long STALE_GAME_TIMEOUT_SECONDS = 3600; // 1 hour
     
     private final AIService aiService;
     private final RuleEngine ruleEngine;
@@ -39,10 +48,13 @@ public class GameService {
     private final ConcurrentHashMap<String, GameState> activeGames;
     private final ConcurrentHashMap<String, GameMode> gameModes;
     private final ConcurrentHashMap<String, String> gamePlayerMappings; // gameId -> player1Id:player2Id
+    private final ConcurrentHashMap<String, Instant> gameLastActivity; // gameId -> last activity timestamp
     
-    // Scheduled executor for cleanup tasks
-    private final ScheduledExecutorService scheduler;
-    
+    /**
+     * Creates a new GameService with the given AI service.
+     *
+     * @param aiService the AI service for single-player move selection
+     */
     @Autowired
     public GameService(AIService aiService) {
         this.aiService = aiService;
@@ -50,10 +62,7 @@ public class GameService {
         this.activeGames = new ConcurrentHashMap<>();
         this.gameModes = new ConcurrentHashMap<>();
         this.gamePlayerMappings = new ConcurrentHashMap<>();
-        this.scheduler = Executors.newScheduledThreadPool(1);
-        
-        // Schedule cleanup task to run every 30 minutes
-        scheduler.scheduleAtFixedRate(this::cleanupCompletedGames, 30, 30, TimeUnit.MINUTES);
+        this.gameLastActivity = new ConcurrentHashMap<>();
     }
     
     /**
@@ -101,6 +110,7 @@ public class GameService {
         // Store game information
         activeGames.put(gameId, gameState);
         gameModes.put(gameId, mode);
+        gameLastActivity.put(gameId, Instant.now());
         
         // Store player mapping
         String playerMapping = switch (mode) {
@@ -162,8 +172,9 @@ public class GameService {
         // Apply the move
         GameState newState = currentState.applyMove(move);
         
-        // Update stored state
+        // Update stored state and refresh activity timestamp
         activeGames.put(gameId, newState);
+        gameLastActivity.put(gameId, Instant.now());
         
         return newState;
     }
@@ -257,25 +268,40 @@ public class GameService {
     }
     
     /**
-     * Removes completed games from active storage to free up memory.
-     * This method is called periodically by a scheduled task and can also be called manually.
+     * Removes completed and stale games from active storage to free up memory.
+     * Runs automatically every 30 minutes via Spring scheduling.
+     * A game is considered stale if it has had no activity for over 1 hour.
      * 
      * @return the number of games that were cleaned up
      */
+    @Scheduled(fixedRate = 1_800_000) // 30 minutes in milliseconds
     public int cleanupCompletedGames() {
         int cleanedUp = 0;
+        Instant staleThreshold = Instant.now().minusSeconds(STALE_GAME_TIMEOUT_SECONDS);
         
-        // Create a copy of the key set to avoid concurrent modification
         for (String gameId : activeGames.keySet()) {
             GameState gameState = activeGames.get(gameId);
             
-            if (gameState != null && gameState.isGameOver()) {
-                // Remove completed game from all maps
+            boolean isCompleted = gameState != null && gameState.isGameOver();
+            Instant lastActivity = gameLastActivity.get(gameId);
+            boolean isStale = lastActivity != null && lastActivity.isBefore(staleThreshold);
+            
+            if (isCompleted || isStale) {
                 activeGames.remove(gameId);
                 gameModes.remove(gameId);
                 gamePlayerMappings.remove(gameId);
+                gameLastActivity.remove(gameId);
                 cleanedUp++;
+                
+                if (isStale && !isCompleted) {
+                    logger.info("Cleaned up stale game {} (last activity: {})", gameId, lastActivity);
+                }
             }
+        }
+        
+        if (cleanedUp > 0) {
+            logger.info("Game cleanup completed: {} game(s) removed, {} active game(s) remaining",
+                    cleanedUp, activeGames.size());
         }
         
         return cleanedUp;
@@ -396,18 +422,13 @@ public class GameService {
     }
     
     /**
-     * Shuts down the cleanup scheduler.
-     * This method should be called when the service is being destroyed.
+     * Returns the last activity timestamp for the specified game.
+     * Useful for monitoring and testing stale game detection.
+     *
+     * @param gameId the game identifier
+     * @return the last activity instant, or null if game not found
      */
-    public void shutdown() {
-        scheduler.shutdown();
-        try {
-            if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-                scheduler.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            scheduler.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
+    public Instant getGameLastActivity(String gameId) {
+        return gameLastActivity.get(gameId);
     }
 }

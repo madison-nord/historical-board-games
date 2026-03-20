@@ -6,7 +6,9 @@ import { UIManager } from './controllers/UIManager.js';
 import { TutorialController } from './controllers/TutorialController.js';
 import { GameMode, PlayerColor } from './models/index.js';
 import { LocalStorage } from './utils/LocalStorage.js';
-import { startOnlineMultiplayer } from './onlineMultiplayer.js';
+// Lazy-load online multiplayer module — only fetched when user selects online mode
+const loadOnlineMultiplayer = () =>
+  import('./onlineMultiplayer.js').then(m => m.startOnlineMultiplayer);
 import { InfoPanel } from './controllers/InfoPanel.js';
 import { AnnouncementBanner } from './controllers/AnnouncementBanner.js';
 import { InfoPage } from './controllers/InfoPage.js';
@@ -66,13 +68,20 @@ uiManager.setOnGameModeSelected((mode: string) => {
       break;
     case 'online-multiplayer':
       announcementBanner.dismiss();
-      startOnlineMultiplayer(uiManager, boardRenderer, gc => {
-        gameController = gc;
-        if (gc) {
-          gc.setInfoPanel(infoPanel);
-          gc.setAnnouncementBanner(announcementBanner);
-        }
-      }, infoPanel);
+      loadOnlineMultiplayer().then(startOnline => {
+        startOnline(
+          uiManager,
+          boardRenderer,
+          gc => {
+            gameController = gc;
+            if (gc) {
+              gc.setInfoPanel(infoPanel);
+              gc.setAnnouncementBanner(announcementBanner);
+            }
+          },
+          infoPanel
+        );
+      });
       break;
   }
 });

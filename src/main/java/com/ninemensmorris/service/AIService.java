@@ -1,37 +1,48 @@
 package com.ninemensmorris.service;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.springframework.stereotype.Service;
+
 import com.ninemensmorris.engine.Board;
 import com.ninemensmorris.engine.GameState;
 import com.ninemensmorris.engine.RuleEngine;
-import com.ninemensmorris.model.*;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
+import com.ninemensmorris.model.GamePhase;
+import com.ninemensmorris.model.Move;
+import com.ninemensmorris.model.MoveType;
+import com.ninemensmorris.model.PlayerColor;
 
 /**
  * AI service for Nine Men's Morris that provides board position evaluation
  * and strategic decision-making capabilities using minimax with alpha-beta pruning.
  * 
- * This service implements:
- * - Comprehensive board evaluation considering multiple strategic factors
- * - Minimax algorithm with alpha-beta pruning for optimal move selection
- * - Configurable search depth for performance tuning
- * - Strategic decision-making that provides challenging AI gameplay
- * 
- * The evaluation considers:
- * - Piece count differences
- * - Mill formations
- * - Potential mills (2 pieces in a row)
- * - Mobility (number of legal moves)
- * - Blocked opponent pieces
+ * <p>This service implements:
+ * <ul>
+ *   <li>Comprehensive board evaluation considering multiple strategic factors</li>
+ *   <li>Minimax algorithm with alpha-beta pruning for optimal move selection</li>
+ *   <li>Transposition table for caching evaluated positions</li>
+ *   <li>Move ordering for improved alpha-beta cutoff efficiency</li>
+ *   <li>Configurable search depth for performance tuning</li>
+ * </ul>
+ *
+ * <p>The evaluation considers piece count differences, mill formations,
+ * potential mills, mobility, and blocked opponent pieces.
  */
 @Service
 public class AIService {
     
     private final RuleEngine ruleEngine;
     
-    // Default search depth for minimax algorithm
+    /** Default search depth for minimax algorithm. */
     private static final int DEFAULT_DEPTH = 4;
+
+    /** Maximum entries in the transposition table before eviction. */
+    private static final int MAX_TRANSPOSITION_TABLE_SIZE = 100_000;
+
     private final int searchDepth;
     
     // Evaluation weights for different strategic factors
@@ -40,12 +51,36 @@ public class AIService {
     private static final int POTENTIAL_MILL_WEIGHT = 10;
     private static final int MOBILITY_WEIGHT = 5;
     private static final int BLOCKED_PIECE_WEIGHT = 3;
+
+    /**
+     * Transposition table entry storing a cached evaluation result.
+     *
+     * @param score the evaluated score
+     * @param depth the search depth at which this score was computed
+     * @param flag the node type: EXACT, LOWER_BOUND, or UPPER_BOUND
+     */
+    private record TranspositionEntry(int score, int depth, NodeFlag flag) {}
+
+    /** Node type flags for transposition table entries. */
+    private enum NodeFlag { EXACT, LOWER_BOUND, UPPER_BOUND }
+
+    /**
+     * Cache of previously evaluated board positions keyed by a compact board hash.
+     * Uses ConcurrentHashMap for thread safety across concurrent AI requests.
+     */
+    private final Map<Long, TranspositionEntry> transpositionTable = new ConcurrentHashMap<>();
     
+    /** Creates an AIService with the default search depth. */
     public AIService() {
         this.ruleEngine = new RuleEngine();
         this.searchDepth = DEFAULT_DEPTH;
     }
     
+    /**
+     * Creates an AIService with a custom search depth.
+     *
+     * @param depth the maximum search depth for minimax
+     */
     public AIService(int depth) {
         this.ruleEngine = new RuleEngine();
         this.searchDepth = depth;
@@ -53,6 +88,7 @@ public class AIService {
     
     /**
      * Selects the best move for the AI using minimax algorithm with alpha-beta pruning.
+     * Clears the transposition table before each search to avoid stale entries.
      * 
      * @param state the current game state
      * @param aiColor the color of the AI player
@@ -67,10 +103,16 @@ public class AIService {
             throw new IllegalArgumentException("AI color cannot be null");
         }
         
+        // Clear transposition table for a fresh search
+        transpositionTable.clear();
+        
         List<Move> legalMoves = ruleEngine.generateLegalMoves(state, aiColor);
         if (legalMoves.isEmpty()) {
             return null; // No legal moves available
         }
+        
+        // Order moves so the most promising are evaluated first
+        List<Move> orderedMoves = orderMoves(legalMoves, state);
         
         Move bestMove = null;
         int bestScore = Integer.MIN_VALUE;
@@ -78,7 +120,7 @@ public class AIService {
         int beta = Integer.MAX_VALUE;
         
         // Evaluate each possible move using minimax
-        for (Move move : legalMoves) {
+        for (Move move : orderedMoves) {
             GameState newState = state.applyMove(move);
             int score = minimax(newState, searchDepth - 1, alpha, beta, false, aiColor);
             
@@ -95,9 +137,76 @@ public class AIService {
         
         return bestMove;
     }
+
+    /**
+     * Orders moves so that the most promising candidates are evaluated first.
+     * Better move ordering leads to more alpha-beta cutoffs and faster search.
+     *
+     * <p>Priority (highest first):
+     * <ol>
+     *   <li>Removal moves (capturing opponent pieces)</li>
+     *   <li>Moves that form a mill</li>
+     *   <li>All other moves</li>
+     * </ol>
+     *
+     * @param moves the unordered list of legal moves
+     * @param state the current game state
+     * @return a new list with moves sorted by estimated quality (best first)
+     */
+    private List<Move> orderMoves(List<Move> moves, GameState state) {
+        List<Move> ordered = new ArrayList<>(moves);
+        Board board = state.getBoard();
+
+        ordered.sort(Comparator.comparingInt((Move m) -> {
+            // Removal moves are highest priority — they capture opponent pieces
+            if (m.getType() == MoveType.REMOVE) {
+                return 0;
+            }
+            // Moves that form a mill are next priority
+            if (m.getType() == MoveType.PLACE || m.getType() == MoveType.MOVE) {
+                // Simulate placing the piece to check for mill formation
+                Board testBoard = board.clone();
+                if (m.getType() == MoveType.MOVE) {
+                    testBoard.getPosition(m.getFrom()).clear();
+                }
+                testBoard.getPosition(m.getTo()).setOccupant(m.getPlayer());
+                if (testBoard.isPartOfMill(m.getTo(), m.getPlayer())) {
+                    return 1;
+                }
+            }
+            return 2;
+        }));
+
+        return ordered;
+    }
+
+    /**
+     * Computes a compact Zobrist-style hash for a board position combined with
+     * the current player. Used as the key for the transposition table.
+     *
+     * <p>The hash encodes each position's occupant (empty=0, WHITE=1, BLACK=2)
+     * into a base-3 representation, then mixes in the current player.
+     *
+     * @param state the game state to hash
+     * @return a long hash value representing the board + current player
+     */
+    private long computeBoardHash(GameState state) {
+        long hash = 0;
+        Board board = state.getBoard();
+        for (int i = 0; i < 24; i++) {
+            hash *= 3;
+            if (!board.isPositionEmpty(i)) {
+                hash += board.getPosition(i).getOccupant() == PlayerColor.WHITE ? 1 : 2;
+            }
+        }
+        // Mix in current player and mill-formed flag
+        hash = hash * 5 + (state.getCurrentPlayer() == PlayerColor.WHITE ? 1 : 2);
+        hash = hash * 3 + (state.isMillFormed() ? 1 : 0);
+        return hash;
+    }
     
     /**
-     * Minimax algorithm with alpha-beta pruning for game tree search.
+     * Minimax algorithm with alpha-beta pruning and transposition table lookup.
      * 
      * @param state the current game state
      * @param depth the remaining search depth
@@ -114,6 +223,20 @@ public class AIService {
         if (depth == 0 || state.isGameOver()) {
             return evaluatePosition(state, aiColor);
         }
+
+        // Transposition table lookup
+        long boardHash = computeBoardHash(state);
+        TranspositionEntry cached = transpositionTable.get(boardHash);
+        if (cached != null && cached.depth() >= depth) {
+            switch (cached.flag()) {
+                case EXACT -> { return cached.score(); }
+                case LOWER_BOUND -> alpha = Math.max(alpha, cached.score());
+                case UPPER_BOUND -> beta = Math.min(beta, cached.score());
+            }
+            if (alpha >= beta) {
+                return cached.score();
+            }
+        }
         
         PlayerColor currentPlayer = maximizing ? aiColor : aiColor.opposite();
         List<Move> legalMoves = ruleEngine.generateLegalMoves(state, currentPlayer);
@@ -122,40 +245,57 @@ public class AIService {
         if (legalMoves.isEmpty()) {
             return evaluatePosition(state, aiColor);
         }
+
+        // Order moves for better pruning at internal nodes
+        List<Move> orderedMoves = orderMoves(legalMoves, state);
+
+        int originalAlpha = alpha;
+        int bestScore;
         
         if (maximizing) {
-            // Maximizing player (AI)
-            int maxEval = Integer.MIN_VALUE;
+            bestScore = Integer.MIN_VALUE;
             
-            for (Move move : legalMoves) {
+            for (Move move : orderedMoves) {
                 GameState newState = state.applyMove(move);
                 int eval = minimax(newState, depth - 1, alpha, beta, false, aiColor);
-                maxEval = Math.max(maxEval, eval);
+                bestScore = Math.max(bestScore, eval);
                 alpha = Math.max(alpha, eval);
                 
                 if (beta <= alpha) {
-                    break; // Beta cutoff (alpha-beta pruning)
+                    break; // Beta cutoff
                 }
             }
-            
-            return maxEval;
         } else {
-            // Minimizing player (opponent)
-            int minEval = Integer.MAX_VALUE;
+            bestScore = Integer.MAX_VALUE;
             
-            for (Move move : legalMoves) {
+            for (Move move : orderedMoves) {
                 GameState newState = state.applyMove(move);
                 int eval = minimax(newState, depth - 1, alpha, beta, true, aiColor);
-                minEval = Math.min(minEval, eval);
+                bestScore = Math.min(bestScore, eval);
                 beta = Math.min(beta, eval);
                 
                 if (beta <= alpha) {
-                    break; // Alpha cutoff (alpha-beta pruning)
+                    break; // Alpha cutoff
                 }
             }
-            
-            return minEval;
         }
+
+        // Store result in transposition table
+        NodeFlag flag;
+        if (bestScore <= originalAlpha) {
+            flag = NodeFlag.UPPER_BOUND;
+        } else if (bestScore >= beta) {
+            flag = NodeFlag.LOWER_BOUND;
+        } else {
+            flag = NodeFlag.EXACT;
+        }
+
+        // Evict if table is too large to prevent unbounded memory growth
+        if (transpositionTable.size() < MAX_TRANSPOSITION_TABLE_SIZE) {
+            transpositionTable.put(boardHash, new TranspositionEntry(bestScore, depth, flag));
+        }
+
+        return bestScore;
     }
     
     /**
@@ -388,5 +528,32 @@ public class AIService {
         }
         
         return blockedCount;
+    }
+
+    /**
+     * Returns the current number of entries in the transposition table.
+     * Useful for monitoring cache utilization and testing.
+     *
+     * @return the number of cached position evaluations
+     */
+    public int getTranspositionTableSize() {
+        return transpositionTable.size();
+    }
+
+    /**
+     * Clears all entries from the transposition table.
+     * Called automatically at the start of each {@link #selectMove} invocation.
+     */
+    public void clearTranspositionTable() {
+        transpositionTable.clear();
+    }
+
+    /**
+     * Returns the configured search depth for this AI instance.
+     *
+     * @return the maximum minimax search depth
+     */
+    public int getSearchDepth() {
+        return searchDepth;
     }
 }
