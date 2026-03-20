@@ -907,7 +907,7 @@ The implementation uses:
     - Add favicon and app icons
     - _Requirements: 10.4_
   
-  - [ ]* 44.2 Add sound effects (optional enhancement)
+  - [x]* 44.2 Add sound effects (optional enhancement)
     - Add piece placement sound
     - Add piece movement sound
     - Add mill formation sound

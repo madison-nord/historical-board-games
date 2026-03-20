@@ -37,6 +37,7 @@ export default [
         fetch: 'readonly',
         WebSocket: 'readonly',
         DOMRect: 'readonly',
+        AudioContext: 'readonly',
       },
     },
     plugins: {

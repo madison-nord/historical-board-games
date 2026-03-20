@@ -2,6 +2,7 @@ import { PlayerColor } from '../models/PlayerColor';
 import { GameMode } from '../models/GameMode';
 import { deriveGameEndMessage } from './InfoPanel';
 import { LocalStorage } from '../utils/LocalStorage';
+import { SoundManager } from '../utils/SoundManager';
 
 /**
  * UIManager handles all menu and dialog interactions for the game.
@@ -25,6 +26,8 @@ export class UIManager {
   private quitButton: HTMLButtonElement | null = null;
   private onQuitGame: (() => void) | null = null;
   private currentGameMode: GameMode = GameMode.LOCAL_TWO_PLAYER;
+  private soundManager: SoundManager | null = null;
+  private muteButton: HTMLButtonElement | null = null;
 
   /**
    * Show the main menu with game mode selection buttons
@@ -957,5 +960,73 @@ export class UIManager {
         this.isProcessingClick = false;
       }, 300);
     };
+  }
+
+  /**
+   * Set the SoundManager instance used for the mute toggle
+   */
+  public setSoundManager(soundManager: SoundManager): void {
+    this.soundManager = soundManager;
+  }
+
+  /**
+   * Show the mute/unmute button during gameplay (inside info panel container)
+   */
+  public showMuteButton(): void {
+    this.hideMuteButton();
+    if (!this.soundManager) {
+      return;
+    }
+
+    const btn = document.createElement('button');
+    const muted = this.soundManager.muted;
+    btn.textContent = muted ? '🔇 Unmute' : '🔊 Mute';
+    btn.id = 'gameplay-mute-btn';
+    btn.setAttribute('aria-label', muted ? 'Unmute sound effects' : 'Mute sound effects');
+    btn.setAttribute('aria-pressed', String(muted));
+    btn.style.cssText =
+      'width:100%;margin-top:8px;background:var(--color-surface);' +
+      'color:var(--color-text-secondary);' +
+      'border:1px solid var(--color-border);border-radius:8px;padding:6px 12px;font-size:14px;' +
+      'cursor:pointer;box-shadow:var(--shadow-sm);transition:all 0.15s ease;' +
+      'min-height:40px;display:flex;align-items:center;justify-content:center;' +
+      'font-family:var(--font-family);';
+    btn.addEventListener('click', () => {
+      if (!this.soundManager) {
+        return;
+      }
+      const nowMuted = this.soundManager.toggleMute();
+      btn.textContent = nowMuted ? '🔇 Unmute' : '🔊 Mute';
+      btn.setAttribute('aria-label', nowMuted ? 'Unmute sound effects' : 'Mute sound effects');
+      btn.setAttribute('aria-pressed', String(nowMuted));
+    });
+    btn.addEventListener('mouseenter', () => {
+      btn.style.boxShadow = 'var(--shadow-md)';
+    });
+    btn.addEventListener('mouseleave', () => {
+      btn.style.boxShadow = 'var(--shadow-sm)';
+    });
+
+    const infoPanelContainer = document.getElementById('info-panel-container');
+    if (infoPanelContainer) {
+      infoPanelContainer.appendChild(btn);
+    } else {
+      document.body.appendChild(btn);
+    }
+    this.muteButton = btn;
+  }
+
+  /**
+   * Hide the mute button
+   */
+  public hideMuteButton(): void {
+    if (this.muteButton) {
+      this.muteButton.remove();
+      this.muteButton = null;
+    }
+    const existing = document.getElementById('gameplay-mute-btn');
+    if (existing) {
+      existing.remove();
+    }
   }
 }

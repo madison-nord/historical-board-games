@@ -12,6 +12,7 @@ import type { TutorialController } from './TutorialController.js';
 import type { InfoPanel } from './InfoPanel.js';
 import { deriveTurnMessage, derivePhaseMessage, deriveGameEndMessage } from './InfoPanel.js';
 import type { AnnouncementBanner } from './AnnouncementBanner.js';
+import { SoundManager, SoundEffect } from '../utils/SoundManager.js';
 
 /**
  * Interface representing the current game state
@@ -64,6 +65,7 @@ export class GameController {
   private announcementBanner: AnnouncementBanner | null = null;
   private phaseTransitionOccurred: boolean = false;
   private onGameEnd: ((winner: PlayerColor | null) => void) | null = null;
+  private soundManager: SoundManager | null = null;
 
   constructor(
     gameMode: GameMode,
@@ -184,6 +186,13 @@ export class GameController {
    */
   public setOnGameEnd(callback: (winner: PlayerColor | null) => void): void {
     this.onGameEnd = callback;
+  }
+
+  /**
+   * Set the SoundManager instance for playing game sound effects
+   */
+  public setSoundManager(soundManager: SoundManager): void {
+    this.soundManager = soundManager;
   }
 
   /**
@@ -522,6 +531,9 @@ export class GameController {
 
       // THEN animate placement (animation draws over the updated board)
       this.boardRenderer.animatePlacement(move.to, move.player);
+
+      // Play placement sound
+      this.soundManager?.play(SoundEffect.PLACE);
     } else if (move.type === MoveType.MOVE) {
       // Update board state FIRST (move piece from old to new position)
       this.currentGameState.board[move.from] = null;
@@ -532,6 +544,9 @@ export class GameController {
 
       // THEN animate movement (animation draws over the updated board)
       this.boardRenderer.animateMovement(move.from, move.to, move.player);
+
+      // Play movement sound
+      this.soundManager?.play(SoundEffect.MOVE);
 
       // Check for mill formation after the move
       const millFormed = this.checkMillFormed(move.to, move.player);
@@ -844,6 +859,9 @@ export class GameController {
     const removablePieces = this.getRemovablePieces(opponent);
 
     if (removablePieces.length > 0) {
+      // Play mill formation sound
+      this.soundManager?.play(SoundEffect.MILL);
+
       // If it's the AI's turn (single-player mode), auto-remove a random piece
       if (
         this.gameMode === GameMode.SINGLE_PLAYER &&
@@ -912,6 +930,9 @@ export class GameController {
     // The animation will draw the fading piece OVER the updated board
     // When animation completes, the piece will be gone
     this.boardRenderer.animateRemoval(position, removedColor);
+
+    // Play removal sound
+    this.soundManager?.play(SoundEffect.REMOVE);
 
     // Check if AI should move next
     this.checkForAIMove();
@@ -1287,6 +1308,9 @@ export class GameController {
     this.currentGameState.isGameOver = true;
     this.currentGameState.gameOver = true;
     this.currentGameState.winner = winner;
+
+    // Play game end sound
+    this.soundManager?.play(SoundEffect.GAME_END);
 
     // Disable input
     this.boardRenderer.setInputEnabled(false);

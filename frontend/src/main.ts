@@ -12,6 +12,7 @@ const loadOnlineMultiplayer = () =>
 import { InfoPanel } from './controllers/InfoPanel.js';
 import { AnnouncementBanner } from './controllers/AnnouncementBanner.js';
 import { InfoPage } from './controllers/InfoPage.js';
+import { SoundManager } from './utils/SoundManager.js';
 
 logger.info("Nine Men's Morris - Game Loading...");
 
@@ -31,6 +32,10 @@ const boardRenderer = new BoardRenderer(canvas);
 
 // Initialize UI manager
 const uiManager = new UIManager();
+
+// Initialize SoundManager for game audio
+const soundManager = new SoundManager();
+uiManager.setSoundManager(soundManager);
 
 // Initialize Info Panel and Announcement Banner
 const infoPanel = new InfoPanel();
@@ -102,11 +107,13 @@ uiManager.setOnGameModeSelected((mode: string) => {
             if (gc) {
               gc.setInfoPanel(infoPanel);
               gc.setAnnouncementBanner(announcementBanner);
+              gc.setSoundManager(soundManager);
             }
           },
           infoPanel
         );
       });
+      uiManager.showMuteButton();
       break;
   }
 });
@@ -128,6 +135,8 @@ uiManager.setOnResumeGame(() => {
     gameController = new GameController(savedGame.gameMode, boardRenderer, savedGame.playerColor);
     gameController.setInfoPanel(infoPanel);
     gameController.setAnnouncementBanner(announcementBanner);
+    gameController.setSoundManager(soundManager);
+    uiManager.showMuteButton();
 
     // Wire onGameEnd callback for result dialog
     if (savedGame.gameMode === GameMode.SINGLE_PLAYER) {
@@ -148,6 +157,7 @@ uiManager.setOnNewGame(() => {
   announcementBanner.dismiss();
   uiManager.hideGameplayThemeToggle();
   uiManager.hideQuitButton();
+  uiManager.hideMuteButton();
   // Only clear the save for the mode the user declined to resume
   const mode = pendingNewGameMode;
   if (mode === 'single-player') {
@@ -197,6 +207,7 @@ uiManager.setOnQuitGame(() => {
 
   uiManager.hideGameplayThemeToggle();
   uiManager.hideQuitButton();
+  uiManager.hideMuteButton();
   uiManager.showMainMenu();
 });
 
@@ -211,6 +222,8 @@ function startGame(mode: GameMode, playerColor: PlayerColor): void {
   gameController = new GameController(mode, boardRenderer, playerColor);
   gameController.setInfoPanel(infoPanel);
   gameController.setAnnouncementBanner(announcementBanner);
+  gameController.setSoundManager(soundManager);
+  uiManager.showMuteButton();
 
   // Wire onGameEnd callback so the result dialog appears after game ends
   if (mode === GameMode.SINGLE_PLAYER) {
@@ -235,6 +248,8 @@ function startTutorial(): void {
   // Wire InfoPanel and AnnouncementBanner for tutorial mode
   gameController.setInfoPanel(infoPanel);
   gameController.setAnnouncementBanner(announcementBanner);
+  gameController.setSoundManager(soundManager);
+  uiManager.showMuteButton();
 
   // Set tutorial controller on game controller so it can validate actions
   gameController.setTutorialController(tutorialController);
