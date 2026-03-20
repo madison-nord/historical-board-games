@@ -37,7 +37,7 @@ describe('UIManager', () => {
       uiManager.showMainMenu();
 
       const buttons = document.querySelectorAll('.menu-buttons button');
-      expect(buttons.length).toBe(5);
+      expect(buttons.length).toBe(6);
 
       const buttonTexts = Array.from(buttons).map(btn => btn.textContent);
       expect(buttonTexts).toContain('Single Player');
@@ -87,6 +87,14 @@ describe('UIManager', () => {
     });
 
     it('should show color selection when single player is clicked', () => {
+      // Wire up the callback that main.ts provides — Single Player now goes
+      // through onGameModeSelected so the resume-check logic can intercept it.
+      uiManager.setOnGameModeSelected((mode: string) => {
+        if (mode === 'single-player') {
+          uiManager.showColorSelection();
+        }
+      });
+
       uiManager.showMainMenu();
 
       const singlePlayerBtn = Array.from(document.querySelectorAll('button')).find(
@@ -502,6 +510,133 @@ describe('UIManager', () => {
       // Note: Testing actual backdrop click behavior is difficult in JSDOM
       // because getBoundingClientRect() doesn't return realistic values.
       // The implementation is correct and works in real browsers.
+    });
+  });
+
+  describe('theme toggle', () => {
+    afterEach(() => {
+      delete document.documentElement.dataset.theme;
+      window.localStorage.clear();
+    });
+
+    it('should toggle from dark to light', () => {
+      document.documentElement.dataset.theme = 'dark';
+      uiManager.toggleTheme();
+      expect(document.documentElement.dataset.theme).toBe('light');
+    });
+
+    it('should toggle from light to dark', () => {
+      document.documentElement.dataset.theme = 'light';
+      uiManager.toggleTheme();
+      expect(document.documentElement.dataset.theme).toBe('dark');
+    });
+
+    it('getCurrentTheme should return current theme', () => {
+      document.documentElement.dataset.theme = 'light';
+      expect(uiManager.getCurrentTheme()).toBe('light');
+      document.documentElement.dataset.theme = 'dark';
+      expect(uiManager.getCurrentTheme()).toBe('dark');
+    });
+
+    it('should default to dark when no theme is set', () => {
+      delete document.documentElement.dataset.theme;
+      expect(uiManager.getCurrentTheme()).toBe('dark');
+    });
+  });
+
+  describe('quit button', () => {
+    it('showQuitButton should create a quit button element', () => {
+      const container = document.createElement('div');
+      container.id = 'info-panel-container';
+      document.body.appendChild(container);
+
+      uiManager.showQuitButton('local-two-player' as any);
+      const btn = document.getElementById('gameplay-quit-btn');
+      expect(btn).not.toBeNull();
+      expect(btn?.textContent).toBe('Exit Game');
+
+      container.remove();
+    });
+
+    it('hideQuitButton should remove the quit button', () => {
+      const container = document.createElement('div');
+      container.id = 'info-panel-container';
+      document.body.appendChild(container);
+
+      uiManager.showQuitButton('local-two-player' as any);
+      expect(document.getElementById('gameplay-quit-btn')).not.toBeNull();
+
+      uiManager.hideQuitButton();
+      expect(document.getElementById('gameplay-quit-btn')).toBeNull();
+
+      container.remove();
+    });
+
+    it('showQuitButton should replace existing quit button', () => {
+      const container = document.createElement('div');
+      container.id = 'info-panel-container';
+      document.body.appendChild(container);
+
+      uiManager.showQuitButton('local-two-player' as any);
+      uiManager.showQuitButton('single-player' as any);
+      const buttons = document.querySelectorAll('#gameplay-quit-btn');
+      expect(buttons.length).toBe(1);
+
+      container.remove();
+    });
+  });
+
+  describe('gameplay theme toggle', () => {
+    it('showGameplayThemeToggle should create a toggle button', () => {
+      const container = document.createElement('div');
+      container.id = 'info-panel-container';
+      document.body.appendChild(container);
+
+      uiManager.showGameplayThemeToggle();
+      const btn = document.getElementById('gameplay-theme-toggle');
+      expect(btn).not.toBeNull();
+
+      container.remove();
+    });
+
+    it('hideGameplayThemeToggle should remove the toggle button', () => {
+      const container = document.createElement('div');
+      container.id = 'info-panel-container';
+      document.body.appendChild(container);
+
+      uiManager.showGameplayThemeToggle();
+      expect(document.getElementById('gameplay-theme-toggle')).not.toBeNull();
+
+      uiManager.hideGameplayThemeToggle();
+      expect(document.getElementById('gameplay-theme-toggle')).toBeNull();
+
+      container.remove();
+    });
+  });
+
+  describe('quit confirmation', () => {
+    it('should call onQuitGame callback when confirm is clicked', () => {
+      const container = document.createElement('div');
+      container.id = 'info-panel-container';
+      document.body.appendChild(container);
+
+      const quitCallback = vi.fn();
+      uiManager.setOnQuitGame(quitCallback);
+      uiManager.showQuitButton('local-two-player' as any);
+
+      // Click the quit button to show confirmation
+      const quitBtn = document.getElementById('gameplay-quit-btn');
+      quitBtn?.click();
+
+      // Find and click the confirm button (Exit)
+      const confirmBtn = Array.from(document.querySelectorAll('button')).find(
+        btn => btn.textContent === 'Exit'
+      );
+      confirmBtn?.click();
+
+      expect(quitCallback).toHaveBeenCalled();
+
+      container.remove();
     });
   });
 });

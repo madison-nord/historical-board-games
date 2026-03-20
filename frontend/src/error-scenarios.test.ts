@@ -60,7 +60,11 @@ describe('Error Scenarios', () => {
         millFormed: false,
       };
 
-      const result = LocalStorage.saveGameState(gameState, GameMode.SINGLE_PLAYER, PlayerColor.WHITE);
+      const result = LocalStorage.saveGameState(
+        gameState,
+        GameMode.SINGLE_PLAYER,
+        PlayerColor.WHITE
+      );
       expect(result).toBe(false);
     });
 
@@ -177,7 +181,7 @@ describe('Error Scenarios', () => {
 
     beforeEach(() => {
       // Mock requestAnimationFrame and cancelAnimationFrame
-      vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
+      vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation(cb => {
         return 1;
       });
       vi.spyOn(globalThis, 'cancelAnimationFrame').mockImplementation(() => {});
@@ -191,11 +195,7 @@ describe('Error Scenarios', () => {
       document.body.appendChild(canvas);
 
       boardRenderer = new BoardRenderer(canvas);
-      gameController = new GameController(
-        GameMode.SINGLE_PLAYER,
-        boardRenderer,
-        PlayerColor.WHITE
-      );
+      gameController = new GameController(GameMode.SINGLE_PLAYER, boardRenderer, PlayerColor.WHITE);
     });
 
     afterEach(() => {
@@ -206,9 +206,7 @@ describe('Error Scenarios', () => {
 
     it('should fall back to local AI when backend fetch fails', async () => {
       // Mock fetch to simulate network failure
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(
-        new Error('Network error')
-      );
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network error'));
 
       // Start game and set up state where AI needs to move
       gameController.startGame();

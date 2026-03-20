@@ -20,6 +20,9 @@ export interface SavedGameState extends GameState {
  */
 export class LocalStorage {
   private static readonly STORAGE_KEY = 'ninemensmorris_saved_game';
+  private static readonly THEME_KEY = 'ninemensmorris_theme';
+  private static readonly SP_STORAGE_KEY = 'ninemensmorris_saved_game_sp';
+  private static readonly TP_STORAGE_KEY = 'ninemensmorris_saved_game_tp';
 
   /**
    * Check if localStorage is available in the browser
@@ -75,8 +78,9 @@ export class LocalStorage {
       };
 
       const serialized = JSON.stringify(savedGame);
-      window.localStorage.setItem(this.STORAGE_KEY, serialized);
-      logger.info(`Game state saved: ${gameState.gameId}`);
+      const key = this.getStorageKeyForMode(gameMode);
+      window.localStorage.setItem(key, serialized);
+      logger.info(`Game state saved: ${gameState.gameId} (key: ${key})`);
       return true;
     } catch (e) {
       logger.error('Failed to save game state', e);
@@ -85,7 +89,8 @@ export class LocalStorage {
   }
 
   /**
-   * Load saved game state from localStorage
+   * Load saved game state from localStorage.
+   * Checks mode-specific keys first, then falls back to legacy key.
    *
    * @returns The saved game state, or null if no saved game exists or loading fails
    */
@@ -95,6 +100,19 @@ export class LocalStorage {
     }
 
     try {
+      // Check mode-specific keys first (SP, then TP)
+      for (const key of [this.SP_STORAGE_KEY, this.TP_STORAGE_KEY]) {
+        const serialized = window.localStorage.getItem(key);
+        if (serialized) {
+          const savedGame = JSON.parse(serialized) as SavedGameState;
+          if (this.isValidSavedGame(savedGame)) {
+            logger.info(`Loaded saved game: ${savedGame.gameId}`);
+            return savedGame;
+          }
+        }
+      }
+
+      // Fall back to legacy key
       const serialized = window.localStorage.getItem(this.STORAGE_KEY);
       if (!serialized) {
         logger.info('No saved game found');
@@ -102,15 +120,7 @@ export class LocalStorage {
       }
 
       const savedGame = JSON.parse(serialized) as SavedGameState;
-
-      // Validate the loaded data has required fields
-      if (
-        !savedGame.gameId ||
-        savedGame.phase === undefined ||
-        savedGame.currentPlayer === undefined ||
-        !Array.isArray(savedGame.board) ||
-        savedGame.board.length !== 24
-      ) {
+      if (!this.isValidSavedGame(savedGame)) {
         logger.warn('Invalid saved game data, clearing');
         this.clearGameState();
         return null;
@@ -120,14 +130,27 @@ export class LocalStorage {
       return savedGame;
     } catch (e) {
       logger.error('Failed to load game state', e);
-      // Clear corrupted data
       this.clearGameState();
       return null;
     }
   }
 
   /**
-   * Clear saved game state from localStorage
+   * Validate that a parsed saved game has all required fields
+   */
+  private static isValidSavedGame(savedGame: SavedGameState): boolean {
+    return !!(
+      savedGame.gameId &&
+      savedGame.phase !== undefined &&
+      savedGame.currentPlayer !== undefined &&
+      Array.isArray(savedGame.board) &&
+      savedGame.board.length === 24
+    );
+  }
+
+  /**
+   * Clear saved game state from localStorage.
+   * Clears both mode-specific keys and the legacy key.
    *
    * Should be called when:
    * - Game is completed
@@ -141,6 +164,8 @@ export class LocalStorage {
 
     try {
       window.localStorage.removeItem(this.STORAGE_KEY);
+      window.localStorage.removeItem(this.SP_STORAGE_KEY);
+      window.localStorage.removeItem(this.TP_STORAGE_KEY);
       logger.info('Saved game state cleared');
     } catch (e) {
       logger.error('Failed to clear game state', e);
@@ -148,7 +173,7 @@ export class LocalStorage {
   }
 
   /**
-   * Check if a saved game exists
+   * Check if a saved game exists (any mode)
    *
    * @returns true if a saved game exists, false otherwise
    */
@@ -158,11 +183,179 @@ export class LocalStorage {
     }
 
     try {
-      const serialized = window.localStorage.getItem(this.STORAGE_KEY);
-      return serialized !== null;
+      return (
+        window.localStorage.getItem(this.SP_STORAGE_KEY) !== null ||
+        window.localStorage.getItem(this.TP_STORAGE_KEY) !== null ||
+        window.localStorage.getItem(this.STORAGE_KEY) !== null
+      );
     } catch (e) {
       logger.error('Failed to check for saved game', e);
       return false;
+    }
+  }
+
+  /**
+   * Get the storage key for a specific game mode
+   */
+  private static getStorageKeyForMode(mode: GameMode): string {
+    switch (mode) {
+      case GameMode.SINGLE_PLAYER:
+        return this.SP_STORAGE_KEY;
+      case GameMode.LOCAL_TWO_PLAYER:
+        return this.TP_STORAGE_KEY;
+      default:
+        return this.STORAGE_KEY;
+    }
+  }
+
+  /**
+   * Load saved game state for a specific game mode.
+   * Falls back to the legacy key and migrates if found.
+   */
+  public static loadGameStateForMode(mode: GameMode): SavedGameState | null {
+    if (!this.isLocalStorageAvailable()) {
+      return null;
+    }
+
+    try {
+      const key = this.getStorageKeyForMode(mode);
+      let serialized = window.localStorage.getItem(key);
+
+      // If not found under mode-specific key, check legacy key for migration
+      if (!serialized) {
+        const legacySerialized = window.localStorage.getItem(this.STORAGE_KEY);
+        if (legacySerialized) {
+          try {
+            const legacyData = JSON.parse(legacySerialized) as SavedGameState;
+            if (legacyData.gameMode === mode) {
+              // Migrate: save to new key, remove legacy key
+              window.localStorage.setItem(key, legacySerialized);
+              window.localStorage.removeItem(this.STORAGE_KEY);
+              serialized = legacySerialized;
+              logger.info(`Migrated legacy save to mode-specific key: ${key}`);
+            }
+          } catch {
+            // Legacy data is corrupted, ignore
+          }
+        }
+      }
+
+      if (!serialized) {
+        return null;
+      }
+
+      const savedGame = JSON.parse(serialized) as SavedGameState;
+
+      if (
+        !savedGame.gameId ||
+        savedGame.phase === undefined ||
+        savedGame.currentPlayer === undefined ||
+        !Array.isArray(savedGame.board) ||
+        savedGame.board.length !== 24
+      ) {
+        logger.warn('Invalid saved game data for mode, clearing');
+        window.localStorage.removeItem(key);
+        return null;
+      }
+
+      return savedGame;
+    } catch (e) {
+      logger.error('Failed to load game state for mode', e);
+      return null;
+    }
+  }
+
+  /**
+   * Check if a saved game exists for a specific game mode
+   */
+  public static hasSavedGameForMode(mode: GameMode): boolean {
+    if (!this.isLocalStorageAvailable()) {
+      return false;
+    }
+
+    try {
+      const key = this.getStorageKeyForMode(mode);
+      if (window.localStorage.getItem(key) !== null) {
+        return true;
+      }
+      // Also check legacy key
+      const legacySerialized = window.localStorage.getItem(this.STORAGE_KEY);
+      if (legacySerialized) {
+        try {
+          const legacyData = JSON.parse(legacySerialized) as SavedGameState;
+          return legacyData.gameMode === mode;
+        } catch {
+          return false;
+        }
+      }
+      return false;
+    } catch (e) {
+      logger.error('Failed to check for saved game for mode', e);
+      return false;
+    }
+  }
+
+  /**
+   * Clear saved game state for a specific game mode
+   */
+  public static clearGameStateForMode(mode: GameMode): void {
+    if (!this.isLocalStorageAvailable()) {
+      return;
+    }
+
+    try {
+      const key = this.getStorageKeyForMode(mode);
+      window.localStorage.removeItem(key);
+      // Also clear legacy key if it matches this mode
+      const legacySerialized = window.localStorage.getItem(this.STORAGE_KEY);
+      if (legacySerialized) {
+        try {
+          const legacyData = JSON.parse(legacySerialized) as SavedGameState;
+          if (legacyData.gameMode === mode) {
+            window.localStorage.removeItem(this.STORAGE_KEY);
+          }
+        } catch {
+          // Ignore corrupted legacy data
+        }
+      }
+      logger.info(`Saved game state cleared for mode: ${mode}`);
+    } catch (e) {
+      logger.error('Failed to clear game state for mode', e);
+    }
+  }
+
+  /**
+   * Save theme preference to localStorage
+   */
+  public static saveThemePreference(theme: 'dark' | 'light'): void {
+    if (!this.isLocalStorageAvailable()) {
+      return;
+    }
+    try {
+      window.localStorage.setItem(this.THEME_KEY, theme);
+    } catch (e) {
+      logger.error('Failed to save theme preference', e);
+    }
+  }
+
+  /**
+   * Load theme preference from localStorage
+   *
+   * @returns The saved theme preference, defaults to 'dark'
+   */
+  public static loadThemePreference(): 'dark' | 'light' {
+    if (!this.isLocalStorageAvailable()) {
+      return 'dark';
+    }
+    try {
+      const theme = window.localStorage.getItem(this.THEME_KEY);
+      if (theme === 'light' || theme === 'dark') {
+        return theme;
+      }
+      return 'dark';
+    } catch (e) {
+      logger.error('Failed to load theme preference', e);
+      return 'dark';
     }
   }
 }

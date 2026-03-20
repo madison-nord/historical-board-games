@@ -24,11 +24,21 @@ export interface InfoPanelData {
  * Pure function — no side effects, no DOM access.
  */
 export function deriveActionInstruction(data: InfoPanelData): string {
-  if (data.isGameOver) return '';
-  if (data.isOpponentTurn || data.isAiThinking) return 'Waiting for opponent...';
-  if (data.millFormed) return "Remove an opponent's piece";
-  if (data.phase === GamePhase.PLACEMENT) return 'Place a piece on an empty position';
-  if (data.selectedPosition !== null) return 'Select a destination for your piece';
+  if (data.isGameOver) {
+    return '';
+  }
+  if (data.isOpponentTurn || data.isAiThinking) {
+    return 'Waiting for opponent...';
+  }
+  if (data.millFormed) {
+    return "Remove an opponent's piece";
+  }
+  if (data.phase === GamePhase.PLACEMENT) {
+    return 'Place a piece on an empty position';
+  }
+  if (data.selectedPosition !== null) {
+    return 'Select a destination for your piece';
+  }
   return 'Select a piece to move';
 }
 
@@ -144,14 +154,15 @@ export class InfoPanel {
     selectedPosition: number | null,
     isAiThinking: boolean
   ): void {
-    if (!this.container) return;
+    if (!this.container) {
+      return;
+    }
 
     const currentPlayer = gameState.currentPlayer;
     const phase = gameState.phase;
     const isGameOver = gameState.gameOver || gameState.isGameOver || false;
     const millFormed = gameState.millFormed || false;
-    const isOpponentTurn =
-      gameMode !== GameMode.LOCAL_TWO_PLAYER && currentPlayer !== playerColor;
+    const isOpponentTurn = gameMode !== GameMode.LOCAL_TWO_PLAYER && currentPlayer !== playerColor;
 
     if (this.turnIndicator) {
       const colorName = currentPlayer === PlayerColor.WHITE ? 'White' : 'Black';
@@ -178,11 +189,11 @@ export class InfoPanel {
 
     if (this.piecesDisplay) {
       if (phase === GamePhase.PLACEMENT) {
-        this.piecesDisplay.textContent =
-          `White pieces: ${gameState.whitePiecesRemaining} | Black pieces: ${gameState.blackPiecesRemaining}`;
-        this.piecesDisplay.style.display = '';
+        this.piecesDisplay.textContent = `White pieces: ${gameState.whitePiecesRemaining} | Black pieces: ${gameState.blackPiecesRemaining}`;
+        this.piecesDisplay.removeAttribute('data-hidden');
       } else {
-        this.piecesDisplay.style.display = 'none';
+        this.piecesDisplay.textContent = '\u00A0'; // non-breaking space to preserve height
+        this.piecesDisplay.setAttribute('data-hidden', 'true');
       }
     }
 
@@ -190,9 +201,10 @@ export class InfoPanel {
       if (gameMode === GameMode.ONLINE_MULTIPLAYER) {
         const colorName = playerColor === PlayerColor.WHITE ? 'White' : 'Black';
         this.playerColorDisplay.textContent = `You are: ${colorName}`;
-        this.playerColorDisplay.style.display = '';
+        this.playerColorDisplay.removeAttribute('data-hidden');
       } else {
-        this.playerColorDisplay.style.display = 'none';
+        this.playerColorDisplay.textContent = '\u00A0';
+        this.playerColorDisplay.setAttribute('data-hidden', 'true');
       }
     }
 

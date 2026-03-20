@@ -1,6 +1,7 @@
 import { PlayerColor } from '../models/PlayerColor';
 import { GameMode } from '../models/GameMode';
 import { deriveGameEndMessage } from './InfoPanel';
+import { LocalStorage } from '../utils/LocalStorage';
 
 /**
  * UIManager handles all menu and dialog interactions for the game.
@@ -20,6 +21,10 @@ export class UIManager {
   private onInfoPageRequested: (() => void) | null = null;
   private isProcessingClick: boolean = false;
   private disconnectCountdownInterval: number | null = null;
+  private gameplayThemeToggle: HTMLButtonElement | null = null;
+  private quitButton: HTMLButtonElement | null = null;
+  private onQuitGame: (() => void) | null = null;
+  private currentGameMode: GameMode = GameMode.LOCAL_TWO_PLAYER;
 
   /**
    * Show the main menu with game mode selection buttons
@@ -48,7 +53,10 @@ export class UIManager {
     singlePlayerBtn.addEventListener(
       'click',
       this.withDebounce(() => {
-        this.showGameModeSelection();
+        this.closeCurrentDialog();
+        if (this.onGameModeSelected) {
+          this.onGameModeSelected('single-player');
+        }
       })
     );
 
@@ -56,10 +64,10 @@ export class UIManager {
     localTwoPlayerBtn.addEventListener(
       'click',
       this.withDebounce(() => {
+        this.closeCurrentDialog();
         if (this.onGameModeSelected) {
           this.onGameModeSelected('local-two-player');
         }
-        this.closeCurrentDialog();
       })
     );
 
@@ -100,6 +108,11 @@ export class UIManager {
     buttonContainer.appendChild(onlineMultiplayerBtn);
     buttonContainer.appendChild(tutorialBtn);
     buttonContainer.appendChild(infoPageBtn);
+
+    // Theme toggle row
+    const themeToggleBtn = this.createThemeToggleButton();
+    themeToggleBtn.style.alignSelf = 'center';
+    buttonContainer.appendChild(themeToggleBtn);
 
     content.appendChild(title);
     content.appendChild(subtitle);
@@ -642,6 +655,227 @@ export class UIManager {
    */
   public setOnInfoPageRequested(callback: () => void): void {
     this.onInfoPageRequested = callback;
+  }
+
+  /**
+   * Toggle between dark and light themes
+   */
+  public toggleTheme(): void {
+    const current = document.documentElement.dataset.theme || 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    LocalStorage.saveThemePreference(next);
+    // Update gameplay toggle if present
+    if (this.gameplayThemeToggle) {
+      this.gameplayThemeToggle.textContent = next === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+      this.gameplayThemeToggle.setAttribute(
+        'aria-label',
+        next === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'
+      );
+    }
+    // Update any menu toggle buttons that may be open
+    const menuToggle = document.querySelector('.theme-toggle-menu-btn');
+    if (menuToggle) {
+      menuToggle.textContent = next === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+    }
+  }
+
+  /**
+   * Get the current theme
+   */
+  public getCurrentTheme(): 'dark' | 'light' {
+    return (document.documentElement.dataset.theme as 'dark' | 'light') || 'dark';
+  }
+
+  /**
+   * Create a theme toggle button element with text label
+   */
+  private createThemeToggleButton(): HTMLButtonElement {
+    const btn = document.createElement('button');
+    const theme = this.getCurrentTheme();
+    btn.textContent = theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+    btn.className = 'game-button secondary-button theme-toggle-menu-btn';
+    btn.style.padding = '8px 16px';
+    btn.style.fontSize = '16px';
+    btn.setAttribute(
+      'aria-label',
+      theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'
+    );
+    btn.addEventListener('click', () => this.toggleTheme());
+    return btn;
+  }
+
+  /**
+   * Show the persistent gameplay theme toggle (inside info panel container)
+   */
+  public showGameplayThemeToggle(): void {
+    this.hideGameplayThemeToggle();
+    const btn = document.createElement('button');
+    const theme = this.getCurrentTheme();
+    btn.textContent = theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+    btn.id = 'gameplay-theme-toggle';
+    btn.setAttribute(
+      'aria-label',
+      theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'
+    );
+    btn.style.cssText =
+      'width:100%;margin-top:8px;background:var(--color-surface);' +
+      'color:var(--color-text-secondary);' +
+      'border:1px solid var(--color-border);border-radius:8px;padding:6px 12px;font-size:14px;' +
+      'cursor:pointer;box-shadow:var(--shadow-sm);transition:all 0.15s ease;' +
+      'min-height:40px;display:flex;align-items:center;justify-content:center;' +
+      'font-family:var(--font-family);';
+    btn.addEventListener('click', () => this.toggleTheme());
+    btn.addEventListener('mouseenter', () => {
+      btn.style.boxShadow = 'var(--shadow-md)';
+    });
+    btn.addEventListener('mouseleave', () => {
+      btn.style.boxShadow = 'var(--shadow-sm)';
+    });
+    // Place inside info panel container (below quit button)
+    const infoPanelContainer = document.getElementById('info-panel-container');
+    if (infoPanelContainer) {
+      infoPanelContainer.appendChild(btn);
+    } else {
+      document.body.appendChild(btn);
+    }
+    this.gameplayThemeToggle = btn;
+  }
+
+  /**
+   * Hide the persistent gameplay theme toggle
+   */
+  public hideGameplayThemeToggle(): void {
+    if (this.gameplayThemeToggle) {
+      this.gameplayThemeToggle.remove();
+      this.gameplayThemeToggle = null;
+    }
+    // Also remove by ID in case reference was lost
+    const existing = document.getElementById('gameplay-theme-toggle');
+    if (existing) {
+      existing.remove();
+    }
+  }
+
+  /**
+   * Set callback for when user quits the current game
+   */
+  public setOnQuitGame(callback: () => void): void {
+    this.onQuitGame = callback;
+  }
+
+  /**
+   * Show the quit button during gameplay (below the info panel)
+   */
+  public showQuitButton(gameMode: GameMode): void {
+    this.hideQuitButton();
+    this.currentGameMode = gameMode;
+    const isOnlineGame = gameMode === GameMode.ONLINE_MULTIPLAYER;
+    const btn = document.createElement('button');
+    btn.textContent = 'Exit Game';
+    btn.id = 'gameplay-quit-btn';
+    btn.setAttribute('aria-label', 'Exit game');
+    btn.style.cssText =
+      'width:100%;margin-top:12px;background:var(--color-surface);' +
+      'color:var(--color-text-secondary);border:1px solid var(--color-border);border-radius:8px;' +
+      'padding:8px 14px;font-size:14px;font-weight:500;cursor:pointer;' +
+      'box-shadow:var(--shadow-sm);transition:all 0.15s ease;' +
+      'font-family:var(--font-family);min-height:40px;';
+    btn.addEventListener('mouseenter', () => {
+      btn.style.color = 'var(--color-text-primary)';
+      btn.style.borderColor = 'var(--color-text-secondary)';
+      btn.style.boxShadow = 'var(--shadow-md)';
+    });
+    btn.addEventListener('mouseleave', () => {
+      btn.style.color = 'var(--color-text-secondary)';
+      btn.style.borderColor = 'var(--color-border)';
+      btn.style.boxShadow = 'var(--shadow-sm)';
+    });
+    btn.addEventListener('click', () => {
+      this.showQuitConfirmation(isOnlineGame);
+    });
+    // Place inside the info panel container so it flows below the info panel
+    const infoPanelContainer = document.getElementById('info-panel-container');
+    if (infoPanelContainer) {
+      infoPanelContainer.appendChild(btn);
+    } else {
+      document.body.appendChild(btn);
+    }
+    this.quitButton = btn;
+  }
+
+  /**
+   * Hide the quit button
+   */
+  public hideQuitButton(): void {
+    if (this.quitButton) {
+      this.quitButton.remove();
+      this.quitButton = null;
+    }
+    const existing = document.getElementById('gameplay-quit-btn');
+    if (existing) {
+      existing.remove();
+    }
+  }
+
+  /**
+   * Show quit confirmation dialog
+   */
+  private showQuitConfirmation(isOnlineGame: boolean): void {
+    this.closeCurrentDialog();
+
+    const dialog = this.createDialog();
+    dialog.classList.add('game-dialog');
+
+    const content = document.createElement('div');
+    content.className = 'dialog-content';
+    content.style.textAlign = 'center';
+
+    const title = document.createElement('h2');
+    title.className = 'dialog-title';
+    title.textContent = isOnlineGame ? 'Forfeit Game?' : 'Exit Game?';
+
+    const message = document.createElement('p');
+    message.className = 'dialog-description';
+    if (isOnlineGame) {
+      message.textContent = 'Are you sure you want to forfeit? This will count as a loss.';
+    } else if (
+      this.currentGameMode === GameMode.SINGLE_PLAYER ||
+      this.currentGameMode === GameMode.LOCAL_TWO_PLAYER
+    ) {
+      message.textContent = 'Are you sure you want to quit? Your progress will be saved.';
+    } else {
+      message.textContent = 'Are you sure you want to quit?';
+    }
+
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'result-buttons';
+
+    const confirmBtn = this.createButton(isOnlineGame ? 'Forfeit' : 'Exit', 'secondary');
+    confirmBtn.addEventListener('click', () => {
+      this.closeCurrentDialog();
+      if (this.onQuitGame) {
+        this.onQuitGame();
+      }
+    });
+
+    const cancelBtn = this.createButton('Cancel', 'primary');
+    cancelBtn.addEventListener('click', () => {
+      this.closeCurrentDialog();
+    });
+
+    buttonContainer.appendChild(cancelBtn);
+    buttonContainer.appendChild(confirmBtn);
+
+    content.appendChild(title);
+    content.appendChild(message);
+    content.appendChild(buttonContainer);
+
+    dialog.appendChild(content);
+    document.body.appendChild(dialog);
+    dialog.showModal();
+
+    this.currentDialog = dialog;
   }
 
   /**

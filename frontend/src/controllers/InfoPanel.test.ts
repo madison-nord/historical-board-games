@@ -130,7 +130,7 @@ describe('InfoPanel', () => {
       panel.update(state, GameMode.LOCAL_TWO_PLAYER, PlayerColor.WHITE, null, false);
 
       const playerColorEl = document.querySelector('.info-panel-player-color') as HTMLElement;
-      expect(playerColorEl.style.display).toBe('none');
+      expect(playerColorEl.getAttribute('data-hidden')).toBe('true');
     });
 
     it('should hide player color display in single-player mode', () => {
@@ -140,7 +140,7 @@ describe('InfoPanel', () => {
       panel.update(state, GameMode.SINGLE_PLAYER, PlayerColor.WHITE, null, false);
 
       const playerColorEl = document.querySelector('.info-panel-player-color') as HTMLElement;
-      expect(playerColorEl.style.display).toBe('none');
+      expect(playerColorEl.getAttribute('data-hidden')).toBe('true');
     });
   });
 
@@ -168,7 +168,7 @@ describe('InfoPanel', () => {
       panel.update(state, GameMode.LOCAL_TWO_PLAYER, PlayerColor.WHITE, null, false);
 
       const piecesEl = document.querySelector('.info-panel-pieces') as HTMLElement;
-      expect(piecesEl.style.display).toBe('none');
+      expect(piecesEl.getAttribute('data-hidden')).toBe('true');
     });
 
     it('should hide pieces remaining in FLYING phase', () => {
@@ -178,7 +178,7 @@ describe('InfoPanel', () => {
       panel.update(state, GameMode.LOCAL_TWO_PLAYER, PlayerColor.WHITE, null, false);
 
       const piecesEl = document.querySelector('.info-panel-pieces') as HTMLElement;
-      expect(piecesEl.style.display).toBe('none');
+      expect(piecesEl.getAttribute('data-hidden')).toBe('true');
     });
   });
 

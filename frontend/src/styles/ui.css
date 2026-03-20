@@ -6,13 +6,14 @@
 :root {
   /* Primary Colors */
   --color-primary: #4a90e2;
-  --color-primary-hover: #357abd;
-  --color-primary-active: #2868a8;
+  --color-primary-hover: #5a9ee8;
+  --color-primary-active: #357abd;
+  --color-primary-glow: rgba(74, 144, 226, 0.25);
 
   /* Secondary Colors */
   --color-secondary: #6c757d;
-  --color-secondary-hover: #5a6268;
-  --color-secondary-active: #4e555b;
+  --color-secondary-hover: #7b848b;
+  --color-secondary-active: #5a6268;
 
   /* Game Colors */
   --color-white-piece: #f8f9fa;
@@ -21,17 +22,18 @@
   --color-board-lines: #5d4a37;
 
   /* UI Colors */
-  --color-background: #1a1a1a;
-  --color-surface: #2d2d2d;
-  --color-surface-hover: #3a3a3a;
-  --color-text-primary: #ffffff;
-  --color-text-secondary: #b0b0b0;
-  --color-border: #404040;
+  --color-background: #12121a;
+  --color-surface: #1a1a2e;
+  --color-surface-hover: #242442;
+  --color-surface-elevated: #22223a;
+  --color-text-primary: #e8e8f0;
+  --color-text-secondary: #9898b0;
+  --color-border: #2e2e4a;
 
   /* Status Colors */
-  --color-success: #28a745;
-  --color-error: #dc3545;
-  --color-warning: #ffc107;
+  --color-success: #2ecc71;
+  --color-error: #e74c3c;
+  --color-warning: #f1c40f;
   --color-info: #17a2b8;
 
   /* Typography */
@@ -42,6 +44,14 @@
   --font-size-large: 18px;
   --font-size-title: 32px;
   --font-size-subtitle: 20px;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height-base: 1.5;
+  --line-height-tight: 1.3;
+  --letter-spacing-tight: -0.01em;
+  --letter-spacing-wide: 0.02em;
 
   /* Spacing */
   --spacing-xs: 4px;
@@ -55,15 +65,37 @@
   --radius-md: 8px;
   --radius-lg: 12px;
 
-  /* Shadows */
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.2);
-  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.3);
+  /* Shadows — layered for depth */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.35), 0 4px 10px rgba(0, 0, 0, 0.2);
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.4), 0 8px 16px rgba(0, 0, 0, 0.25);
+  --shadow-glow: 0 0 20px rgba(74, 144, 226, 0.15);
 
   /* Transitions */
   --transition-fast: 150ms ease-in-out;
   --transition-normal: 250ms ease-in-out;
   --transition-slow: 400ms ease-in-out;
+}
+
+/* ============================================
+   Light Theme Overrides
+   ============================================ */
+[data-theme="light"] {
+  --color-background: #f0f0f5;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f5f5fa;
+  --color-surface-elevated: #fafafe;
+  --color-text-primary: #1a1a2e;
+  --color-text-secondary: #5a5a70;
+  --color-border: #d0d0e0;
+  --color-primary-glow: rgba(74, 144, 226, 0.15);
+  /* Shadows for light theme */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.12), 0 4px 10px rgba(0, 0, 0, 0.08);
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1);
+  --shadow-glow: 0 0 20px rgba(74, 144, 226, 0.1);
 }
 
 /* ============================================
@@ -77,21 +109,25 @@
   padding: 0;
   max-width: 90vw;
   max-height: 90vh;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-xl), var(--shadow-glow);
   opacity: 1;
   animation: dialogFadeIn var(--transition-normal) forwards;
+  border: 1px solid var(--color-border);
 }
 
 .game-dialog::backdrop {
-  background-color: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 @keyframes dialogFadeIn {
   from {
-    transform: scale(0.95) translateY(-20px);
+    opacity: 0;
+    transform: scale(0.92) translateY(-20px);
   }
   to {
+    opacity: 1;
     transform: scale(1) translateY(0);
   }
 }
@@ -106,10 +142,12 @@
 
 .dialog-title {
   font-size: var(--font-size-subtitle);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   margin-bottom: var(--spacing-md);
   text-align: center;
   color: var(--color-text-primary);
+  letter-spacing: var(--letter-spacing-tight);
+  line-height: var(--line-height-tight);
 }
 
 .dialog-description {
@@ -117,7 +155,7 @@
   color: var(--color-text-secondary);
   text-align: center;
   margin-bottom: var(--spacing-lg);
-  line-height: 1.5;
+  line-height: var(--line-height-base);
 }
 
 /* ============================================
@@ -126,16 +164,23 @@
 .game-button {
   font-family: var(--font-family);
   font-size: var(--font-size-base);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--letter-spacing-wide);
   padding: var(--spacing-md) var(--spacing-lg);
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    opacity var(--transition-fast);
   text-align: center;
   min-width: 120px;
   min-height: 48px; /* Ensure touch-friendly size (44px minimum + padding) */
   outline: none;
+  position: relative;
+  overflow: hidden;
 }
 
 .game-button:focus-visible {
@@ -143,18 +188,26 @@
   outline-offset: 2px;
 }
 
+.game-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .primary-button {
   background-color: var(--color-primary);
   color: white;
+  box-shadow: var(--shadow-sm), 0 0 0 0 var(--color-primary-glow);
 }
 
-.primary-button:hover {
+.primary-button:hover:not(:disabled) {
   background-color: var(--color-primary-hover);
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-md), 0 0 16px var(--color-primary-glow);
 }
 
-.primary-button:active {
+.primary-button:active:not(:disabled) {
   background-color: var(--color-primary-active);
   transform: translateY(0);
   box-shadow: var(--shadow-sm);
@@ -163,15 +216,16 @@
 .secondary-button {
   background-color: var(--color-secondary);
   color: white;
+  box-shadow: var(--shadow-sm);
 }
 
-.secondary-button:hover {
+.secondary-button:hover:not(:disabled) {
   background-color: var(--color-secondary-hover);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
-.secondary-button:active {
+.secondary-button:active:not(:disabled) {
   background-color: var(--color-secondary-active);
   transform: translateY(0);
   box-shadow: var(--shadow-sm);
@@ -190,18 +244,22 @@
 
 .menu-title {
   font-size: var(--font-size-title);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   margin-bottom: var(--spacing-sm);
+  letter-spacing: var(--letter-spacing-tight);
   background: linear-gradient(135deg, var(--color-primary), var(--color-info));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  text-shadow: none;
 }
 
 .menu-subtitle {
   font-size: var(--font-size-base);
   color: var(--color-text-secondary);
   margin-bottom: var(--spacing-xl);
+  font-weight: var(--font-weight-normal);
+  letter-spacing: var(--letter-spacing-wide);
 }
 
 .menu-buttons {
@@ -241,24 +299,38 @@
   background-color: var(--color-white-piece);
   color: var(--color-black-piece);
   border: 2px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
 }
 
 .white-button:hover {
   background-color: #ffffff;
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-md), 0 0 12px rgba(248, 249, 250, 0.2);
+  border-color: var(--color-primary);
+}
+
+.white-button:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
 }
 
 .black-button {
   background-color: var(--color-black-piece);
   color: var(--color-white-piece);
   border: 2px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
 }
 
 .black-button:hover {
   background-color: #000000;
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-md), 0 0 12px rgba(0, 0, 0, 0.3);
+  border-color: var(--color-primary);
+}
+
+.black-button:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
 }
 
 /* ============================================
@@ -274,23 +346,24 @@
 
 .result-title {
   font-size: 28px;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   margin-bottom: var(--spacing-lg);
+  letter-spacing: var(--letter-spacing-tight);
 }
 
 .result-title.white-wins {
   color: var(--color-white-piece);
-  text-shadow: 0 0 10px rgba(248, 249, 250, 0.5);
+  text-shadow: 0 0 16px rgba(248, 249, 250, 0.4), 0 0 32px rgba(248, 249, 250, 0.15);
 }
 
 .result-title.black-wins {
   color: var(--color-text-primary);
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  text-shadow: 0 0 16px rgba(255, 255, 255, 0.2);
 }
 
 .result-title.draw {
   color: var(--color-warning);
-  text-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+  text-shadow: 0 0 16px rgba(241, 196, 15, 0.4), 0 0 32px rgba(241, 196, 15, 0.15);
 }
 
 .result-message {
@@ -466,12 +539,13 @@
 .disconnect-countdown {
   font-size: var(--font-size-large);
   color: var(--color-text-primary);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   margin-bottom: var(--spacing-xl);
   padding: var(--spacing-md);
   background-color: var(--color-background);
   border-radius: var(--radius-md);
   border: 2px solid var(--color-warning);
+  box-shadow: 0 0 12px rgba(241, 196, 15, 0.15);
 }
 
 .disconnect-buttons {
@@ -519,10 +593,16 @@
   background-color: var(--color-surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
+  border: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   animation: slideInRight var(--transition-normal);
   align-self: start;
+  transition: box-shadow var(--transition-normal);
+}
+
+.chat-panel:hover {
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
 }
 
 @keyframes slideInRight {
@@ -712,11 +792,14 @@
   font-size: var(--font-size-base);
   font-family: var(--font-family);
   outline: none;
-  transition: border-color var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .chat-input:focus {
   border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-glow);
 }
 
 .chat-input::placeholder {
@@ -730,19 +813,25 @@
   border: none;
   border-radius: var(--radius-md);
   font-size: var(--font-size-base);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
   flex-shrink: 0;
   white-space: nowrap;
 }
 
 .chat-send-button:hover {
   background-color: var(--color-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .chat-send-button:active {
   background-color: var(--color-primary-active);
+  transform: translateY(0);
 }
 
 /* ============================================

@@ -897,8 +897,8 @@ The implementation uses:
     - Implement game cleanup scheduler
     - _Requirements: 3.2_
 
-- [ ] 44. Add final visual polish
-  - [ ] 44.1 Refine visual design
+- [x] 44. Add final visual polish
+  - [x] 44.1 Refine visual design
     - Fine-tune color scheme for consistency
     - Add subtle shadows and depth
     - Polish button hover and active states
@@ -907,7 +907,7 @@ The implementation uses:
     - Add favicon and app icons
     - _Requirements: 10.4_
   
-  - [ ] 44.2 Add sound effects (optional enhancement)
+  - [ ]* 44.2 Add sound effects (optional enhancement)
     - Add piece placement sound
     - Add piece movement sound
     - Add mill formation sound

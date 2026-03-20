@@ -59,12 +59,15 @@ describe('LocalStorage Property Tests', () => {
               return true;
             }
 
+            // Clear before each iteration to avoid cross-contamination
+            window.localStorage.clear();
+
             // Save the game state
             const saved = LocalStorage.saveGameState(gameState, gameMode, playerColor);
             expect(saved).toBe(true);
 
-            // Load the game state
-            const loaded = LocalStorage.loadGameState();
+            // Load the game state using mode-specific loader
+            const loaded = LocalStorage.loadGameStateForMode(gameMode);
             expect(loaded).not.toBeNull();
 
             if (loaded) {

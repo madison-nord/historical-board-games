@@ -13,8 +13,8 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-    color: #ffffff;
+    background: var(--color-background);
+    color: var(--color-text-primary);
     overflow: hidden;
     min-height: 100vh;
     /* Prevent text selection during gameplay */
@@ -24,6 +24,8 @@ body {
     -ms-user-select: none;
     /* Prevent pull-to-refresh on mobile */
     overscroll-behavior: none;
+    line-height: 1.5;
+    letter-spacing: 0.01em;
 }
 
 #app {
@@ -53,13 +55,14 @@ body {
     width: auto;
     height: auto;
     border-radius: 8px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-xl), var(--shadow-glow);
     /* Ensure canvas scales proportionally */
     object-fit: contain;
     /* Prevent canvas from being dragged on mobile */
     touch-action: none;
     justify-self: center;
     align-self: center;
+    transition: box-shadow 0.3s ease;
 }
 
 #ui-container {
@@ -82,6 +85,9 @@ body {
 #info-panel-container {
     grid-area: info;
     align-self: start;
+    width: 100%;
+    min-width: 200px;
+    max-width: 250px;
 }
 
 #announcement-container {
@@ -93,15 +99,35 @@ body {
    ============================================ */
 
 .info-panel {
-    background: rgba(45, 45, 45, 0.95);
+    background: var(--color-surface);
     padding: 16px;
     border-radius: 8px;
-    color: #ffffff;
+    color: var(--color-text-primary);
     font-size: 14px;
     line-height: 1.6;
     width: 100%;
-    min-height: 150px;
+    min-height: 180px;
     box-sizing: border-box;
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-md);
+    transition: box-shadow 0.25s ease;
+}
+
+/* Prevent info panel children from causing layout shifts */
+.info-panel-pieces,
+.info-panel-player-color {
+    min-height: 1.6em;
+    visibility: visible;
+}
+
+/* Use visibility:hidden instead of display:none to preserve layout space */
+.info-panel-pieces[data-hidden="true"],
+.info-panel-player-color[data-hidden="true"] {
+    visibility: hidden;
+}
+
+.info-panel:hover {
+    box-shadow: var(--shadow-lg), var(--shadow-glow);
 }
 
 .info-panel-turn {
@@ -110,22 +136,22 @@ body {
 }
 
 .info-panel-phase {
-    color: #b0b0b0;
+    color: var(--color-text-secondary);
     margin-bottom: 4px;
 }
 
 .info-panel-pieces {
-    color: #b0b0b0;
+    color: var(--color-text-secondary);
     margin-bottom: 4px;
 }
 
 .info-panel-player-color {
-    color: #4a90e2;
+    color: var(--color-primary);
     margin-bottom: 8px;
 }
 
 .info-panel-action {
-    color: #4a90e2;
+    color: var(--color-primary);
     font-style: italic;
     margin-top: 8px;
 }
@@ -143,38 +169,44 @@ body {
     text-align: center;
     padding: 20px 40px;
     border-radius: 12px;
-    animation: announcementFadeIn 0.3s ease-in;
+    animation: announcementFadeIn 0.3s ease-out;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--color-border);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .announcement-message {
     font-size: 24px;
-    font-weight: bold;
+    font-weight: 700;
+    letter-spacing: -0.01em;
 }
 
 .announcement-subtitle {
     font-size: 14px;
-    color: #b0b0b0;
+    color: var(--color-text-secondary);
     margin-top: 8px;
 }
 
 .announcement-turn {
-    background: rgba(45, 45, 45, 0.9);
-    color: #ffffff;
+    background: var(--color-surface);
+    color: var(--color-text-primary);
 }
 
 .announcement-phase {
-    background: rgba(74, 144, 226, 0.9);
+    background: rgba(74, 144, 226, 0.92);
     color: #ffffff;
 }
 
 .announcement-game-end {
-    background: rgba(45, 45, 45, 0.95);
+    background: var(--color-surface);
     color: #ffd700;
+    box-shadow: var(--shadow-lg), 0 0 20px rgba(255, 215, 0, 0.1);
 }
 
 @keyframes announcementFadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.92); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
 /* Game board container */
@@ -191,25 +223,30 @@ body {
 
 /* Game info display */
 .game-info {
-    background-color: rgba(45, 45, 45, 0.9);
+    background-color: var(--color-surface);
     padding: 16px 24px;
     border-radius: 8px;
     text-align: center;
     min-width: 300px;
     max-width: 100%;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--color-border);
+    transition: box-shadow 0.25s ease;
 }
 
 .game-info h2 {
     font-size: clamp(16px, 4vw, 18px);
     margin-bottom: 8px;
-    color: #4a90e2;
+    color: var(--color-primary);
+    font-weight: 600;
+    letter-spacing: -0.01em;
 }
 
 .game-info p {
     font-size: clamp(12px, 3vw, 14px);
-    color: #b0b0b0;
+    color: var(--color-text-secondary);
     margin: 4px 0;
+    line-height: 1.5;
 }
 
 .current-player-indicator {
@@ -241,8 +278,8 @@ body {
 }
 
 .spinner {
-    border: 4px solid rgba(255, 255, 255, 0.1);
-    border-top: 4px solid #4a90e2;
+    border: 4px solid var(--color-border);
+    border-top: 4px solid var(--color-primary);
     border-radius: 50%;
     width: 40px;
     height: 40px;
@@ -578,11 +615,13 @@ body {
     #game-canvas {
         max-width: 100%;
         border: 1px solid black;
+        box-shadow: none;
     }
 
     .game-info {
         background-color: white;
         color: black;
         border: 1px solid black;
+        box-shadow: none;
     }
 }

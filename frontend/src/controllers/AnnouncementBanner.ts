@@ -40,7 +40,9 @@ export class AnnouncementBanner {
 
   /** Show an announcement with the given options */
   public show(options: AnnouncementOptions): void {
-    if (!this.container) return;
+    if (!this.container) {
+      return;
+    }
 
     // Dismiss any existing announcement first
     this.dismiss();

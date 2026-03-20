@@ -229,6 +229,23 @@ export class BoardRenderer {
     // Clear canvas
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+    // Fill with warm wood background
+    this.ctx.fillStyle = '#c4a265';
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // Subtle wood grain effect using horizontal lines with opacity variation
+    this.ctx.save();
+    for (let y = 0; y < this.canvas.height; y += 4) {
+      const opacity = 0.03 + Math.sin(y * 0.15) * 0.02 + Math.sin(y * 0.07) * 0.015;
+      this.ctx.strokeStyle = `rgba(90, 55, 20, ${opacity})`;
+      this.ctx.lineWidth = 1;
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, y);
+      this.ctx.lineTo(this.canvas.width, y);
+      this.ctx.stroke();
+    }
+    this.ctx.restore();
+
     // Draw board elements
     this.drawSquares();
     this.drawConnectingLines();
@@ -246,16 +263,35 @@ export class BoardRenderer {
    */
   private drawSquares(): void {
     this.ctx.save();
-    this.ctx.strokeStyle = '#333';
-    this.ctx.lineWidth = 2;
+
+    // Carved groove effect: draw a darker shadow line first, then a lighter highlight
+    const drawCarvedRect = (x: number, y: number, w: number, h: number): void => {
+      // Dark carved groove
+      this.ctx.strokeStyle = '#5d3a1a';
+      this.ctx.lineWidth = 3;
+      this.ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+      this.ctx.shadowBlur = 2;
+      this.ctx.shadowOffsetX = 1;
+      this.ctx.shadowOffsetY = 1;
+      this.ctx.strokeRect(x, y, w, h);
+
+      // Light inner highlight for engraved look
+      this.ctx.shadowColor = 'transparent';
+      this.ctx.shadowBlur = 0;
+      this.ctx.shadowOffsetX = 0;
+      this.ctx.shadowOffsetY = 0;
+      this.ctx.strokeStyle = 'rgba(210, 180, 130, 0.3)';
+      this.ctx.lineWidth = 1;
+      this.ctx.strokeRect(x - 1, y - 1, w + 2, h + 2);
+    };
 
     // Outer square
-    this.ctx.strokeRect(this.padding, this.padding, this.boardSize, this.boardSize);
+    drawCarvedRect(this.padding, this.padding, this.boardSize, this.boardSize);
 
     // Middle square
     const middleSize = this.boardSize * 0.66;
     const middleOffset = (this.boardSize - middleSize) / 2;
-    this.ctx.strokeRect(
+    drawCarvedRect(
       this.padding + middleOffset,
       this.padding + middleOffset,
       middleSize,
@@ -265,12 +301,7 @@ export class BoardRenderer {
     // Inner square
     const innerSize = this.boardSize * 0.33;
     const innerOffset = (this.boardSize - innerSize) / 2;
-    this.ctx.strokeRect(
-      this.padding + innerOffset,
-      this.padding + innerOffset,
-      innerSize,
-      innerSize
-    );
+    drawCarvedRect(this.padding + innerOffset, this.padding + innerOffset, innerSize, innerSize);
 
     this.ctx.restore();
   }
@@ -280,8 +311,12 @@ export class BoardRenderer {
    */
   private drawConnectingLines(): void {
     this.ctx.save();
-    this.ctx.strokeStyle = '#333';
-    this.ctx.lineWidth = 2;
+    this.ctx.strokeStyle = '#5d3a1a';
+    this.ctx.lineWidth = 3;
+    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    this.ctx.shadowBlur = 2;
+    this.ctx.shadowOffsetX = 1;
+    this.ctx.shadowOffsetY = 1;
 
     // Top connecting line (1 -> 9 -> 17)
     this.drawLine(
@@ -360,14 +395,30 @@ export class BoardRenderer {
    */
   private drawPositionMarkers(): void {
     this.ctx.save();
-    this.ctx.fillStyle = '#666';
-    const markerRadius = 4;
+    const markerRadius = 6;
 
     for (let i = 0; i < this.positions.length; i++) {
       const pos = this.positions[i];
+
+      // Dark indent fill
+      this.ctx.fillStyle = '#8b6b3a';
       this.ctx.beginPath();
       this.ctx.arc(pos.x, pos.y, markerRadius, 0, Math.PI * 2);
       this.ctx.fill();
+
+      // Inner shadow for carved indent effect
+      this.ctx.strokeStyle = '#5d3a1a';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.beginPath();
+      this.ctx.arc(pos.x, pos.y, markerRadius, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      // Highlight ring around the indent
+      this.ctx.strokeStyle = 'rgba(210, 180, 130, 0.4)';
+      this.ctx.lineWidth = 1;
+      this.ctx.beginPath();
+      this.ctx.arc(pos.x, pos.y, markerRadius + 1.5, 0, Math.PI * 2);
+      this.ctx.stroke();
     }
 
     this.ctx.restore();
@@ -392,19 +443,53 @@ export class BoardRenderer {
     const pos = this.positions[position];
     const pieceRadius = this.boardSize * 0.025; // 2.5% of board size
 
-    // Draw piece shadow
-    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    // Draw piece shadow (subtle depth, centered to avoid visual offset)
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
     this.ctx.beginPath();
-    this.ctx.arc(pos.x + 2, pos.y + 2, pieceRadius, 0, Math.PI * 2);
+    this.ctx.arc(pos.x, pos.y, pieceRadius + 2, 0, Math.PI * 2);
     this.ctx.fill();
 
-    // Draw piece
-    if (color === PlayerColor.WHITE) {
-      this.ctx.fillStyle = '#f0f0f0';
-      this.ctx.strokeStyle = '#333';
-    } else {
-      this.ctx.fillStyle = '#333';
-      this.ctx.strokeStyle = '#000';
+    // Draw piece base and 3D shading (gracefully skip gradients in test environments)
+    try {
+      if (color === PlayerColor.WHITE) {
+        // White piece: radial gradient matching black piece structure for consistent 3D look
+        const baseGradient = this.ctx.createRadialGradient(
+          pos.x - pieceRadius * 0.3,
+          pos.y - pieceRadius * 0.3,
+          pieceRadius * 0.1,
+          pos.x,
+          pos.y,
+          pieceRadius
+        );
+        baseGradient.addColorStop(0, '#ffffff');
+        baseGradient.addColorStop(0.7, '#e8e8f0');
+        baseGradient.addColorStop(1, '#d0d0d8');
+        this.ctx.fillStyle = baseGradient;
+        this.ctx.strokeStyle = '#b0b0be';
+      } else {
+        // Black piece: radial gradient for 3D look
+        const baseGradient = this.ctx.createRadialGradient(
+          pos.x - pieceRadius * 0.3,
+          pos.y - pieceRadius * 0.3,
+          pieceRadius * 0.1,
+          pos.x,
+          pos.y,
+          pieceRadius
+        );
+        baseGradient.addColorStop(0, '#4a4a5e');
+        baseGradient.addColorStop(1, '#1a1a2e');
+        this.ctx.fillStyle = baseGradient;
+        this.ctx.strokeStyle = '#1a1a2e';
+      }
+    } catch {
+      // Gradient not available in test environments — use flat colors
+      if (color === PlayerColor.WHITE) {
+        this.ctx.fillStyle = '#e8e8f0';
+        this.ctx.strokeStyle = '#b0b0be';
+      } else {
+        this.ctx.fillStyle = '#2a2a3e';
+        this.ctx.strokeStyle = '#1a1a2e';
+      }
     }
 
     this.ctx.lineWidth = 2;
@@ -412,6 +497,45 @@ export class BoardRenderer {
     this.ctx.arc(pos.x, pos.y, pieceRadius, 0, Math.PI * 2);
     this.ctx.fill();
     this.ctx.stroke();
+
+    // Add rim shadow for edge depth (gracefully skip in test environments)
+    try {
+      if (color === PlayerColor.WHITE) {
+        // Subtle inner highlight for white pieces (mirrors black piece structure)
+        const gradient = this.ctx.createRadialGradient(
+          pos.x - pieceRadius * 0.3,
+          pos.y - pieceRadius * 0.3,
+          0,
+          pos.x,
+          pos.y,
+          pieceRadius
+        );
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.35)');
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0.08)');
+        this.ctx.fillStyle = gradient;
+        this.ctx.beginPath();
+        this.ctx.arc(pos.x, pos.y, pieceRadius, 0, Math.PI * 2);
+        this.ctx.fill();
+      } else {
+        // Subtle inner highlight for black pieces
+        const gradient = this.ctx.createRadialGradient(
+          pos.x - pieceRadius * 0.3,
+          pos.y - pieceRadius * 0.3,
+          0,
+          pos.x,
+          pos.y,
+          pieceRadius
+        );
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        this.ctx.fillStyle = gradient;
+        this.ctx.beginPath();
+        this.ctx.arc(pos.x, pos.y, pieceRadius, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+    } catch {
+      // createRadialGradient not available in some test environments — skip highlight
+    }
   }
 
   /**
@@ -451,15 +575,15 @@ export class BoardRenderer {
   private drawHighlights(): void {
     // Draw highlighted positions (valid moves)
     for (const position of this.highlightedPositions) {
-      this.drawPositionHighlight(position, 'rgba(0, 255, 0, 0.2)', 'rgba(0, 255, 0, 0.6)');
+      this.drawPositionHighlight(position, 'rgba(46, 204, 113, 0.2)', 'rgba(46, 204, 113, 0.6)');
     }
 
     // Draw hover position
     if (this.hoverPosition !== null) {
       this.drawPositionHighlight(
         this.hoverPosition,
-        'rgba(100, 150, 255, 0.2)',
-        'rgba(100, 150, 255, 0.6)'
+        'rgba(74, 144, 226, 0.2)',
+        'rgba(74, 144, 226, 0.6)'
       );
     }
   }
@@ -667,7 +791,13 @@ export class BoardRenderer {
 
     // Draw game info (skip when InfoPanel is active)
     if (!this.infoPanelActive) {
-      this.drawGameInfo(currentPlayer, phase, whitePiecesRemaining, blackPiecesRemaining, playerColor);
+      this.drawGameInfo(
+        currentPlayer,
+        phase,
+        whitePiecesRemaining,
+        blackPiecesRemaining,
+        playerColor
+      );
     }
   }
 
@@ -679,111 +809,111 @@ export class BoardRenderer {
       for (const anim of this.animations) {
         const t = Math.min(anim.progress, 1);
 
-      switch (anim.type) {
-        case 'placement': {
-          const data = anim.data as PlacementAnimationData;
-          const { position, playerColor } = data;
-          const scale = t; // Grow from 0 to 1
-          const pos = this.positions[position];
-          const pieceRadius = this.boardSize * 0.025 * scale;
-
-          this.ctx.save();
-          this.ctx.globalAlpha = t;
-
-          if (playerColor === PlayerColor.WHITE) {
-            this.ctx.fillStyle = '#f0f0f0';
-            this.ctx.strokeStyle = '#333';
-          } else {
-            this.ctx.fillStyle = '#333';
-            this.ctx.strokeStyle = '#000';
-          }
-
-          this.ctx.lineWidth = 2;
-          this.ctx.beginPath();
-          this.ctx.arc(pos.x, pos.y, pieceRadius, 0, Math.PI * 2);
-          this.ctx.fill();
-          this.ctx.stroke();
-
-          this.ctx.restore();
-          break;
-        }
-
-        case 'movement': {
-          const data = anim.data as MovementAnimationData;
-          const { from, to, playerColor } = data;
-          const fromPos = this.positions[from];
-          const toPos = this.positions[to];
-          const x = fromPos.x + (toPos.x - fromPos.x) * t;
-          const y = fromPos.y + (toPos.y - fromPos.y) * t;
-          const pieceRadius = this.boardSize * 0.025;
-
-          if (playerColor === PlayerColor.WHITE) {
-            this.ctx.fillStyle = '#f0f0f0';
-            this.ctx.strokeStyle = '#333';
-          } else {
-            this.ctx.fillStyle = '#333';
-            this.ctx.strokeStyle = '#000';
-          }
-
-          this.ctx.lineWidth = 2;
-          this.ctx.beginPath();
-          this.ctx.arc(x, y, pieceRadius, 0, Math.PI * 2);
-          this.ctx.fill();
-          this.ctx.stroke();
-          break;
-        }
-
-        case 'removal': {
-          const data = anim.data as RemovalAnimationData;
-          const { position, playerColor } = data;
-          const scale = 1 - t; // Shrink from 1 to 0
-          const pos = this.positions[position];
-          const pieceRadius = this.boardSize * 0.025 * scale;
-
-          this.ctx.save();
-          this.ctx.globalAlpha = 1 - t;
-
-          if (playerColor === PlayerColor.WHITE) {
-            this.ctx.fillStyle = '#f0f0f0';
-            this.ctx.strokeStyle = '#333';
-          } else {
-            this.ctx.fillStyle = '#333';
-            this.ctx.strokeStyle = '#000';
-          }
-
-          this.ctx.lineWidth = 2;
-          this.ctx.beginPath();
-          this.ctx.arc(pos.x, pos.y, pieceRadius, 0, Math.PI * 2);
-          this.ctx.fill();
-          this.ctx.stroke();
-
-          this.ctx.restore();
-          break;
-        }
-
-        case 'mill': {
-          const data = anim.data as MillAnimationData;
-          const { millPositions } = data;
-          const pulse = Math.sin(t * Math.PI * 4) * 0.5 + 0.5; // Pulse 4 times
-
-          this.ctx.save();
-          this.ctx.strokeStyle = `rgba(255, 215, 0, ${pulse})`;
-          this.ctx.lineWidth = 4;
-
-          for (const position of millPositions) {
+        switch (anim.type) {
+          case 'placement': {
+            const data = anim.data as PlacementAnimationData;
+            const { position, playerColor } = data;
+            const scale = t; // Grow from 0 to 1
             const pos = this.positions[position];
-            const radius = this.boardSize * 0.04;
+            const pieceRadius = this.boardSize * 0.025 * scale;
 
+            this.ctx.save();
+            this.ctx.globalAlpha = t;
+
+            if (playerColor === PlayerColor.WHITE) {
+              this.ctx.fillStyle = '#e8e8f0';
+              this.ctx.strokeStyle = '#9898b0';
+            } else {
+              this.ctx.fillStyle = '#2a2a3e';
+              this.ctx.strokeStyle = '#1a1a2e';
+            }
+
+            this.ctx.lineWidth = 2;
             this.ctx.beginPath();
-            this.ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+            this.ctx.arc(pos.x, pos.y, pieceRadius, 0, Math.PI * 2);
+            this.ctx.fill();
             this.ctx.stroke();
+
+            this.ctx.restore();
+            break;
           }
 
-          this.ctx.restore();
-          break;
+          case 'movement': {
+            const data = anim.data as MovementAnimationData;
+            const { from, to, playerColor } = data;
+            const fromPos = this.positions[from];
+            const toPos = this.positions[to];
+            const x = fromPos.x + (toPos.x - fromPos.x) * t;
+            const y = fromPos.y + (toPos.y - fromPos.y) * t;
+            const pieceRadius = this.boardSize * 0.025;
+
+            if (playerColor === PlayerColor.WHITE) {
+              this.ctx.fillStyle = '#e8e8f0';
+              this.ctx.strokeStyle = '#9898b0';
+            } else {
+              this.ctx.fillStyle = '#2a2a3e';
+              this.ctx.strokeStyle = '#1a1a2e';
+            }
+
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, pieceRadius, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.stroke();
+            break;
+          }
+
+          case 'removal': {
+            const data = anim.data as RemovalAnimationData;
+            const { position, playerColor } = data;
+            const scale = 1 - t; // Shrink from 1 to 0
+            const pos = this.positions[position];
+            const pieceRadius = this.boardSize * 0.025 * scale;
+
+            this.ctx.save();
+            this.ctx.globalAlpha = 1 - t;
+
+            if (playerColor === PlayerColor.WHITE) {
+              this.ctx.fillStyle = '#e8e8f0';
+              this.ctx.strokeStyle = '#9898b0';
+            } else {
+              this.ctx.fillStyle = '#2a2a3e';
+              this.ctx.strokeStyle = '#1a1a2e';
+            }
+
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.arc(pos.x, pos.y, pieceRadius, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.stroke();
+
+            this.ctx.restore();
+            break;
+          }
+
+          case 'mill': {
+            const data = anim.data as MillAnimationData;
+            const { millPositions } = data;
+            const pulse = Math.sin(t * Math.PI * 4) * 0.5 + 0.5; // Pulse 4 times
+
+            this.ctx.save();
+            this.ctx.strokeStyle = `rgba(255, 215, 0, ${pulse})`;
+            this.ctx.lineWidth = 4;
+
+            for (const position of millPositions) {
+              const pos = this.positions[position];
+              const radius = this.boardSize * 0.04;
+
+              this.ctx.beginPath();
+              this.ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+              this.ctx.stroke();
+            }
+
+            this.ctx.restore();
+            break;
+          }
         }
       }
-    }
     } catch (error) {
       logger.error('Animation rendering error:', error);
       this.animations = [];
@@ -800,8 +930,8 @@ export class BoardRenderer {
     blackPiecesRemaining: number,
     playerColor?: PlayerColor
   ): void {
-    this.ctx.fillStyle = '#333';
-    this.ctx.font = '16px Arial';
+    this.ctx.fillStyle = '#9898b0';
+    this.ctx.font = '16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     this.ctx.textAlign = 'left';
 
     let yOffset = this.boardSize + this.padding + 20; // Position text BELOW the board

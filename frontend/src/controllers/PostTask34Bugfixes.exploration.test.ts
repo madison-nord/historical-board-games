@@ -267,7 +267,8 @@ describe('Post-Task 34 Bug Condition Exploration Tests', () => {
       gc.stopGameLoop();
     });
 
-    it('should invoke onGameEnd callback when endGame is called', () => {
+    it('should invoke onGameEnd callback when endGame is called', async () => {
+      vi.useFakeTimers();
       const boardRenderer = new BoardRenderer(canvas);
       const gc = new GameController(GameMode.LOCAL_TWO_PLAYER, boardRenderer, PlayerColor.WHITE);
       gc.startGame();
@@ -302,10 +303,13 @@ describe('Post-Task 34 Bug Condition Exploration Tests', () => {
 
       // Expected: onGameEnd callback should have been invoked with the winner
       // On unfixed code: endGame() only shows AnnouncementBanner, no callback
+      // onGameEnd is now called after a 3s delay via setTimeout
+      await vi.advanceTimersByTimeAsync(3000);
       expect(onGameEndCallback).toHaveBeenCalled();
       expect(onGameEndCallback).toHaveBeenCalledWith(expect.any(String));
 
       gc.stopGameLoop();
+      vi.useRealTimers();
     });
   });
 

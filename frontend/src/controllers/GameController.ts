@@ -1106,10 +1106,7 @@ export class GameController {
 
     if (!this.currentGameState.isGameOver && !this.currentGameState.millFormed) {
       // In local two-player or tutorial mode, always enable input
-      if (
-        this.gameMode === GameMode.LOCAL_TWO_PLAYER ||
-        this.gameMode === GameMode.TUTORIAL
-      ) {
+      if (this.gameMode === GameMode.LOCAL_TWO_PLAYER || this.gameMode === GameMode.TUTORIAL) {
         logger.debug('switchPlayer: Enabling input for local/tutorial mode');
         this.boardRenderer.setInputEnabled(true);
       }
@@ -1306,17 +1303,20 @@ export class GameController {
         : this.currentGameState.blackPiecesOnBoard;
     const reason = loserPieces < 3 ? 'Reduced to fewer than 3 pieces' : 'No legal moves available';
 
-    // Show game-end announcement
+    // Show game-end announcement banner first, then show result dialog after a delay
     const endMsg = deriveGameEndMessage(winner, reason, this.gameMode, this.playerColor);
     this.announcementBanner?.show({
       message: endMsg.message,
       subtitle: endMsg.subtitle,
       type: 'game-end',
-      duration: 0,
+      duration: 3000,
     });
 
-    // Notify outer scope (main.ts) so it can show the result dialog with navigation buttons
-    this.onGameEnd?.(winner);
+    // Delay the result dialog so the banner is visible first
+    setTimeout(() => {
+      this.announcementBanner?.dismiss();
+      this.onGameEnd?.(winner);
+    }, 3000);
 
     logger.info(`Game Over! Winner: ${winner}`);
     this.updateDisplay();
@@ -1422,7 +1422,7 @@ export class GameController {
    * @returns true if a game was loaded, false otherwise
    */
   public loadSavedGame(): boolean {
-    const savedGame = LocalStorage.loadGameState();
+    const savedGame = LocalStorage.loadGameStateForMode(this.gameMode);
     if (!savedGame) {
       return false;
     }
@@ -1476,10 +1476,10 @@ export class GameController {
   }
 
   /**
-   * Clear saved game state from localStorage
+   * Clear saved game state for this game's mode from localStorage
    */
   public clearSavedGame(): void {
-    LocalStorage.clearGameState();
+    LocalStorage.clearGameStateForMode(this.gameMode);
   }
 
   /**

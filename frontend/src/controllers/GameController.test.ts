@@ -38,6 +38,7 @@ describe('GameController - Comprehensive Tests', () => {
   afterEach(() => {
     gameController.stopGameLoop();
     document.body.removeChild(canvas);
+    window.localStorage.clear();
   });
 
   describe('Initialization', () => {

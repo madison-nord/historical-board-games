@@ -49,7 +49,7 @@ describe('AnnouncementBanner', () => {
     it('should auto-dismiss after the specified duration', () => {
       banner.create();
 
-      banner.show({ message: "Your Turn", type: 'turn', duration: 2000 });
+      banner.show({ message: 'Your Turn', type: 'turn', duration: 2000 });
 
       const container = document.querySelector('.announcement-banner') as HTMLElement;
       expect(container.style.display).toBe('');
@@ -63,7 +63,7 @@ describe('AnnouncementBanner', () => {
     it('should auto-dismiss after default 2000ms when no duration specified', () => {
       banner.create();
 
-      banner.show({ message: "Your Turn", type: 'turn' });
+      banner.show({ message: 'Your Turn', type: 'turn' });
 
       const container = document.querySelector('.announcement-banner') as HTMLElement;
       expect(container.style.display).toBe('');
@@ -164,7 +164,7 @@ describe('AnnouncementBanner', () => {
     it('should use pointer-events: none for turn announcements', () => {
       banner.create();
 
-      banner.show({ message: "Your Turn", type: 'turn' });
+      banner.show({ message: 'Your Turn', type: 'turn' });
 
       const container = document.querySelector('.announcement-banner') as HTMLElement;
       expect(container.style.pointerEvents).toBe('none');

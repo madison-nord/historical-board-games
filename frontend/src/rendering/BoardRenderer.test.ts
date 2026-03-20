@@ -169,6 +169,43 @@ describe('BoardRenderer', () => {
     });
   });
 
+  describe('piece shadow centering', () => {
+    it('should draw piece shadow at same center as piece position (no offset)', () => {
+      // Access the private drawPiece method via the renderer's context
+      // We verify by spying on the context's arc method before rendering
+      const ctx = (renderer as any).ctx as CanvasRenderingContext2D;
+      const arcCalls: { x: number; y: number; radius: number }[] = [];
+      const originalArc = ctx.arc.bind(ctx);
+      vi.spyOn(ctx, 'arc').mockImplementation(
+        (x: number, y: number, radius: number, ...rest: unknown[]) => {
+          arcCalls.push({ x, y, radius });
+          return originalArc(x, y, radius, ...(rest as [number, number, boolean?]));
+        }
+      );
+
+      const board = new Array(24).fill(null);
+      board[0] = PlayerColor.WHITE;
+      renderer.render(board, null, []);
+
+      const pos = renderer.getPositionCoordinates(0);
+
+      // All arc calls for this piece should be centered on pos.x, pos.y
+      // (the shadow, the piece fill, and the stroke are all at the same center)
+      // Filter arcs that are near position 0's coordinates
+      const pieceArcs = arcCalls.filter(
+        c => Math.abs(c.x - pos.x) < 1 && Math.abs(c.y - pos.y) < 1
+      );
+      // At minimum: shadow arc + piece arc (gradient try/catch may skip highlight)
+      expect(pieceArcs.length).toBeGreaterThanOrEqual(2);
+
+      // Verify NO arcs are drawn at the old offset position (+2, +3)
+      const oldOffsetArcs = arcCalls.filter(
+        c => Math.abs(c.x - (pos.x + 2)) < 0.5 && Math.abs(c.y - (pos.y + 3)) < 0.5
+      );
+      expect(oldOffsetArcs.length).toBe(0);
+    });
+  });
+
   describe('infoPanelActive flag', () => {
     it('should skip drawGameInfo when infoPanelActive is true', () => {
       const drawGameInfoSpy = vi.spyOn(renderer as any, 'drawGameInfo');

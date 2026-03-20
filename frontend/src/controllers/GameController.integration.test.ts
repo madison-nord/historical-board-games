@@ -167,12 +167,8 @@ describe('GameController - InfoPanel & AnnouncementBanner Integration', () => {
 
       // Should have phase announcement but NOT turn announcement
       const showCalls = mockBanner.show.mock.calls;
-      const phaseCall = showCalls.find(
-        (call: any[]) => call[0].type === 'phase'
-      );
-      const turnCall = showCalls.find(
-        (call: any[]) => call[0].type === 'turn'
-      );
+      const phaseCall = showCalls.find((call: any[]) => call[0].type === 'phase');
+      const turnCall = showCalls.find((call: any[]) => call[0].type === 'turn');
 
       expect(phaseCall).toBeDefined();
       expect(phaseCall![0].message).toContain('Movement');
@@ -215,7 +211,7 @@ describe('GameController - InfoPanel & AnnouncementBanner Integration', () => {
       );
 
       expect(gameEndCall).toBeDefined();
-      expect(gameEndCall![0].duration).toBe(0);
+      expect(gameEndCall![0].duration).toBe(3000);
       expect(gameEndCall![0].message).toContain('White Wins!'); // LOCAL_TWO_PLAYER mode
       expect(gameEndCall![0].subtitle).toBeDefined();
     });

@@ -10,7 +10,12 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fc from 'fast-check';
 import { GameController } from './GameController';
 import { BoardRenderer } from '../rendering/BoardRenderer';
-import { InfoPanel, deriveActionInstruction, deriveTurnMessage, deriveGameEndMessage } from './InfoPanel';
+import {
+  InfoPanel,
+  deriveActionInstruction,
+  deriveTurnMessage,
+  deriveGameEndMessage,
+} from './InfoPanel';
 import type { InfoPanelData } from './InfoPanel';
 import { ChatPanel } from './ChatPanel';
 import type { ChatMessage } from './ChatPanel';
@@ -51,7 +56,16 @@ describe('Preservation: deriveActionInstruction', () => {
         fc.boolean(),
         fc.boolean(),
         fc.boolean(),
-        (currentPlayer, phase, gameMode, playerColor, selectedPosition, isOpponentTurn, isAiThinking, millFormed) => {
+        (
+          currentPlayer,
+          phase,
+          gameMode,
+          playerColor,
+          selectedPosition,
+          isOpponentTurn,
+          isAiThinking,
+          millFormed
+        ) => {
           const data: InfoPanelData = {
             currentPlayer,
             phase,
@@ -310,55 +324,39 @@ describe('Preservation: deriveGameEndMessage for ONLINE_MULTIPLAYER', () => {
 describe('Preservation: deriveTurnMessage', () => {
   it('should return color-based turn messages for LOCAL_TWO_PLAYER', () => {
     fc.assert(
-      fc.property(
-        arbPlayerColor,
-        arbPlayerColor,
-        (newPlayer, localPlayerColor) => {
-          const result = deriveTurnMessage(newPlayer, GameMode.LOCAL_TWO_PLAYER, localPlayerColor);
-          const colorName = newPlayer === PlayerColor.WHITE ? 'White' : 'Black';
-          expect(result).toBe(`${colorName}'s Turn`);
-        }
-      ),
+      fc.property(arbPlayerColor, arbPlayerColor, (newPlayer, localPlayerColor) => {
+        const result = deriveTurnMessage(newPlayer, GameMode.LOCAL_TWO_PLAYER, localPlayerColor);
+        const colorName = newPlayer === PlayerColor.WHITE ? 'White' : 'Black';
+        expect(result).toBe(`${colorName}'s Turn`);
+      }),
       { numRuns: 100 }
     );
   });
 
   it('should return perspective-based turn messages for ONLINE_MULTIPLAYER', () => {
     fc.assert(
-      fc.property(
-        arbPlayerColor,
-        arbPlayerColor,
-        (newPlayer, localPlayerColor) => {
-          const result = deriveTurnMessage(
-            newPlayer,
-            GameMode.ONLINE_MULTIPLAYER,
-            localPlayerColor
-          );
-          if (newPlayer === localPlayerColor) {
-            expect(result).toBe('Your Turn');
-          } else {
-            expect(result).toBe("Opponent's Turn");
-          }
+      fc.property(arbPlayerColor, arbPlayerColor, (newPlayer, localPlayerColor) => {
+        const result = deriveTurnMessage(newPlayer, GameMode.ONLINE_MULTIPLAYER, localPlayerColor);
+        if (newPlayer === localPlayerColor) {
+          expect(result).toBe('Your Turn');
+        } else {
+          expect(result).toBe("Opponent's Turn");
         }
-      ),
+      }),
       { numRuns: 100 }
     );
   });
 
   it('should return perspective-based turn messages for SINGLE_PLAYER', () => {
     fc.assert(
-      fc.property(
-        arbPlayerColor,
-        arbPlayerColor,
-        (newPlayer, localPlayerColor) => {
-          const result = deriveTurnMessage(newPlayer, GameMode.SINGLE_PLAYER, localPlayerColor);
-          if (newPlayer === localPlayerColor) {
-            expect(result).toBe('Your Turn');
-          } else {
-            expect(result).toBe("Opponent's Turn");
-          }
+      fc.property(arbPlayerColor, arbPlayerColor, (newPlayer, localPlayerColor) => {
+        const result = deriveTurnMessage(newPlayer, GameMode.SINGLE_PLAYER, localPlayerColor);
+        if (newPlayer === localPlayerColor) {
+          expect(result).toBe('Your Turn');
+        } else {
+          expect(result).toBe("Opponent's Turn");
         }
-      ),
+      }),
       { numRuns: 100 }
     );
   });
@@ -438,42 +436,39 @@ describe('Preservation: ChatPanel collapse/mute', () => {
 
   it('should track unread messages when collapsed and clear badge on expand', () => {
     fc.assert(
-      fc.property(
-        fc.integer({ min: 1, max: 15 }),
-        (messageCount) => {
-          const panel = new ChatPanel();
-          panel.show();
+      fc.property(fc.integer({ min: 1, max: 15 }), messageCount => {
+        const panel = new ChatPanel();
+        panel.show();
 
-          try {
-            // Collapse first
-            panel.toggleCollapse();
+        try {
+          // Collapse first
+          panel.toggleCollapse();
 
-            // Send messages while collapsed
-            for (let i = 0; i < messageCount; i++) {
-              panel.addMessage({
-                senderId: 'player1',
-                senderColor: PlayerColor.WHITE,
-                content: `Message ${i}`,
-                timestamp: new Date().toISOString(),
-              });
-            }
-
-            const badge = document.querySelector('.chat-notification-badge') as HTMLElement;
-            expect(badge).toBeTruthy();
-            expect(badge.style.display).toBe('block');
-
-            const expectedText = messageCount > 9 ? '9+' : String(messageCount);
-            expect(badge.textContent).toBe(expectedText);
-
-            // Expand should clear badge
-            panel.toggleCollapse();
-            expect(badge.style.display).toBe('none');
-            expect(badge.textContent).toBe('');
-          } finally {
-            panel.destroy();
+          // Send messages while collapsed
+          for (let i = 0; i < messageCount; i++) {
+            panel.addMessage({
+              senderId: 'player1',
+              senderColor: PlayerColor.WHITE,
+              content: `Message ${i}`,
+              timestamp: new Date().toISOString(),
+            });
           }
+
+          const badge = document.querySelector('.chat-notification-badge') as HTMLElement;
+          expect(badge).toBeTruthy();
+          expect(badge.style.display).toBe('block');
+
+          const expectedText = messageCount > 9 ? '9+' : String(messageCount);
+          expect(badge.textContent).toBe(expectedText);
+
+          // Expand should clear badge
+          panel.toggleCollapse();
+          expect(badge.style.display).toBe('none');
+          expect(badge.textContent).toBe('');
+        } finally {
+          panel.destroy();
         }
-      ),
+      }),
       { numRuns: 50 }
     );
   });
@@ -529,11 +524,7 @@ describe('Preservation: getRemovablePieces (via mill formation flow)', () => {
     const boardRenderer = new BoardRenderer(canvas);
     const highlightSpy = vi.spyOn(boardRenderer, 'highlightValidMoves');
 
-    const gc = new GameController(
-      GameMode.LOCAL_TWO_PLAYER,
-      boardRenderer,
-      PlayerColor.WHITE
-    );
+    const gc = new GameController(GameMode.LOCAL_TWO_PLAYER, boardRenderer, PlayerColor.WHITE);
     gc.startGame();
 
     // Set up board: WHITE about to form mill at 0-1-2 by placing at 2
@@ -576,11 +567,7 @@ describe('Preservation: getRemovablePieces (via mill formation flow)', () => {
     const boardRenderer = new BoardRenderer(canvas);
     const highlightSpy = vi.spyOn(boardRenderer, 'highlightValidMoves');
 
-    const gc = new GameController(
-      GameMode.LOCAL_TWO_PLAYER,
-      boardRenderer,
-      PlayerColor.WHITE
-    );
+    const gc = new GameController(GameMode.LOCAL_TWO_PLAYER, boardRenderer, PlayerColor.WHITE);
     gc.startGame();
 
     // Set up board: WHITE about to form mill at 0-1-2 by placing at 2
@@ -623,11 +610,7 @@ describe('Preservation: getRemovablePieces (via mill formation flow)', () => {
     const boardRenderer = new BoardRenderer(canvas);
     const highlightSpy = vi.spyOn(boardRenderer, 'highlightValidMoves');
 
-    const gc = new GameController(
-      GameMode.LOCAL_TWO_PLAYER,
-      boardRenderer,
-      PlayerColor.WHITE
-    );
+    const gc = new GameController(GameMode.LOCAL_TWO_PLAYER, boardRenderer, PlayerColor.WHITE);
     gc.startGame();
 
     // WHITE about to form mill at 0-1-2 by placing at 2

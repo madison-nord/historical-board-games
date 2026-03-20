@@ -96,7 +96,7 @@ describe('LocalStorage Unit Tests', () => {
       expect(LocalStorage.hasSavedGame()).toBe(false);
     });
 
-    it('should overwrite existing saved game', () => {
+    it('should overwrite existing saved game for the same mode', () => {
       const gameState1: GameState = {
         gameId: 'game-1',
         phase: GamePhase.PLACEMENT,
@@ -126,13 +126,13 @@ describe('LocalStorage Unit Tests', () => {
       };
 
       LocalStorage.saveGameState(gameState1, GameMode.SINGLE_PLAYER, PlayerColor.WHITE);
-      LocalStorage.saveGameState(gameState2, GameMode.LOCAL_TWO_PLAYER, PlayerColor.BLACK);
+      LocalStorage.saveGameState(gameState2, GameMode.SINGLE_PLAYER, PlayerColor.BLACK);
 
-      const loaded = LocalStorage.loadGameState();
+      const loaded = LocalStorage.loadGameStateForMode(GameMode.SINGLE_PLAYER);
       expect(loaded).not.toBeNull();
       expect(loaded?.gameId).toBe('game-2');
       expect(loaded?.phase).toBe(GamePhase.MOVEMENT);
-      expect(loaded?.gameMode).toBe(GameMode.LOCAL_TWO_PLAYER);
+      expect(loaded?.playerColor).toBe(PlayerColor.BLACK);
     });
   });
 
