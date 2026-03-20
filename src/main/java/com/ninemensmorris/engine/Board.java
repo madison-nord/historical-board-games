@@ -39,7 +39,7 @@ import com.ninemensmorris.model.Position;
  * 
  * This class manages position states, adjacency relationships, and mill pattern detection.
  */
-public class Board {
+public class Board implements Cloneable {
     
     /**
      * Array of 24 positions representing the Nine Men's Morris board.
@@ -277,6 +277,12 @@ public class Board {
      */
     @Override
     public Board clone() {
+        try {
+            super.clone();
+        } catch (CloneNotSupportedException e) {
+            // Cannot happen — Board implements Cloneable
+            throw new AssertionError(e);
+        }
         return new Board(this);
     }
     

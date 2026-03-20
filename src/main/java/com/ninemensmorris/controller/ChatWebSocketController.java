@@ -1,5 +1,7 @@
 package com.ninemensmorris.controller;
 
+import java.util.Objects;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
@@ -97,8 +99,10 @@ public class ChatWebSocketController {
             // Broadcast to both players via their user queues
             String[] parts = playerMapping.split(":");
             if (parts.length == 2) {
-                messagingTemplate.convertAndSendToUser(parts[0], "/queue/chat", broadcast);
-                messagingTemplate.convertAndSendToUser(parts[1], "/queue/chat", broadcast);
+                String player1 = Objects.requireNonNull(parts[0]);
+                String player2 = Objects.requireNonNull(parts[1]);
+                messagingTemplate.convertAndSendToUser(player1, "/queue/chat", broadcast);
+                messagingTemplate.convertAndSendToUser(player2, "/queue/chat", broadcast);
             }
         } catch (Exception e) {
             logger.error("Error handling chat message for game {}: {}", 

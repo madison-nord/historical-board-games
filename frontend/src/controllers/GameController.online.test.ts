@@ -67,6 +67,7 @@ describe('GameController - Online Multiplayer Integration', () => {
       blackPiecesOnBoard: 0,
       board: new Array(24).fill(null),
       isGameOver: false,
+      gameOver: false,
       winner: null,
       millFormed: false,
     });
@@ -370,6 +371,7 @@ describe('GameController - Online Multiplayer Integration', () => {
         blackPiecesOnBoard: 0,
         board: new Array(24).fill(null),
         isGameOver: false,
+        gameOver: false,
         winner: null,
         millFormed: false,
       });
@@ -431,6 +433,7 @@ describe('GameController - Online Multiplayer Integration', () => {
         blackPiecesOnBoard: 0,
         board: new Array(24).fill(null),
         isGameOver: false,
+        gameOver: false,
         winner: null,
         millFormed: false,
       });
@@ -480,6 +483,7 @@ describe('GameController - Online Multiplayer Integration', () => {
         blackPiecesOnBoard: 0,
         board: new Array(24).fill(null),
         isGameOver: false,
+        gameOver: false,
         winner: null,
         millFormed: false,
       });

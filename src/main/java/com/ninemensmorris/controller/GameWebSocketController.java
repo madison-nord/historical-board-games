@@ -1,5 +1,7 @@
 package com.ninemensmorris.controller;
 
+import java.util.Objects;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
@@ -171,16 +173,18 @@ public class GameWebSocketController {
         if (playerMapping != null) {
             String[] parts = playerMapping.split(":");
             if (parts.length == 2) {
-                messagingTemplate.convertAndSendToUser(parts[0], "/queue/game-state", update);
-                messagingTemplate.convertAndSendToUser(parts[1], "/queue/game-state", update);
+                String player1 = Objects.requireNonNull(parts[0]);
+                String player2 = Objects.requireNonNull(parts[1]);
+                messagingTemplate.convertAndSendToUser(player1, "/queue/game-state", update);
+                messagingTemplate.convertAndSendToUser(player2, "/queue/game-state", update);
                 
                 // Also send a GameEndMessage when the game is over
                 if (state.isGameOver()) {
                     PlayerColor winner = state.getWinner();
                     String reason = determineGameEndReason(state);
                     GameEndMessage endMessage = new GameEndMessage(gameId, winner, reason);
-                    messagingTemplate.convertAndSendToUser(parts[0], "/queue/game-end", endMessage);
-                    messagingTemplate.convertAndSendToUser(parts[1], "/queue/game-end", endMessage);
+                    messagingTemplate.convertAndSendToUser(player1, "/queue/game-end", endMessage);
+                    messagingTemplate.convertAndSendToUser(player2, "/queue/game-end", endMessage);
                 }
             }
         }

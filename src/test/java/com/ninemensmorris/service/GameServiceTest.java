@@ -382,9 +382,8 @@ public class GameServiceTest {
     @Test
     @DisplayName("Cleanup completed games")
     void testCleanupCompletedGames() {
-        // Create a game and simulate completion
-        GameState game = gameService.createGame(GameMode.SINGLE_PLAYER, "player1", null);
-        String gameId = game.getGameId();
+        // Create a game and simulate completion (return value unused; side effect registers the game)
+        gameService.createGame(GameMode.SINGLE_PLAYER, "player1", null);
         
         // Initially should have 1 active game
         assertEquals(1, gameService.getActiveGameCount(), "Should have 1 active game");

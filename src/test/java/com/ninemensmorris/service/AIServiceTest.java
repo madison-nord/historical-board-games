@@ -1,16 +1,27 @@
 package com.ninemensmorris.service;
 
-import com.ninemensmorris.engine.GameState;
-import com.ninemensmorris.engine.RuleEngine;
-import com.ninemensmorris.model.*;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
-import net.jqwik.api.*;
-
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import com.ninemensmorris.engine.GameState;
+import com.ninemensmorris.engine.RuleEngine;
+import com.ninemensmorris.model.Move;
+import com.ninemensmorris.model.MoveType;
+import com.ninemensmorris.model.PlayerColor;
+
+import net.jqwik.api.Arbitraries;
+import net.jqwik.api.Arbitrary;
+import net.jqwik.api.ForAll;
+import net.jqwik.api.Property;
+import net.jqwik.api.Provide;
 
 /**
  * Unit tests for AIService evaluation function.
@@ -314,26 +325,10 @@ public class AIServiceTest {
         Move aiMove = aiService.selectMove(state, PlayerColor.WHITE);
         assertNotNull(aiMove, "AI should select a move");
         
-        // Apply AI move, then check if opponent can still form the mill
-        GameState afterAIMove = state.applyMove(aiMove);
-        
         // Check if the blocking was effective by seeing if opponent's mill opportunity is gone
         RuleEngine ruleEngine = new RuleEngine();
-        List<Move> opponentMoves = ruleEngine.generateLegalMoves(afterAIMove, PlayerColor.BLACK);
         
-        // Apply each opponent move and see if any forms a mill
-        boolean opponentCanFormMill = false;
-        for (Move opponentMove : opponentMoves) {
-            GameState afterOpponentMove = afterAIMove.applyMove(opponentMove);
-            List<Move> opponentFollowup = ruleEngine.generateLegalMoves(afterOpponentMove, PlayerColor.BLACK);
-            if (opponentFollowup.stream().anyMatch(move -> move.getType() == MoveType.REMOVE)) {
-                opponentCanFormMill = true;
-                break;
-            }
-        }
-        
-        // AI should have blocked the mill opportunity (though this is strategic, not guaranteed)
-        // We'll just verify the AI made a reasonable move
+        // AI should have made a valid move (strategic blocking isn't guaranteed but legality is)
         assertTrue(ruleEngine.isValidMove(state, aiMove), "AI should make a valid move");
     }
     
@@ -425,38 +420,6 @@ public class AIServiceTest {
             state = state.applyMove(new Move(MoveType.PLACE, 11, PlayerColor.BLACK)); // BLACK forms mill
             state = state.applyMove(new Move(MoveType.PLACE, 12, PlayerColor.WHITE));
             state = state.applyMove(new Move(MoveType.PLACE, 15, PlayerColor.BLACK)); // Extra piece
-        }
-        
-        return state;
-    }
-    
-    private GameState createWinningPosition(PlayerColor winner) {
-        GameState state = new GameState("test-game");
-        
-        // Place pieces to create a winning scenario
-        // Winner has 3+ pieces, loser has < 3 pieces
-        if (winner == PlayerColor.WHITE) {
-            // WHITE wins - place 3 WHITE pieces and 2 BLACK pieces
-            state = state.applyMove(new Move(MoveType.PLACE, 0, PlayerColor.WHITE));
-            state = state.applyMove(new Move(MoveType.PLACE, 1, PlayerColor.BLACK));
-            state = state.applyMove(new Move(MoveType.PLACE, 2, PlayerColor.WHITE));
-            state = state.applyMove(new Move(MoveType.PLACE, 3, PlayerColor.BLACK));
-            state = state.applyMove(new Move(MoveType.PLACE, 4, PlayerColor.WHITE));
-            
-            // Continue placing until all pieces are placed
-            int[] positions = {5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23};
-            PlayerColor currentPlayer = state.getCurrentPlayer();
-            
-            for (int i = 0; i < positions.length && (state.getWhitePiecesRemaining() > 0 || state.getBlackPiecesRemaining() > 0); i++) {
-                if (state.getPiecesRemaining(currentPlayer) > 0) {
-                    state = state.applyMove(new Move(MoveType.PLACE, positions[i], currentPlayer));
-                    currentPlayer = currentPlayer.opposite();
-                }
-            }
-            
-            // Simulate BLACK losing pieces to get below 3
-            // This would normally happen through mill formations and removals
-            // For testing, we'll create a state that represents this end condition
         }
         
         return state;

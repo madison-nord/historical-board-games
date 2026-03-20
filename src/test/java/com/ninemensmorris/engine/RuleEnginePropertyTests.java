@@ -1,11 +1,24 @@
 package com.ninemensmorris.engine;
 
-import com.ninemensmorris.model.*;
-import net.jqwik.api.*;
-
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.ninemensmorris.model.GamePhase;
+import com.ninemensmorris.model.Move;
+import com.ninemensmorris.model.MoveType;
+import com.ninemensmorris.model.PlayerColor;
+
+import net.jqwik.api.Arbitraries;
+import net.jqwik.api.Arbitrary;
+import net.jqwik.api.ForAll;
+import net.jqwik.api.Label;
+import net.jqwik.api.Property;
+import net.jqwik.api.Provide;
 
 /**
  * Property-based tests for RuleEngine class using jqwik.
@@ -121,8 +134,9 @@ public class RuleEnginePropertyTests {
         // Note: The actual validation depends on game phase, but we're testing the core logic
         boolean isValid = ruleEngine.isValidMove(state, movementMove);
         
-        // In placement phase, movement moves should be invalid
-        // This tests that the RuleEngine correctly rejects movement during placement
+        // In placement phase, movement moves should be invalid regardless of adjacency
+        assertFalse(isValid, 
+            "Movement moves should be invalid during placement phase (adjacent=" + isAdjacent + ")");
         assertFalse(isValid, 
             String.format("Movement from %d to %d should be invalid during PLACEMENT phase", 
                          fromPosition, toPosition));
