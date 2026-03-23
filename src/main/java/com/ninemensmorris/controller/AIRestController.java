@@ -29,8 +29,8 @@ public class AIRestController {
 
     private final AIService aiService;
 
-    public AIRestController() {
-        this.aiService = new AIService();
+    public AIRestController(AIService aiService) {
+        this.aiService = aiService;
     }
 
     /**

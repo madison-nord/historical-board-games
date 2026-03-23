@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -15,12 +16,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ninemensmorris.dto.AIMoveRequest;
 import com.ninemensmorris.dto.AIMoveResponse;
+import com.ninemensmorris.service.AIService;
 
 /**
  * Tests for the AI REST endpoint that exposes the minimax AI
  * for single-player games.
  */
 @WebMvcTest(AIRestController.class)
+@Import(AIService.class)
 class AIRestControllerTest {
 
     @Autowired

@@ -1,0 +1,147 @@
+# Implementation Plan
+
+- [x] 1. Write bug condition exploration tests (BEFORE implementing any fixes)
+  - **Property 1: Bug Condition** - AI Movement Phase Strategic Defects
+  - **CRITICAL**: Write these property-based tests BEFORE implementing any fix
+  - **DO NOT attempt to fix the tests or the code when they fail**
+  - **NOTE**: These tests encode the expected behavior — they will validate the fixes when they pass after implementation
+  - **GOAL**: Surface counterexamples that demonstrate the 9 root causes exist on unfixed code
+  - Tests go in `src/test/java/com/ninemensmorris/service/AIMovementPhaseExplorationTest.java`
+  - Use jqwik `@Property(tries = 100)` for property-based tests
+  - **Test 1a — Cross-Phase Cache Collision (Property 3)**: Call `computeBoardHash` on two GameStates with identical board positions but different phases (PLACEMENT vs MOVEMENT). Assert hashes are different. On unfixed code this FAILS because `computeBoardHash` omits phase.
+  - **Test 1b — Iterative Deepening Completeness (Property 4)**: Create a movement-phase state with high branching factor. Call `selectMove` with a short time budget (use `AIService(1)` for fast test). Verify the AI returns a move based on at least depth-1 complete search, not a depth-0 fallback. On unfixed code this may produce suboptimal results due to fixed-depth search.
+  - **Test 1c — Move Repetition Penalty (Property 6)**: Create a movement-phase state where the AI's last move was A→B. Evaluate the reverse move B→A vs an equivalent non-reversing move. Assert the reverse move scores lower. On unfixed code this FAILS because there is no repetition penalty.
+  - **Test 1d — Mill Completion in Movement Phase (Property 1)**: Create a movement-phase state where the AI is exactly one move away from completing a mill. Call `selectMove` and assert the AI returns the mill-completing move. On unfixed code this may FAIL due to poor move ordering and depth-0 fallback.
+  - **Test 1e — Weight Ratio Check (Property 8)**: Assert that MOVEMENT_WEIGHTS has `mill:potentialMill` ratio ≤ 2.5 and FLYING_WEIGHTS has `mill:potentialMill` ratio ≤ 2.5. On unfixed code this FAILS (current ratios are 3.3:1 and 5.0:1).
+  - **Test 1f — DI Bypass Check**: Verify `AIRestController` has a constructor that accepts `AIService` parameter (constructor injection) and does NOT use `new AIService()`. On unfixed code this FAILS.
+  - **Test 1g — Transposition Table Persistence**: Call `selectMove` twice on different states. Assert the transposition table is NOT cleared between calls (table size > 0 before second call starts). On unfixed code this FAILS because `selectMove` calls `transpositionTable.clear()`.
+  - Run tests on UNFIXED code
+  - **EXPECTED OUTCOME**: Tests FAIL (this is correct — it proves the bugs exist)
+  - Document counterexamples found to understand root causes
+  - Mark task complete when tests are written, run, and failures are documented
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8_
+
+- [x] 2. Write preservation property tests (BEFORE implementing any fixes)
+  - **Property 2: Preservation** - Placement Phase and Terminal Score Invariance
+  - **IMPORTANT**: Follow observation-first methodology — observe behavior on UNFIXED code first
+  - Tests go in `src/test/java/com/ninemensmorris/service/AIMovementPhasePreservationTest.java`
+  - Use jqwik `@Property(tries = 100)` for property-based tests, reuse the existing `gameStates` arbitrary pattern
+  - **Test 2a — Placement Evaluation Preservation (Property 2)**: For any PLACEMENT-phase game state, record `evaluatePosition(state, aiColor)` on unfixed code. After fix, the score must be identical. Implement by asserting placement weights are exactly: pieceCount=100, mill=200, potentialMill=80, opponentPotentialMill=80, doubleMill=500, mobility=3, blockedPiece=0, intersection=15.
+  - **Test 2b — Terminal Score Invariance (Property 5)**: For any terminal game state (game over), assert `evaluatePosition` returns +10000 for AI win, -10000 for AI loss, 0 for draw.
+  - **Test 2c — AI Move Legality (Property 7)**: For any valid non-terminal game state, assert `selectMove` returns either null (no legal moves) or a move in `RuleEngine.generateLegalMoves(state, aiColor)`. (Extends existing Property 10 to cover all phases.)
+  - **Test 2d — Weight Ratio Invariants**: For all phases, assert: mill >= 1.5 * pieceCount, potentialMill >= 0.3 * mill, opponentPotentialMill > 0, doubleMill >= 2.0 * mill, opponentPotentialMill >= potentialMill. This extends existing Property 3 and must hold after rebalancing.
+  - **Test 2e — All 8 Evaluation Factors Present**: Assert that `evaluatePosition` considers pieceCount, mills, potentialMills, opponentBlocking, doubleMills, mobility, blockedPieces, and intersectionControl (placement only). Verify by checking that changing each factor changes the score.
+  - Run tests on UNFIXED code
+  - **EXPECTED OUTCOME**: Tests PASS (this confirms baseline behavior to preserve)
+  - Mark task complete when tests are written, run, and passing on unfixed code
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
+
+
+- [x] 3. Fix transposition table hash to include game phase
+  - [x] 3.1 Add phase to `computeBoardHash` in `AIService.java`
+    - In `computeBoardHash`, after mixing in the mill-formed flag, add: `hash = hash * 7 + state.getPhase().ordinal();`
+    - This ensures PLACEMENT, MOVEMENT, and FLYING produce distinct hashes for the same board layout
+    - _Bug_Condition: isBugCondition — transpositionHashOmitsPhase(state) returns true_
+    - _Expected_Behavior: computeBoardHash(stateA) != computeBoardHash(stateB) when stateA.phase != stateB.phase_
+    - _Preservation: Existing transposition table lookup/store logic unchanged_
+    - _Requirements: 2.1_
+
+- [x] 4. Implement iterative deepening in `selectMove`
+  - [x] 4.1 Replace fixed-depth search with iterative deepening loop in `AIService.java`
+    - Replace the single depth-4 search with a loop from depth 1 to `searchDepth`
+    - Track `bestMoveFromLastCompleteIteration` separately from current iteration's partial result
+    - If deadline exceeded during an iteration, return best move from last fully completed iteration
+    - Re-order moves after each complete iteration: put PV (principal variation) move first
+    - This guarantees at least a depth-1 complete search result is always available
+    - _Bug_Condition: isBugCondition — searchTimesOutWithNoFallback(state, aiColor) returns true_
+    - _Expected_Behavior: selectMove always returns a move based on at least depth-1 complete search_
+    - _Preservation: selectMove still returns legal moves within time budget_
+    - _Requirements: 2.2, 2.3_
+
+- [x] 5. Stop clearing transposition table every call
+  - [x] 5.1 Remove `transpositionTable.clear()` from `selectMove` in `AIService.java`
+    - Remove the `transpositionTable.clear()` call at the start of `selectMove`
+    - The table now persists across calls, giving cached evaluations from prior turns
+    - Combined with fix #1 (phase-aware hashing), stale cross-phase entries are no longer a concern
+    - The existing `MAX_TRANSPOSITION_TABLE_SIZE` eviction guard prevents unbounded memory growth
+    - Add a `clearTranspositionTable()` call in the controller or game service when a new game starts
+    - _Bug_Condition: isBugCondition — transpositionTableClearedEveryCall() returns true_
+    - _Expected_Behavior: transposition table retains entries across selectMove calls_
+    - _Preservation: MAX_TRANSPOSITION_TABLE_SIZE eviction still prevents unbounded memory_
+    - _Requirements: 2.2_
+
+- [x] 6. Add move repetition penalty
+  - [x] 6.1 Add repetition penalty logic to `selectMove` in `AIService.java`
+    - Add a `lastAIMove` field or parameter to track the AI's most recent move
+    - In `selectMove`, after computing each root move's minimax score, subtract a penalty (e.g., 40 points) if the move reverses the last AI move (move.getFrom() == lastAIMove.getTo() AND move.getTo() == lastAIMove.getFrom())
+    - Update `lastAIMove` after selecting the best move
+    - _Bug_Condition: isBugCondition — noRepetitionPenalty(state) returns true_
+    - _Expected_Behavior: reverse moves score lower than equivalent non-reversing moves_
+    - _Preservation: Non-reversing moves unaffected; placement phase unaffected (no from position)_
+    - _Requirements: 2.5_
+
+- [x] 7. Enhance move ordering with potential mill detection and killer move heuristic
+  - [x] 7.1 Add potential mill priority tier to `orderMoves` in `AIService.java`
+    - Add a third priority tier: moves that create a potential mill (2 of 3 positions filled with 1 empty, no opponent blocking)
+    - New ordering: (0) REMOVE, (1) mill-completing, (2) potential-mill-creating, (3) killer moves, (4) everything else
+    - _Bug_Condition: isBugCondition — moveOrderingMissesPotentialMills(state) returns true_
+    - _Expected_Behavior: potential-mill-creating moves evaluated before generic moves_
+    - _Requirements: 2.6_
+  - [x] 7.2 Add killer move heuristic to `AIService.java`
+    - Add `killerMoves` array indexed by depth, storing up to 2 moves per depth level
+    - When a move causes a beta cutoff in minimax, store it as a killer move for that depth
+    - In `orderMoves`, accept killerMoves and depth parameters, prioritize killer moves after potential-mill moves
+    - Reset killer moves at the start of each `selectMove` call (or persist across iterative deepening iterations)
+    - _Bug_Condition: isBugCondition — noKillerMoveHeuristic() returns true_
+    - _Expected_Behavior: killer moves tried early in sibling nodes, improving pruning_
+    - _Requirements: 2.7_
+
+- [x] 8. Rebalance movement/flying evaluation weights
+  - [x] 8.1 Update `MOVEMENT_WEIGHTS` and `FLYING_WEIGHTS` in `AIService.java`
+    - Change `MOVEMENT_WEIGHTS.potentialMill` from 60 to 100 (ratio 2.0:1 with mill=200)
+    - Change `MOVEMENT_WEIGHTS.opponentPotentialMill` from 60 to 100
+    - Change `FLYING_WEIGHTS.potentialMill` from 60 to 120 (ratio 2.5:1 with mill=300)
+    - Change `FLYING_WEIGHTS.opponentPotentialMill` from 60 to 120
+    - Verify all weight ratio invariants still hold: mill >= 1.5 * pieceCount, potentialMill >= 0.3 * mill, opponentPotentialMill >= potentialMill, doubleMill >= 2.0 * mill
+    - _Bug_Condition: isBugCondition — weightsDiscouragePotentialMills(phase) returns true_
+    - _Expected_Behavior: mill:potentialMill ratio ≤ 2.5:1 for MOVEMENT and FLYING_
+    - _Preservation: PLACEMENT_WEIGHTS unchanged; all ratio invariants still hold_
+    - _Requirements: 2.8_
+
+- [x] 9. Fix AIRestController Spring DI bypass
+  - [x] 9.1 Replace no-arg constructor with constructor injection in `AIRestController.java`
+    - Remove `public AIRestController() { this.aiService = new AIService(); }`
+    - Replace with `public AIRestController(AIService aiService) { this.aiService = aiService; }`
+    - Spring will auto-inject the `@Service`-annotated `AIService` bean
+    - Update `AIRestControllerTest` if needed to work with the injected bean
+    - _Bug_Condition: isBugCondition — controllerBypassesDI() returns true_
+    - _Expected_Behavior: REST endpoint uses Spring-managed AIService bean_
+    - _Preservation: All existing REST endpoint behavior unchanged_
+    - _Requirements: 2.4_
+
+- [x] 10. Verify bug condition exploration tests now pass
+  - **Property 1: Expected Behavior** - AI Movement Phase Strategic Quality
+  - **IMPORTANT**: Re-run the SAME tests from task 1 — do NOT write new tests
+  - The tests from task 1 encode the expected behavior for all 9 root causes
+  - When these tests pass, it confirms the expected behavior is satisfied
+  - Run `mvn test -Dtest=AIMovementPhaseExplorationTest --quiet`
+  - **EXPECTED OUTCOME**: All tests PASS (confirms bugs are fixed)
+  - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8_
+
+- [x] 11. Verify preservation tests still pass
+  - **Property 2: Preservation** - Placement Phase and Terminal Score Invariance
+  - **IMPORTANT**: Re-run the SAME tests from task 2 — do NOT write new tests
+  - Run `mvn test -Dtest=AIMovementPhasePreservationTest --quiet`
+  - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
+  - Confirm all preservation tests still pass after all fixes (no regressions)
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
+
+- [x] 12. Checkpoint — Ensure ALL tests pass and BUILD SUCCESS
+  - Run `mvn test --quiet` to execute the full test suite
+  - Verify BUILD SUCCESS with 0 test failures
+  - Verify all 213+ existing tests still pass (no regressions)
+  - Verify all new exploration tests (task 1) pass
+  - Verify all new preservation tests (task 2) pass
+  - Verify all existing property-based tests (Properties 1-10, 12) still pass
+  - Verify `AIRestControllerTest` passes with Spring DI injection
+  - Ask the user if questions arise
