@@ -14,7 +14,7 @@ test.describe('UI and Menus E2E Tests', () => {
   
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should display main menu on load', async ({ page }) => {
@@ -180,7 +180,7 @@ test.describe('UI and Menus E2E Tests', () => {
     });
     
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
     
     // Should have no critical errors

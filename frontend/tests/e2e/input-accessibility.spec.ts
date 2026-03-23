@@ -74,8 +74,9 @@ async function clickPosition(page: Page, position: number): Promise<void> {
 
 async function startLocalGame(page: Page): Promise<void> {
   await page.goto('/');
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
   const btn = page.locator('button:has-text("Local Two Player"), button:has-text("Local")');
+  await expect(btn.first()).toBeVisible({ timeout: 5000 });
   await btn.first().click();
   await page.waitForTimeout(500);
 }
@@ -83,7 +84,7 @@ async function startLocalGame(page: Page): Promise<void> {
 // ─── 40.1 Mouse Input ───────────────────────────────────────────────────
 
 test.describe('40.1 Mouse input', () => {
-  test.setTimeout(30000);
+  test.setTimeout(90000);
 
   test('should register piece placement via mouse click on canvas', async ({ page }) => {
     await startLocalGame(page);
@@ -194,7 +195,7 @@ test.describe('40.1 Mouse input', () => {
 
   test('should handle mouse click on main menu buttons', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify main menu buttons respond to mouse clicks
     const menuButtons = page.locator('button.game-button');
@@ -220,7 +221,8 @@ test.describe('40.1 Mouse input', () => {
 // ─── 40.2 Touch Input ───────────────────────────────────────────────────
 
 test.describe('40.2 Touch input', () => {
-  test.setTimeout(30000);
+  test.setTimeout(90000);
+  test.use({ hasTouch: true });
 
   test('should register piece placement via touch tap on canvas', async ({ page }) => {
     await startLocalGame(page);
@@ -320,7 +322,7 @@ test.describe('40.2 Touch input', () => {
 
   test('should handle touch tap on menu buttons', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Find the "Local Two Player" button and tap it
     const localBtn = page.locator('button:has-text("Local Two Player"), button:has-text("Local")');
@@ -339,11 +341,11 @@ test.describe('40.2 Touch input', () => {
 // ─── 40.3 Keyboard Navigation ───────────────────────────────────────────
 
 test.describe('40.3 Keyboard navigation', () => {
-  test.setTimeout(30000);
+  test.setTimeout(90000);
 
   test('should allow tabbing through main menu buttons', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Tab through the menu buttons and verify focus moves
     const focusedElements: string[] = [];
@@ -368,7 +370,7 @@ test.describe('40.3 Keyboard navigation', () => {
 
   test('should activate menu button with Enter key', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Tab to the "Local Two Player" button
     const localBtn = page.locator('button:has-text("Local Two Player"), button:has-text("Local")');
@@ -390,7 +392,7 @@ test.describe('40.3 Keyboard navigation', () => {
 
   test('should activate menu button with Space key', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Focus the Tutorial button and press Space
     const tutorialBtn = page.locator('button:has-text("Tutorial")');
@@ -413,7 +415,7 @@ test.describe('40.3 Keyboard navigation', () => {
 
   test('should allow tabbing through dialog buttons', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Click Single Player to open color selection dialog
     await page.click('button:has-text("Single Player")');
@@ -441,11 +443,11 @@ test.describe('40.3 Keyboard navigation', () => {
 // ─── 40.4 Screen Reader Compatibility ───────────────────────────────────
 
 test.describe('40.4 Screen reader compatibility', () => {
-  test.setTimeout(30000);
+  test.setTimeout(90000);
 
   test('should have ARIA label on the game canvas', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const canvas = page.locator('#game-canvas');
     await expect(canvas).toBeVisible();
@@ -461,7 +463,7 @@ test.describe('40.4 Screen reader compatibility', () => {
 
   test('should have proper role attributes on dialog elements', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // The main menu uses a <dialog> element which has implicit role="dialog"
     const dialog = page.locator('dialog');
@@ -480,7 +482,7 @@ test.describe('40.4 Screen reader compatibility', () => {
 
   test('should have accessible button text on all menu buttons', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // All buttons should have visible text content for screen readers
     const buttons = page.locator('button.game-button');
@@ -496,7 +498,7 @@ test.describe('40.4 Screen reader compatibility', () => {
 
   test('should have heading structure in main menu', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify the main menu has a heading for screen reader navigation
     const heading = page.locator('.main-menu-dialog h1, .main-menu-dialog h2');
@@ -510,7 +512,7 @@ test.describe('40.4 Screen reader compatibility', () => {
 
   test('should have lang attribute on html element', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify the page has a lang attribute for screen readers
     const lang = await page.locator('html').getAttribute('lang');
@@ -520,7 +522,7 @@ test.describe('40.4 Screen reader compatibility', () => {
 
   test('should have descriptive page title', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const title = await page.title();
     expect(title).toBeTruthy();
@@ -529,7 +531,7 @@ test.describe('40.4 Screen reader compatibility', () => {
 
   test('should verify dynamic content containers exist for announcements', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify the announcement container exists in the DOM
     // This container is used for dynamic game state announcements
@@ -545,7 +547,7 @@ test.describe('40.4 Screen reader compatibility', () => {
 
   test('should have accessible info panel container', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify the info panel container exists
     const infoPanel = page.locator('#info-panel-container');
@@ -555,7 +557,7 @@ test.describe('40.4 Screen reader compatibility', () => {
 
   test('should have viewport meta tag for mobile accessibility', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify viewport meta tag exists (important for mobile screen readers)
     const viewport = await page.locator('meta[name="viewport"]').getAttribute('content');

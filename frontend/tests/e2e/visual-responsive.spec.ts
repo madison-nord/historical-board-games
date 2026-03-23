@@ -12,12 +12,11 @@ test.describe('Visual and Responsive Design', () => {
   // Helper: start a local two-player game so the board has pieces for visual tests
   async function startLocalGame(page: import('@playwright/test').Page): Promise<void> {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     const localBtn = page.locator('button:has-text("Local"), button:has-text("Two Player")');
-    if ((await localBtn.count()) > 0) {
-      await localBtn.first().click();
-      await page.waitForTimeout(500);
-    }
+    await expect(localBtn.first()).toBeVisible({ timeout: 5000 });
+    await localBtn.first().click();
+    await page.waitForTimeout(500);
   }
 
   // ─── 37.1 Desktop Rendering ───────────────────────────────────────────
@@ -139,7 +138,10 @@ test.describe('Visual and Responsive Design', () => {
     test('touch targets meet 44x44px minimum on mobile', async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 667 });
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
+
+      // Wait for buttons to render
+      await expect(page.locator('button.game-button').first()).toBeVisible({ timeout: 5000 });
 
       // Check all visible game-button elements
       const buttons = page.locator('button.game-button:visible');

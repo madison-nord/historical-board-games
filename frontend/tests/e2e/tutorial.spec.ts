@@ -15,7 +15,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Tutorial System E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should display main menu with tutorial button', async ({ page }) => {

@@ -15,7 +15,7 @@ test.describe('Responsive Design E2E Tests', () => {
     test('should display correctly on 1920x1080 desktop', async ({ page }) => {
       await page.setViewportSize({ width: 1920, height: 1080 });
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       
       // Check canvas is visible and sized appropriately
       const canvas = page.locator('#game-canvas');
@@ -30,7 +30,7 @@ test.describe('Responsive Design E2E Tests', () => {
     test('should display correctly on 1366x768 desktop', async ({ page }) => {
       await page.setViewportSize({ width: 1366, height: 768 });
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       
       const canvas = page.locator('#game-canvas');
       await expect(canvas).toBeVisible();
@@ -43,7 +43,7 @@ test.describe('Responsive Design E2E Tests', () => {
     test('should display correctly on 1024x768 desktop', async ({ page }) => {
       await page.setViewportSize({ width: 1024, height: 768 });
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       
       const canvas = page.locator('#game-canvas');
       await expect(canvas).toBeVisible();
@@ -54,7 +54,7 @@ test.describe('Responsive Design E2E Tests', () => {
     test('should display correctly on iPad (768x1024)', async ({ page }) => {
       await page.setViewportSize({ width: 768, height: 1024 });
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       
       const canvas = page.locator('#game-canvas');
       await expect(canvas).toBeVisible();
@@ -75,7 +75,7 @@ test.describe('Responsive Design E2E Tests', () => {
       // Start in portrait
       await page.setViewportSize({ width: 768, height: 1024 });
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       
       const canvas = page.locator('#game-canvas');
       await expect(canvas).toBeVisible();
@@ -95,7 +95,7 @@ test.describe('Responsive Design E2E Tests', () => {
     test('should display correctly on iPhone (375x667)', async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 667 });
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       
       const canvas = page.locator('#game-canvas');
       await expect(canvas).toBeVisible();
@@ -109,7 +109,7 @@ test.describe('Responsive Design E2E Tests', () => {
     test('should display correctly on larger phone (414x896)', async ({ page }) => {
       await page.setViewportSize({ width: 414, height: 896 });
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       
       const canvas = page.locator('#game-canvas');
       await expect(canvas).toBeVisible();
@@ -118,7 +118,7 @@ test.describe('Responsive Design E2E Tests', () => {
     test('should have touch-friendly buttons on mobile', async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 667 });
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       
       // Check visible game-button elements meet minimum touch target size (44x44px)
       const buttons = page.locator('button.game-button:visible');
@@ -138,7 +138,7 @@ test.describe('Responsive Design E2E Tests', () => {
       // Start in portrait
       await page.setViewportSize({ width: 375, height: 667 });
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       
       const canvas = page.locator('#game-canvas');
       await expect(canvas).toBeVisible();
@@ -156,7 +156,7 @@ test.describe('Responsive Design E2E Tests', () => {
     test('should have readable text on mobile', async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 667 });
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       
       // Check that text elements have appropriate font sizes
       const textElements = page.locator('h1, h2, h3, p, button');
@@ -178,7 +178,7 @@ test.describe('Responsive Design E2E Tests', () => {
     test('should not have overlapping UI elements', async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 667 });
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       
       // Take screenshot to verify no overlapping
       await page.screenshot({ path: 'test-results/mobile-layout.png' });
@@ -209,7 +209,7 @@ test.describe('Responsive Design E2E Tests', () => {
     test('should scale canvas proportionally on resize', async ({ page }) => {
       await page.setViewportSize({ width: 1024, height: 768 });
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       
       const canvas = page.locator('#game-canvas');
       const initialBox = await canvas.boundingBox();
