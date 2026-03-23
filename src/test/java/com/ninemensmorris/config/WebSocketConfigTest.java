@@ -28,8 +28,12 @@ public class WebSocketConfigTest {
     
     @BeforeEach
     @SuppressWarnings("unused") // Used by JUnit framework
-    void setUp() {
+    void setUp() throws Exception {
         webSocketConfig = new WebSocketConfig();
+        // Set the @Value field via reflection since we're not using Spring context
+        var field = WebSocketConfig.class.getDeclaredField("allowedOrigins");
+        field.setAccessible(true);
+        field.set(webSocketConfig, "*");
         stompEndpointRegistry = mock(StompEndpointRegistry.class);
         messageBrokerRegistry = mock(MessageBrokerRegistry.class);
         endpointRegistration = mock(StompWebSocketEndpointRegistration.class);
@@ -46,9 +50,9 @@ public class WebSocketConfigTest {
         // Act
         webSocketConfig.registerStompEndpoints(stompEndpointRegistry);
         
-        // Assert
+        // Assert - allowedOrigins "*" is split by comma, producing ["*"]
         verify(stompEndpointRegistry).addEndpoint("/ws");
-        verify(endpointRegistration).setAllowedOriginPatterns("*");
+        verify(endpointRegistration).setAllowedOriginPatterns(new String[]{"*"});
         verify(endpointRegistration).withSockJS();
     }
     

@@ -1,5 +1,6 @@
 package com.ninemensmorris.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.lang.NonNull;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -28,18 +29,29 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     
     /**
+     * Allowed origin patterns for WebSocket connections.
+     * Defaults to "*" for development; override via {@code websocket.allowed-origins}
+     * property in production (e.g., {@code https://yourdomain.com}).
+     */
+    @Value("${websocket.allowed-origins:*}")
+    private String allowedOrigins;
+    
+    /**
      * Registers STOMP endpoints that clients will connect to.
      * 
      * The /ws endpoint is configured with:
      * - SockJS fallback for browsers without WebSocket support
-     * - CORS enabled for all origins (should be restricted in production)
+     * - Configurable CORS origins (defaults to all for dev, restricted in prod)
+     * - Works with both ws:// (dev) and wss:// (prod behind reverse proxy)
      * 
      * @param registry the STOMP endpoint registry
      */
     @Override
+    @SuppressWarnings("null") // String.split() never returns null; origins array is safe
     public void registerStompEndpoints(@NonNull StompEndpointRegistry registry) {
+        String[] origins = allowedOrigins.split(",");
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*")
+                .setAllowedOriginPatterns(origins)
                 .withSockJS();
     }
     
